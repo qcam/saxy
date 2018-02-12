@@ -1,4 +1,11 @@
 defmodule Saxy.Buffering do
+  def maybe_commit(buffer, position)
+      when is_binary(buffer) and byte_size(buffer) > 4096 do
+    {subbuffer(buffer, position), 0}
+  end
+
+  def maybe_commit(buffer, position), do: {buffer, position}
+
   def subbuffer(buffer, 0), do: buffer
 
   def subbuffer(buffer, position)

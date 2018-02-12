@@ -193,6 +193,8 @@ defmodule Saxy.Parser do
     {:ok, buffer, position, next_cont} = Buffering.maybe_buffer(buffer, position, state.cont)
     state = %{state | cont: next_cont}
 
+    {buffer, position} = Buffering.maybe_commit(buffer, position)
+
     match_result =
       case Buffering.subbuffer(buffer, position) do
         <<"<!--", _rest::bits>> ->
