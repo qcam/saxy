@@ -517,33 +517,33 @@ defmodule Saxy.Parser do
   end
 
   defp match_token(<<"<?xml", _rest::bits>>, :"<?xml"), do: {:ok, {"<?xml", 5}}
-  defp match_token(_other, :"<?xml"), do: :error
+  defp match_token(<<_::bits>>, :"<?xml"), do: :error
 
   defp match_token(<<"encoding", _rest::bits>>, :encoding), do: {:ok, {"encoding", 8}}
-  defp match_token(_other, :encoding), do: :error
+  defp match_token(<<_::bits>>, :encoding), do: :error
 
   defp match_token(<<"standalone", _rest::bits>>, :standalone), do: {:ok, {"standalone", 10}}
-  defp match_token(_other, :standalone), do: :error
+  defp match_token(<<_::bits>>, :standalone), do: :error
 
   defp match_token(<<"yes", _rest::bits>>, :YesNo), do: {:ok, {"yes", 3}}
   defp match_token(<<"no", _rest::bits>>, :YesNo), do: {:ok, {"no", 2}}
-  defp match_token(_other, :YesNo), do: :error
+  defp match_token(<<_::bits>>, :YesNo), do: :error
 
   defp match_token(<<"version", _rest::bits>>, :version), do: {:ok, {"version", 7}}
-  defp match_token(_other, :version), do: :error
+  defp match_token(<<_::bits>>, :version), do: :error
 
   defp match_token(<<"1.", _rest::bits>>, :"1."), do: {:ok, {"1.", 2}}
-  defp match_token(_other, :"1."), do: :error
+  defp match_token(<<_::bits>>, :"1."), do: :error
 
   defp match_token(<<"?>", _rest::bits>>, :"?>"), do: {:ok, {"?>", 2}}
-  defp match_token(_other, :"?>"), do: :error
+  defp match_token(<<_::bits>>, :"?>"), do: :error
 
   defp match_token(<<charcode::utf8, _rest::bits>>, :DecChar) when charcode in ?0..?9 do
     char = <<charcode::utf8>>
     {:ok, {char, byte_size(char)}}
   end
 
-  defp match_token(_other, :DecChar), do: :error
+  defp match_token(<<_::bits>>, :DecChar), do: :error
 
   defp match_token(<<charcode::utf8, _rest::bits>>, :EncNameStartChar) do
     if enc_name_start_char?(charcode) do
@@ -554,7 +554,7 @@ defmodule Saxy.Parser do
     end
   end
 
-  defp match_token(_other, :EncNameStartChar), do: :error
+  defp match_token(<<_::bits>>, :EncNameStartChar), do: :error
 
   defp match_token(<<charcode::utf8, _rest::bits>>, :EncNameChar) do
     if enc_name_char?(charcode) do
@@ -565,19 +565,19 @@ defmodule Saxy.Parser do
     end
   end
 
-  defp match_token(_other, :EncNameChar), do: :error
+  defp match_token(<<_::bits>>, :EncNameChar), do: :error
 
   defp match_token(<<0xA, _rest::bits>>, :whitespace), do: {:ok, {<<0xA>>, 1}}
   defp match_token(<<0x9, _rest::bits>>, :whitespace), do: {:ok, {<<0x9>>, 1}}
   defp match_token(<<0xD, _rest::bits>>, :whitespace), do: {:ok, {<<0xD>>, 1}}
   defp match_token(<<0x20, _rest::bits>>, :whitespace), do: {:ok, {<<0x20>>, 1}}
-  defp match_token(_other, :whitespace), do: :error
+  defp match_token(<<_::bits>>, :whitespace), do: :error
 
   defp match_token(<<"<!--", _rest::bits>>, :"<!--"), do: {:ok, {"<!--", 4}}
-  defp match_token(_other, :"<!--"), do: :error
+  defp match_token(<<_::bits>>, :"<!--"), do: :error
 
   defp match_token(<<"-->", _rest::bits>>, :"-->"), do: {:ok, {"-->", 3}}
-  defp match_token(_other, :"-->"), do: :error
+  defp match_token(<<_::bits>>, :"-->"), do: :error
 
   defp match_token(<<"-->", _rest::bits>>, :CommentChar), do: :error
 
@@ -585,16 +585,16 @@ defmodule Saxy.Parser do
     do: {:ok, {<<char::utf8>>, byte_size(<<char::utf8>>)}}
 
   defp match_token(<<"<", _rest::bits>>, :<), do: {:ok, {"<", 1}}
-  defp match_token(_other, :<), do: :error
+  defp match_token(<<_::bits>>, :<), do: :error
 
   defp match_token(<<">", _rest::bits>>, :>), do: {:ok, {">", 1}}
-  defp match_token(_other, :>), do: :error
+  defp match_token(<<_::bits>>, :>), do: :error
 
   defp match_token(<<"/>", _rest::bits>>, :"/>"), do: {:ok, {"/>", 2}}
-  defp match_token(_other, :"/>"), do: :error
+  defp match_token(<<_::bits>>, :"/>"), do: :error
 
   defp match_token(<<"</", _rest::bits>>, :"</"), do: {:ok, {"</", 2}}
-  defp match_token(_other, :"</"), do: :error
+  defp match_token(<<_::bits>>, :"</"), do: :error
 
   defp match_token(<<charcode::utf8, _rest::bits>>, :NameStartChar) do
     if name_start_char?(charcode) do
@@ -614,14 +614,14 @@ defmodule Saxy.Parser do
     end
   end
 
-  defp match_token(_other, :NameChar), do: :error
+  defp match_token(<<_::bits>>, :NameChar), do: :error
 
   defp match_token(<<?=, _rest::bits>>, :Eq), do: {:ok, {"=", 1}}
-  defp match_token(_other, :Eq), do: :error
+  defp match_token(<<_::bits>>, :Eq), do: :error
 
   defp match_token(<<?", _rest::bits>>, :quote), do: {:ok, {"\"", 1}}
   defp match_token(<<?', _rest::bits>>, :quote), do: {:ok, {"'", 1}}
-  defp match_token(_other, :quote), do: :error
+  defp match_token(<<_::bits>>, :quote), do: :error
 
   defp match_token(<<?", _rest::bits>>, {:AttValueChar, "\""}), do: :error
   defp match_token(<<?', _rest::bits>>, {:AttValueChar, "'"}), do: :error
@@ -654,13 +654,13 @@ defmodule Saxy.Parser do
     {:ok, {"<![CDATA[", 9}}
   end
 
-  defp match_token(_other, :CDStart), do: :error
+  defp match_token(<<_::bits>>, :CDStart), do: :error
 
   defp match_token(<<"]]>", _rest::bits>>, :CDEnd) do
     {:ok, {"]]>", 3}}
   end
 
-  defp match_token(_other, :CDEnd), do: :error
+  defp match_token(<<_::bits>>, :CDEnd), do: :error
 
   defp match_token(<<"]]>", _rest::bits>>, :CDataChar), do: :error
 
@@ -673,13 +673,13 @@ defmodule Saxy.Parser do
     end
   end
 
-  defp match_token(_other, :CDataChar), do: :error
+  defp match_token(<<_::bits>>, :CDataChar), do: :error
 
   defp match_token(<<?&, _rest::bits>>, :&), do: {:ok, {"&", 1}}
-  defp match_token(_other, :&), do: :error
+  defp match_token(<<_::bits>>, :&), do: :error
 
   defp match_token(<<?;, _rest::bits>>, :";"), do: {:ok, {";", 1}}
-  defp match_token(_other, :";"), do: :error
+  defp match_token(<<_::bits>>, :";"), do: :error
 
   defp match_token(<<charcode::utf8, _rest::bits>>, :HexChar) do
     if hex_char?(charcode) do
@@ -690,7 +690,7 @@ defmodule Saxy.Parser do
     end
   end
 
-  defp match_token(_other, :HexChar), do: :error
+  defp match_token(<<_::bits>>, :HexChar), do: :error
 
   defp name_start_char?(charcode) do
     cond do
