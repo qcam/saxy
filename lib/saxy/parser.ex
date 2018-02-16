@@ -195,31 +195,30 @@ defmodule Saxy.Parser do
 
     {buffer, position} = Buffering.maybe_commit(buffer, position)
 
-    match_result =
-      case Buffering.subbuffer(buffer, position) do
-        <<"<!--", _rest::bits>> ->
-          match(buffer, position, :Comment, state)
+    Buffering.subbuffer(buffer, position)
+    |> case do
+      <<"<!--", _rest::bits>> ->
+        match(buffer, position, :Comment, state)
 
-        <<"<![CDATA[", _rest::bits>> ->
-          match(buffer, position, :CDSect, state)
+      <<"<![CDATA[", _rest::bits>> ->
+        match(buffer, position, :CDSect, state)
 
-        <<"<?", _rest::bits>> ->
-          {:error, :ContentComponent, {buffer, position}, state}
+      <<"<?", _rest::bits>> ->
+        {:error, :ContentComponent, {buffer, position}, state}
 
-        <<"&", _rest::bits>> ->
-          match(buffer, position, :Reference, state)
+      <<"&", _rest::bits>> ->
+        match(buffer, position, :Reference, state)
 
-        <<"</", _rest::bits>> ->
-          {:error, :ContentComponent, {buffer, position}, state}
+      <<"</", _rest::bits>> ->
+        {:error, :ContentComponent, {buffer, position}, state}
 
-        <<"<", _rest::bits>> ->
-          match(buffer, position, :element, state)
+      <<"<", _rest::bits>> ->
+        match(buffer, position, :element, state)
 
-        _ ->
-          {:error, :ContentComponent, {buffer, position}, state}
-      end
-
-    case match_result do
+      _ ->
+        {:error, :ContentComponent, {buffer, position}, state}
+    end
+    |> case do
       {:ok, matched_rule, {new_buffer, new_pos}, new_state} ->
         new_state =
           case matched_rule do
@@ -343,19 +342,17 @@ defmodule Saxy.Parser do
     {:ok, buffer, position, next_cont} = Buffering.maybe_buffer(buffer, position, state.cont)
     state = %{state | cont: next_cont}
 
-    result =
-      case Buffering.subbuffer(buffer, position) do
-        <<"&#x", _rest::bits>> ->
-          one_or_more(buffer, position + 3, :HexChar, state, <<>>)
+    case Buffering.subbuffer(buffer, position) do
+      <<"&#x", _rest::bits>> ->
+        one_or_more(buffer, position + 3, :HexChar, state, <<>>)
 
-        <<"&#", _rest::bits>> ->
-          one_or_more(buffer, position + 2, :DecChar, state, <<>>)
+      <<"&#", _rest::bits>> ->
+        one_or_more(buffer, position + 2, :DecChar, state, <<>>)
 
-        <<"&", _rest::bits>> ->
-          match(buffer, position + 1, :Name, state)
-      end
-
-    case result do
+      <<"&", _rest::bits>> ->
+        match(buffer, position + 1, :Name, state)
+    end
+    |> case do
       {:ok, matched, {new_buffer, new_pos}, new_state} ->
         case match(new_buffer, new_pos, :";", new_state) do
           {:ok, {:";", _tval}, {new_buffer, new_pos}, new_state} ->
