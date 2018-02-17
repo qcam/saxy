@@ -43,8 +43,18 @@ defmodule Saxy.ParserTest do
     {:ok, {:prolog, prolog}, {^buffer, 39}, %{user_state: state}} =
       Saxy.Parser.match(buffer, 0, :prolog, make_state())
 
-    assert prolog == [version: "1.0", encoding: nil, standalone: true]
+    assert prolog == [version: "1.0", encoding: "UTF-8", standalone: true]
     assert state == []
+
+    buffer = ~s(<?xml ?>)
+
+    assert catch_throw(Saxy.Parser.match(buffer, 0, :prolog, make_state())) ==
+             {:bad_syntax, {:XMLDecl, {buffer, 6}}}
+
+    buffer = ""
+
+    assert {:ok, {:prolog, []}, {^buffer, 0}, _state} =
+             Saxy.Parser.match(buffer, 0, :prolog, make_state())
   end
 
   test "XMLDecl rule" do
@@ -53,7 +63,7 @@ defmodule Saxy.ParserTest do
     {:ok, {:XMLDecl, xml}, {^buffer, 22}, %{user_state: state}} =
       Saxy.Parser.match(buffer, 0, :XMLDecl, make_state())
 
-    assert xml == [version: "1.0", encoding: nil, standalone: false]
+    assert xml == [version: "1.0", encoding: "UTF-8", standalone: false]
     assert state == []
 
     buffer = ~s(<?xml version="1.0" encoding='utf-8'?>bar)
@@ -134,6 +144,14 @@ defmodule Saxy.ParserTest do
 
     {:ok, {:element, element}, {^buffer, 36}, %{user_state: state}} =
       Saxy.Parser.match(buffer, 0, :element, make_state())
+
+    assert element == {"foo", []}
+    assert length(state) == 5
+
+    buffer = "<foo>Hello World &amp; people!</bar>"
+
+    assert catch_throw(Saxy.Parser.match(buffer, 0, :element, make_state())) ==
+             {:wrong_closing_tag, {"foo", "bar"}}
 
     assert element == {"foo", []}
     assert length(state) == 5
