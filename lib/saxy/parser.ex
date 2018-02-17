@@ -1,3 +1,33 @@
+defmodule Saxy.ParsingError do
+  @type t :: %__MODULE__{
+          reason: {:bad_syntax, any} | {:wrong_closing_tag, {binary, binary}}
+        }
+
+  defexception [:reason]
+
+  def message(%__MODULE__{} = exception) do
+    {error_type, term} = exception.reason
+
+    format_message(error_type, term)
+  end
+
+  defp format_message(:bad_syntax, {mismatched_rule, {buffer, position}})
+       when byte_size(buffer) == position do
+    "unexpected byte at end of input, expected: #{inspect(mismatched_rule)}"
+  end
+
+  defp format_message(:bad_syntax, {mismatched_rule, {buffer, position}}) do
+    byte = :binary.at(buffer, position)
+    char = <<byte>>
+
+    "unexpected byte #{inspect(char)}, expected: #{inspect(mismatched_rule)}"
+  end
+
+  defp format_message(:wrong_closing_tag, {open_tag, end_tag}) do
+    "unexpected closing tag #{inspect(end_tag)}, expected: #{inspect(open_tag)}"
+  end
+end
+
 defmodule Saxy.Parser do
   alias Saxy.{Buffering, Emitter}
 
@@ -17,7 +47,7 @@ defmodule Saxy.Parser do
 
   def match(buffer, position, :prolog, state) do
     with {:ok, {:XMLDecl, xml}, {new_buffer, new_pos}, new_state} <-
-           zero_or_one(buffer, position, :XMLDecl, state),
+           zero_or_one(buffer, position, :XMLDecl, state, []),
          {:ok, {:Misc, _}, {new_buffer, new_pos}, new_state} <-
            zero_or_more(new_buffer, new_pos, :Misc, new_state, []) do
       {:ok, {:prolog, xml}, {new_buffer, new_pos}, new_state}
@@ -30,7 +60,7 @@ defmodule Saxy.Parser do
          {:ok, {:VersionInfo, version}, {new_buffer, new_pos}, new_state} <-
            match(new_buffer, new_pos, :VersionInfo, new_state),
          {:ok, {:EncodingDecl, encoding}, {new_buffer, new_pos}, new_state} <-
-           zero_or_one(new_buffer, new_pos, :EncodingDecl, new_state),
+           zero_or_one(new_buffer, new_pos, :EncodingDecl, new_state, "UTF-8"),
          {:ok, {:SDDecl, standalone?}, {new_buffer, new_pos}, new_state} <-
            zero_or_one(new_buffer, new_pos, :SDDecl, new_state, false),
          {:ok, {:S, _tval}, {new_buffer, new_pos}, new_state} <-
@@ -39,6 +69,12 @@ defmodule Saxy.Parser do
            zero_or_one(new_buffer, new_pos, :"?>", new_state) do
       xml = [version: version, encoding: encoding, standalone: standalone?]
       {:ok, {:XMLDecl, xml}, {new_buffer, new_pos}, new_state}
+    else
+      {:error, :"<?xml", {new_buffer, new_pos}, new_state} ->
+        {:error, :XMLDecl, {new_buffer, new_pos}, new_state}
+
+      {:error, :VersionInfo, {new_buffer, new_pos}, _new_state} ->
+        raise_bad_syntax(:XMLDecl, new_buffer, new_pos)
     end
   end
 
@@ -56,6 +92,18 @@ defmodule Saxy.Parser do
          {:ok, {:quote, ^open_quote_val}, {new_buffer, new_pos}, new_state} <-
            match(new_buffer, new_pos, :quote, new_state) do
       {:ok, {:VersionInfo, num}, {new_buffer, new_pos}, new_state}
+    else
+      {:ok, {:quote, _wrong_quote}, {new_buffer, new_pos}, _new_state} ->
+        raise_bad_syntax(:VersionInfo, new_buffer, new_pos)
+
+      {:error, mismatched_token, {new_buffer, new_pos}, new_state} ->
+        cond do
+          mismatched_token in [:Eq, :quote, :VersionNum] ->
+            raise_bad_syntax(:VersionInfo, new_buffer, new_pos)
+
+          mismatched_token in [:S, :version] ->
+            {:error, :VersionInfo, {new_buffer, new_pos}, new_state}
+        end
     end
   end
 
@@ -90,7 +138,7 @@ defmodule Saxy.Parser do
         {:error, :EncodingDecl, {new_buffer, position}, new_state}
 
       {:error, _error, {new_buffer, new_pos}, _new_state} ->
-        raise_error(:EncodingDecl, new_buffer, new_pos)
+        raise_bad_syntax(:EncodingDecl, new_buffer, new_pos)
     end
   end
 
@@ -126,7 +174,7 @@ defmodule Saxy.Parser do
         {:error, :SDDecl, {new_buffer, position}, new_state}
 
       {:error, _error, {new_buffer, new_pos}, _new_state} ->
-        raise_error(:SDDecl, new_buffer, new_pos)
+        raise_bad_syntax(:SDDecl, new_buffer, new_pos)
     end
   end
 
@@ -157,6 +205,9 @@ defmodule Saxy.Parser do
                     {:ok, {:ETag, ^tag_name}, {new_buffer, new_pos}, new_state} ->
                       new_state = Emitter.emit(:end_element, {tag_name}, new_state)
                       {:ok, {:element, {tag_name, attributes}}, {new_buffer, new_pos}, new_state}
+
+                    {:ok, {:ETag, mismatched_tag}, {_new_buffer, _new_pos}, _new_state} ->
+                      throw({:wrong_closing_tag, {tag_name, mismatched_tag}})
                   end
               end
           end
@@ -314,7 +365,7 @@ defmodule Saxy.Parser do
                 {:ok, {:Attribute, {name, att_val}}, {new_buffer, new_pos}, new_state}
 
               {:error, :AttValue, {new_buffer, new_pos}, _new_state} ->
-                raise_error(:Attribute, new_buffer, new_pos)
+                raise_bad_syntax(:Attribute, new_buffer, new_pos)
             end
         end
 
@@ -399,7 +450,7 @@ defmodule Saxy.Parser do
         {:error, :Comment, {new_buffer, new_pos}, new_state}
 
       {:error, _token_name, {new_buffer, new_pos}, _new_state} ->
-        raise_error(:Comment, new_buffer, new_pos)
+        raise_bad_syntax(:Comment, new_buffer, new_pos)
     end
   end
 
@@ -511,10 +562,6 @@ defmodule Saxy.Parser do
 
   defp acc(acc, value) when is_list(acc), do: [value | acc]
   defp acc(acc, value) when is_binary(acc), do: acc <> value
-
-  defp raise_error(rule_name, _buffer, position) do
-    raise "unexpected sequence at position #{position}, token: #{rule_name}"
-  end
 
   defp match_token(<<0xA, _rest::bits>>, :whitespace), do: {:ok, {<<0xA>>, 1}}
   defp match_token(<<0x9, _rest::bits>>, :whitespace), do: {:ok, {<<0x9>>, 1}}
@@ -767,4 +814,8 @@ defmodule Saxy.Parser do
 
   defp yes?("yes"), do: true
   defp yes?("no"), do: false
+
+  defp raise_bad_syntax(rule, buffer, pos) do
+    throw({:bad_syntax, {rule, {buffer, pos}}})
+  end
 end
