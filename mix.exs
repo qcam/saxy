@@ -1,7 +1,7 @@
 defmodule Saxy.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0-rc1"
 
   def project do
     [
@@ -15,7 +15,7 @@ defmodule Saxy.MixProject do
       docs: [
         main: "Saxy",
         source_ref: "v#{@version}",
-        source_url: "https://github.com/lexmag/msgpax"
+        source_url: "https://github.com/qcam/saxy"
       ]
     ]
   end
