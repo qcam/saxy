@@ -1,21 +1,67 @@
 # Saxy
 
-**TODO: Add description**
+Saxy is a XML SAX parser which provides functions to parse XML file in both binary and streaming way.
+Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `saxy` to your list of dependencies in `mix.exs`:
-
 ```elixir
 def deps do
-  [
-    {:saxy, "~> 0.1.0"}
-  ]
+  [{:saxy, "~> 0.2.0"}]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/saxy](https://hexdocs.pm/saxy).
+## Overview
 
+Full documentation is available on [HexDocs](https://hexdocs.pm/saxy/).
+
+A SAX event handler implementation is required before starting parsing.
+
+```elixir
+defmodule MyEventHandler do
+  @behaviour Saxy.Handler
+
+  def handle_event(:start_document, prolog, state) do
+    IO.inspect "Start parsing document"
+    [{:start_document, prolog} | state]
+  end
+
+  def handle_event(:end_document, _data, state) do
+    IO.inspect "Finish parsing document"
+    [{:end_document} | state]
+  end
+
+  def handle_event(:start_element, {name, attributes}, state) do
+    IO.inspect "Start parsing element #{name} with attributes #{inspect(attributes)}"
+    [{:start_element, name, attributes} | state]
+  end
+
+  def handle_event(:end_element, {name}, state) do
+    IO.inspect "Finish parsing element #{name}"
+    [{:end_element, name} | state]
+  end
+
+  def handle_event(:characters, chars, state) do
+    IO.inspect "Receive characters #{chars}"
+    [{:chacters, chars} | state]
+  end
+end
+```
+
+Then parse your XML with:
+
+```elixir
+initial_state = []
+
+Saxy.parse_string(data, MyEventHandler, initial_state)
+```
+
+## Contributing
+
+If you have any issues or ideas, feel free to write to https://github.com/qcam/saxy/issues.
+
+To start developing:
+
+1. Fork the repository.
+2. Write your code and related tests.
+3. Create a pull request at https://github.com/qcam/saxy/pulls.
