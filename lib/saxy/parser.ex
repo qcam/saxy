@@ -29,6 +29,8 @@ defmodule Saxy.ParsingError do
 end
 
 defmodule Saxy.Parser do
+  @moduledoc false
+
   alias Saxy.{Buffering, Emitter}
 
   def match(buffer, position, :document, state) do

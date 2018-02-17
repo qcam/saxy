@@ -1,4 +1,6 @@
 defmodule Saxy.Emitter do
+  @moduledoc false
+
   alias Saxy.State
 
   def emit(event_type, data, %State{user_state: user_state, handler: handler} = state) do
