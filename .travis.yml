@@ -1,0 +1,12 @@
+language: elixir
+
+matrix:
+  include:
+    - otp_release: 18.3
+      elixir: 1.4.4
+    - otp_release: 19.3
+      elixir: 1.4.4
+
+sudo: false
+
+script: mix test --trace
