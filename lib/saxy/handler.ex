@@ -1,8 +1,17 @@
 defmodule Saxy.Handler do
   @moduledoc ~S"""
   This module provides callbacks for implementing SAX events handler.
+  """
 
-  There is only one callback to implement in this module.
+  @doc ~S"""
+  Callback for event handling.
+
+  This callback takes an event type, an event data and `user_state` as the input.
+
+  `user_state` is the third input in `Saxy.parse_string/3` and `Saxy.parse_stream/3`.
+  It and can be accumulated, passed around during the parsing time by returning it
+  as the result of the callback implementation, which can be used to keep track
+  of data when parsing is happening.
 
   ## Examples
 
@@ -34,9 +43,7 @@ defmodule Saxy.Handler do
           [{:chacters, chars} | state]
         end
       end
-
   """
-
   @callback handle_event(event_type :: atom, data :: tuple, user_state :: term) ::
               user_state :: term
 end

@@ -9,9 +9,12 @@ defmodule Saxy do
   @doc ~S"""
   Parses XML binary data.
 
-  This function takes XML binary, SAX event handler and an initial state as the input, it returns
+  This function takes XML binary, SAX event handler (see more at `Saxy.Handler`) and an initial state as the input, it returns
   `{:ok, state}` if parsing is successful, otherwise `{:error, exception}`, where `exception` is a
   `Saxy.ParsingError` struct which can be converted into readable message with `Exception.message/1`.
+
+  The third argument `state` can be used to keep track of data and parsing progress when parsing is happening, which will be
+  returned when parsing finishes.
 
   ## Examples
 
@@ -76,7 +79,7 @@ defmodule Saxy do
   @doc ~S"""
   Parses XML stream data.
 
-  This function takes a stream, SAX event handler and an initial state as the input, it returns
+  This function takes a stream, SAX event handler (see more at `Saxy.Handler`) and an initial state as the input, it returns
   `{:ok, state}` if parsing is successful, otherwise `{:error, exception}`, where `exception` is a
   `Saxy.ParsingError` struct which can be converted into readable message with `Exception.message/1`.
 
