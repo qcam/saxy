@@ -55,6 +55,12 @@ defmodule Saxy do
        ]}
   """
 
+  @spec parse_string(
+          data :: binary,
+          handler :: module | function,
+          state :: term
+        ) :: {:ok, state :: term} | {:error, exception :: ParsingError.t()}
+
   def parse_string(data, handler, state)
       when is_binary(data) and (is_atom(handler) or is_function(handler, 3)) do
     initial_state = %State{
@@ -115,6 +121,13 @@ defmodule Saxy do
          {:start_document, [version: "1.0", encoding: "UTF-8", standalone: false]}
        ]}
   """
+
+  @spec parse_stream(
+          stream :: File.Stream.t() | Stream.t(),
+          handler :: module | function,
+          state :: term
+        ) :: {:ok, state :: term} | {:error, exception :: ParsingError.t()}
+
   def parse_stream(%module{} = stream, handler, state)
       when module in [File.Stream, Stream] and (is_atom(handler) or is_function(handler, 3)) do
     initial_state = %State{
