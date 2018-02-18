@@ -451,12 +451,18 @@ defmodule Saxy.Parser do
         {:ok, {:Misc, []}, {new_buffer, new_pos}, new_state}
 
       {:error, :Comment, {new_buffer, new_pos}, new_state} ->
-        case match(new_buffer, new_pos, :S, new_state) do
-          {:ok, {:S, _s}, {new_buffer, new_pos}, new_state} ->
+        case match(new_buffer, new_pos, :PI, new_state) do
+          {:ok, {:PI, _pi}, {new_buffer, new_pos}, new_state} ->
             {:ok, {:Misc, []}, {new_buffer, new_pos}, new_state}
 
-          {:error, :S, {new_buffer, new_pos}, new_state} ->
-            {:error, :Misc, {new_buffer, new_pos}, new_state}
+          {:error, :PI, {new_buffer, new_pos}, new_state} ->
+            case match(new_buffer, new_pos, :S, new_state) do
+              {:ok, {:S, _s}, {new_buffer, new_pos}, new_state} ->
+                {:ok, {:Misc, []}, {new_buffer, new_pos}, new_state}
+
+              {:error, :S, {new_buffer, new_pos}, new_state} ->
+                {:error, :Misc, {new_buffer, new_pos}, new_state}
+            end
         end
     end
   end

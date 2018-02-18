@@ -1,7 +1,7 @@
 defmodule Saxy.ParserTest do
   use ExUnit.Case
 
-  test "streaming" do
+  test "streaming parsing" do
     buffer = ""
     stream = File.stream!("./test/support/fixture/food.xml", [], 200)
     state = %Saxy.State{cont: stream, user_state: [], handler: &handler/3, prolog: []}
@@ -10,6 +10,33 @@ defmodule Saxy.ParserTest do
              Saxy.Parser.match(buffer, 0, :document, state)
 
     assert length(state) == 105
+
+    buffer = ""
+    stream = File.stream!("./test/support/fixture/complex.xml", [], 200)
+    state = %Saxy.State{cont: stream, user_state: [], handler: &handler/3, prolog: []}
+
+    assert {:ok, {:document, {}}, {_, 1930}, %{user_state: state}} =
+             Saxy.Parser.match(buffer, 0, :document, state)
+
+    assert length(state) == 118
+  end
+
+  test "binary parsing" do
+    buffer = File.read!("./test/support/fixture/food.xml")
+    state = %Saxy.State{cont: :binary, user_state: [], handler: &handler/3, prolog: []}
+
+    assert {:ok, {:document, {}}, {_, 1119}, %{user_state: state}} =
+             Saxy.Parser.match(buffer, 0, :document, state)
+
+    assert length(state) == 105
+
+    buffer = File.read!("./test/support/fixture/complex.xml")
+    state = %Saxy.State{cont: :binary, user_state: [], handler: &handler/3, prolog: []}
+
+    assert {:ok, {:document, {}}, {_, _}, %{user_state: state}} =
+             Saxy.Parser.match(buffer, 0, :document, state)
+
+    assert length(state) == 118
   end
 
   test "document rule" do
