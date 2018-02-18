@@ -257,7 +257,7 @@ defmodule Saxy.Parser do
         match(buffer, position, :CDSect, state)
 
       <<"<?", _rest::bits>> ->
-        {:error, :ContentComponent, {buffer, position}, state}
+        match(buffer, position, :PI, state)
 
       <<"&", _rest::bits>> ->
         match(buffer, position, :Reference, state)
@@ -451,12 +451,18 @@ defmodule Saxy.Parser do
         {:ok, {:Misc, []}, {new_buffer, new_pos}, new_state}
 
       {:error, :Comment, {new_buffer, new_pos}, new_state} ->
-        case match(new_buffer, new_pos, :S, new_state) do
-          {:ok, {:S, _s}, {new_buffer, new_pos}, new_state} ->
+        case match(new_buffer, new_pos, :PI, new_state) do
+          {:ok, {:PI, _pi}, {new_buffer, new_pos}, new_state} ->
             {:ok, {:Misc, []}, {new_buffer, new_pos}, new_state}
 
-          {:error, :S, {new_buffer, new_pos}, new_state} ->
-            {:error, :Misc, {new_buffer, new_pos}, new_state}
+          {:error, :PI, {new_buffer, new_pos}, new_state} ->
+            case match(new_buffer, new_pos, :S, new_state) do
+              {:ok, {:S, _s}, {new_buffer, new_pos}, new_state} ->
+                {:ok, {:Misc, []}, {new_buffer, new_pos}, new_state}
+
+              {:error, :S, {new_buffer, new_pos}, new_state} ->
+                {:error, :Misc, {new_buffer, new_pos}, new_state}
+            end
         end
     end
   end
@@ -485,6 +491,50 @@ defmodule Saxy.Parser do
 
       {:error, _, {new_buffer, new_pos}, new_state} ->
         {:error, :S, {new_buffer, new_pos}, new_state}
+    end
+  end
+
+  def match(buffer, position, :PI, state) do
+    with {:ok, {:"<?", _token_val}, {new_buffer, new_pos}, new_state} <-
+           match(buffer, position, :"<?", state),
+         {:ok, {:PITarget, pi_name}, {new_buffer, new_pos}, new_state} <-
+           match(new_buffer, new_pos, :PITarget, new_state),
+         {:ok, {:PIContent, chars}, {new_buffer, new_pos}, new_state} <-
+           zero_or_one(new_buffer, new_pos, :PIContent, new_state, <<>>),
+         {:ok, {:"?>", _token_val}, {new_buffer, new_pos}, new_state} <-
+           match(new_buffer, new_pos, :"?>", new_state) do
+      {:ok, {:PI, {pi_name, chars}}, {new_buffer, new_pos}, new_state}
+    else
+      {:error, :"<?", {new_buffer, new_pos}, new_state} ->
+        {:error, :PI, {new_buffer, new_pos}, new_state}
+
+      {:error, _token_name, {new_buffer, new_pos}, _new_state} ->
+        raise_bad_syntax(:PI, new_buffer, new_pos)
+    end
+  end
+
+  def match(buffer, position, :PITarget, state) do
+    case match(buffer, position, :Name, state) do
+      {:ok, {:Name, pi_name}, {new_buffer, new_pos}, new_state} ->
+        if valid_pi_name?(pi_name) do
+          {:ok, {:PITarget, pi_name}, {new_buffer, new_pos}, new_state}
+        else
+          raise_bad_syntax(:PITarget, buffer, position)
+        end
+
+      {:error, :Name, {_new_buffer, _new_pos}, _new_state} ->
+        raise_bad_syntax(:PITarget, buffer, position)
+    end
+  end
+
+  def match(buffer, position, :PIContent, state) do
+    with {:ok, {:S, _}, {new_buffer, new_pos}, new_state} <- match(buffer, position, :S, state),
+         {:ok, {:PIChar, chars}, {new_buffer, new_pos}, new_state} <-
+           zero_or_more(new_buffer, new_pos, :PIChar, new_state, <<>>) do
+      {:ok, {:PIContent, chars}, {new_buffer, new_pos}, new_state}
+    else
+      {:error, :S, {new_buffer, new_pos}, new_state} ->
+        {:error, :PIContent, {new_buffer, new_pos}, new_state}
     end
   end
 
@@ -519,7 +569,9 @@ defmodule Saxy.Parser do
     :CDEnd,
     :CDataChar,
     :DecChar,
-    :HexChar
+    :HexChar,
+    :PIChar,
+    :"<?"
   ]
 
   Enum.each(@tokens, fn token ->
@@ -763,6 +815,16 @@ defmodule Saxy.Parser do
   defp match_token(<<"?>", _rest::bits>>, :"?>"), do: {:ok, {"?>", 2}}
   defp match_token(<<_::bits>>, :"?>"), do: :error
 
+  defp match_token(<<"<?", _rest::bits>>, :"<?"), do: {:ok, {"<?", 2}}
+  defp match_token(<<_::bits>>, :"<?"), do: :error
+
+  defp match_token(<<"?>", _rest::bits>>, :PIChar), do: :error
+
+  defp match_token(<<charcode::utf8, _rest::bits>>, :PIChar) do
+    char = <<charcode::utf8>>
+    {:ok, {char, byte_size(char)}}
+  end
+
   defp name_start_char?(charcode) do
     cond do
       charcode == ?: -> true
@@ -842,4 +904,15 @@ defmodule Saxy.Parser do
   defp raise_bad_syntax(rule, buffer, pos) do
     throw({:bad_syntax, {rule, {buffer, pos}}})
   end
+
+  def valid_pi_name?(<<a::utf8, b::utf8, c::utf8>>) do
+    cond do
+      not(a in [?x, ?X]) -> true
+      not(b in [?m, ?M]) -> true
+      not(c in [?l, ?L]) -> true
+      true -> false
+    end
+  end
+
+  def valid_pi_name?(<<_any::bits>>), do: true
 end

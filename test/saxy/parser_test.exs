@@ -1,7 +1,7 @@
 defmodule Saxy.ParserTest do
   use ExUnit.Case
 
-  test "streaming" do
+  test "streaming parsing" do
     buffer = ""
     stream = File.stream!("./test/support/fixture/food.xml", [], 200)
     state = %Saxy.State{cont: stream, user_state: [], handler: &handler/3, prolog: []}
@@ -10,6 +10,33 @@ defmodule Saxy.ParserTest do
              Saxy.Parser.match(buffer, 0, :document, state)
 
     assert length(state) == 105
+
+    buffer = ""
+    stream = File.stream!("./test/support/fixture/complex.xml", [], 200)
+    state = %Saxy.State{cont: stream, user_state: [], handler: &handler/3, prolog: []}
+
+    assert {:ok, {:document, {}}, {_, 1931}, %{user_state: state}} =
+             Saxy.Parser.match(buffer, 0, :document, state)
+
+    assert length(state) == 120
+  end
+
+  test "binary parsing" do
+    buffer = File.read!("./test/support/fixture/food.xml")
+    state = %Saxy.State{cont: :binary, user_state: [], handler: &handler/3, prolog: []}
+
+    assert {:ok, {:document, {}}, {_, 1119}, %{user_state: state}} =
+             Saxy.Parser.match(buffer, 0, :document, state)
+
+    assert length(state) == 105
+
+    buffer = File.read!("./test/support/fixture/complex.xml")
+    state = %Saxy.State{cont: :binary, user_state: [], handler: &handler/3, prolog: []}
+
+    assert {:ok, {:document, {}}, {_, 1931}, %{user_state: state}} =
+             Saxy.Parser.match(buffer, 0, :document, state)
+
+    assert length(state) == 120
   end
 
   test "document rule" do
@@ -295,6 +322,27 @@ defmodule Saxy.ParserTest do
 
     assert comment == "XML rocks!"
     assert state == []
+  end
+
+  test "PI rule" do
+    buffer = "<?xml-stylesheet type=\"text/css\" href=\"style.css\"?>"
+
+    assert {:ok, {:PI, processing_instruction}, {^buffer, 51}, _state} =
+             Saxy.Parser.match(buffer, 0, :PI, make_state())
+
+    assert processing_instruction == {"xml-stylesheet", "type=\"text/css\" href=\"style.css\""}
+
+    buffer = "<?foo?>"
+
+    assert {:ok, {:PI, processing_instruction}, {^buffer, 7}, _state} =
+             Saxy.Parser.match(buffer, 0, :PI, make_state())
+
+    assert processing_instruction == {"foo", ""}
+
+    buffer = "<?xml this is a joke?>"
+
+    assert {:bad_syntax, reason} = catch_throw(Saxy.Parser.match(buffer, 0, :PI, make_state()))
+    assert reason == {:PITarget, {buffer, 2}}
   end
 
   defp make_state() do
