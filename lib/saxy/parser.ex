@@ -907,9 +907,9 @@ defmodule Saxy.Parser do
 
   def valid_pi_name?(<<a::utf8, b::utf8, c::utf8>>) do
     cond do
-      a not in [?x, ?X] -> true
-      b not in [?m, ?M] -> true
-      c not in [?l, ?L] -> true
+      not(a in [?x, ?X]) -> true
+      not(b in [?m, ?M]) -> true
+      not(c in [?l, ?L]) -> true
       true -> false
     end
   end
