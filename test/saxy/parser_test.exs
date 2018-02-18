@@ -300,10 +300,17 @@ defmodule Saxy.ParserTest do
   test "PI rule" do
     buffer = "<?xml-stylesheet type=\"text/css\" href=\"style.css\"?>"
 
-    assert {:ok, {:PI, processing_instruction}, {^buffer, 49}, _state} =
+    assert {:ok, {:PI, processing_instruction}, {^buffer, 51}, _state} =
              Saxy.Parser.match(buffer, 0, :PI, make_state())
 
     assert processing_instruction == {"xml-stylesheet", "type=\"text/css\" href=\"style.css\""}
+
+    buffer = "<?foo?>"
+
+    assert {:ok, {:PI, processing_instruction}, {^buffer, 7}, _state} =
+             Saxy.Parser.match(buffer, 0, :PI, make_state())
+
+    assert processing_instruction == {"foo", ""}
 
     buffer = "<?xml this is a joke?>"
 

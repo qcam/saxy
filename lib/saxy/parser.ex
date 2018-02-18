@@ -494,14 +494,16 @@ defmodule Saxy.Parser do
          {:ok, {:PITarget, pi_name}, {new_buffer, new_pos}, new_state} <-
            match(new_buffer, new_pos, :PITarget, new_state),
          {:ok, {:PIContent, chars}, {new_buffer, new_pos}, new_state} <-
-           zero_or_one(new_buffer, new_pos, :PIContent, new_state) do
+           zero_or_one(new_buffer, new_pos, :PIContent, new_state, <<>>),
+         {:ok, {:"?>", _token_val}, {new_buffer, new_pos}, new_state} <-
+           match(new_buffer, new_pos, :"?>", new_state) do
       {:ok, {:PI, {pi_name, chars}}, {new_buffer, new_pos}, new_state}
     else
       {:error, :"<?", {new_buffer, new_pos}, new_state} ->
         {:error, :PI, {new_buffer, new_pos}, new_state}
 
       {:error, _token_name, {new_buffer, new_pos}, _new_state} ->
-        raise_bad_syntax(:Comment, new_buffer, new_pos)
+        raise_bad_syntax(:PI, new_buffer, new_pos)
     end
   end
 
