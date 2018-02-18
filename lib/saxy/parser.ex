@@ -488,6 +488,48 @@ defmodule Saxy.Parser do
     end
   end
 
+  def match(buffer, position, :PI, state) do
+    with {:ok, {:"<?", _token_val}, {new_buffer, new_pos}, new_state} <-
+           match(buffer, position, :"<?", state),
+         {:ok, {:PITarget, pi_name}, {new_buffer, new_pos}, new_state} <-
+           match(new_buffer, new_pos, :PITarget, new_state),
+         {:ok, {:PIContent, chars}, {new_buffer, new_pos}, new_state} <-
+           zero_or_one(new_buffer, new_pos, :PIContent, new_state) do
+      {:ok, {:PI, {pi_name, chars}}, {new_buffer, new_pos}, new_state}
+    else
+      {:error, :"<?", {new_buffer, new_pos}, new_state} ->
+        {:error, :PI, {new_buffer, new_pos}, new_state}
+
+      {:error, _token_name, {new_buffer, new_pos}, _new_state} ->
+        raise_bad_syntax(:Comment, new_buffer, new_pos)
+    end
+  end
+
+  def match(buffer, position, :PITarget, state) do
+    case match(buffer, position, :Name, state) do
+      {:ok, {:Name, pi_name}, {new_buffer, new_pos}, new_state} ->
+        if valid_pi_name?(pi_name) do
+          {:ok, {:PITarget, pi_name}, {new_buffer, new_pos}, new_state}
+        else
+          raise_bad_syntax(:PITarget, buffer, position)
+        end
+
+      {:error, :Name, {_new_buffer, _new_pos}, _new_state} ->
+        raise_bad_syntax(:PITarget, buffer, position)
+    end
+  end
+
+  def match(buffer, position, :PIContent, state) do
+    with {:ok, {:S, _}, {new_buffer, new_pos}, new_state} <- match(buffer, position, :S, state),
+         {:ok, {:PIChar, chars}, {new_buffer, new_pos}, new_state} <-
+           zero_or_more(new_buffer, new_pos, :PIChar, new_state, <<>>) do
+      {:ok, {:PIContent, chars}, {new_buffer, new_pos}, new_state}
+    else
+      {:error, :S, {new_buffer, new_pos}, new_state} ->
+        {:error, :PIContent, {new_buffer, new_pos}, new_state}
+    end
+  end
+
   @tokens [
     :"<?xml",
     :version,
@@ -519,7 +561,9 @@ defmodule Saxy.Parser do
     :CDEnd,
     :CDataChar,
     :DecChar,
-    :HexChar
+    :HexChar,
+    :PIChar,
+    :"<?"
   ]
 
   Enum.each(@tokens, fn token ->
@@ -763,6 +807,16 @@ defmodule Saxy.Parser do
   defp match_token(<<"?>", _rest::bits>>, :"?>"), do: {:ok, {"?>", 2}}
   defp match_token(<<_::bits>>, :"?>"), do: :error
 
+  defp match_token(<<"<?", _rest::bits>>, :"<?"), do: {:ok, {"<?", 2}}
+  defp match_token(<<_::bits>>, :"<?"), do: :error
+
+  defp match_token(<<"?>", _rest::bits>>, :PIChar), do: :error
+
+  defp match_token(<<charcode::utf8, _rest::bits>>, :PIChar) do
+    char = <<charcode::utf8>>
+    {:ok, {char, byte_size(char)}}
+  end
+
   defp name_start_char?(charcode) do
     cond do
       charcode == ?: -> true
@@ -842,4 +896,15 @@ defmodule Saxy.Parser do
   defp raise_bad_syntax(rule, buffer, pos) do
     throw({:bad_syntax, {rule, {buffer, pos}}})
   end
+
+  def valid_pi_name?(<<a::utf8, b::utf8, c::utf8>>) do
+    cond do
+      a not in [?x, ?X] -> true
+      b not in [?m, ?M] -> true
+      c not in [?l, ?L] -> true
+      true -> false
+    end
+  end
+
+  def valid_pi_name?(<<_any::bits>>), do: true
 end
