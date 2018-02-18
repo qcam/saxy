@@ -257,7 +257,7 @@ defmodule Saxy.Parser do
         match(buffer, position, :CDSect, state)
 
       <<"<?", _rest::bits>> ->
-        {:error, :ContentComponent, {buffer, position}, state}
+        match(buffer, position, :PI, state)
 
       <<"&", _rest::bits>> ->
         match(buffer, position, :Reference, state)
