@@ -379,7 +379,7 @@ defmodule Saxy.Parser do
   def match(buffer, position, :AttValue, state) do
     case match(buffer, position, :quote, state) do
       {:ok, {:quote, open_quote}, {new_buffer, new_pos}, new_state} ->
-        rule = {:AttValueChar, open_quote}
+        rule = {:AttValueComponent, open_quote}
 
         case zero_or_more(new_buffer, new_pos, rule, new_state, <<>>) do
           {:ok, {^rule, att_value}, {new_buffer, new_pos}, new_state} ->
@@ -387,6 +387,28 @@ defmodule Saxy.Parser do
               {:ok, {:quote, ^open_quote}, {new_buffer, new_pos}, new_state} ->
                 {:ok, {:AttValue, att_value}, {new_buffer, new_pos}, new_state}
             end
+        end
+    end
+  end
+
+  def match(buffer, position, {:AttValueComponent, quote_val}, state) do
+    {:ok, buffer, position, next_cont} = Buffering.maybe_buffer(buffer, position, state.cont)
+    state = %{state | cont: next_cont}
+
+    case Buffering.subbuffer(buffer, position) do
+      <<"&", _rest::bits>> ->
+        case match(buffer, position, :Reference, state) do
+          {:ok, {:Reference, ref}, {new_buffer, new_pos}, new_state} ->
+            {:ok, {{:AttValueComponent, quote_val}, ref}, {new_buffer, new_pos}, new_state}
+        end
+
+      <<_any::bits>> ->
+        case match(buffer, position, {:AttValueChar, quote_val}, state) do
+          {:ok, {{:AttValueChar, _qval}, char}, {new_buffer, new_pos}, new_state} ->
+            {:ok, {{:AttValueComponent, quote_val}, char}, {new_buffer, new_pos}, new_state}
+
+          {:error, {:AttValueChar, _qval}, {new_buffer, new_pos}, new_state} ->
+            {:error, {:AttValueComponent, quote_val}, {new_buffer, new_pos}, new_state}
         end
     end
   end

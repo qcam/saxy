@@ -183,6 +183,22 @@ defmodule Saxy.ParserTest do
     assert length(state) == 2
   end
 
+  test "element attributes" do
+    buffer = ~s(<foo bar1='123' bar-1='456' bar:1="789"/>bar)
+
+    assert {:ok, {:element, element}, {^buffer, 41}, _state} =
+      Saxy.Parser.match(buffer, 0, :element, make_state())
+
+    assert element == {"foo", [{"bar:1", "789"}, {"bar-1", "456"}, {"bar1", "123"}]}
+
+    buffer = ~s(<foo bar1='foo &amp; bar' bar-1='456' bar:1="789"/>bar)
+
+    assert {:ok, {:element, element}, {^buffer, 51}, _state} =
+      Saxy.Parser.match(buffer, 0, :element, make_state())
+
+    assert element == {"foo", [{"bar:1", "789"}, {"bar-1", "456"}, {"bar1", "foo &amp; bar"}]}
+  end
+
   test "CDSect rule" do
     buffer = "<![CDATA[Hello world]]>bar"
 
