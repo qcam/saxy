@@ -7,7 +7,7 @@ defmodule Saxy.EmitterTest do
     @behaviour Handler
 
     def handle_event(event, data, state) do
-      [{event, data} | state]
+      {:ok, [{event, data} | state]}
     end
   end
 
@@ -71,5 +71,25 @@ defmodule Saxy.EmitterTest do
     assert [{:characters, "Last Foo"} | state] = state
     assert [{:end_element, {"foo"}} | state] = state
     assert [{:end_document, {}} | []] = state
+  end
+
+  test "emit/3 handles user :stop message" do
+    xml = """
+    <?xml version="1.0" encoding="utf8" standalone="no"?>
+    <foo>First Foo</foo>
+    """
+
+    event_handler = fn
+      :start_document, _data, _state -> {:stop, 1}
+    end
+
+    state = %State{
+      cont: :binary,
+      user_state: [],
+      prolog: [],
+      handler: event_handler
+    }
+
+    assert catch_throw(Parser.match(xml, 0, :document, state)) == {:stop, 1}
   end
 end

@@ -357,6 +357,6 @@ defmodule Saxy.ParserTest do
   end
 
   defp handler(event_type, data, state) do
-    [{event_type, data} | state]
+    {:ok, [{event_type, data} | state]}
   end
 end

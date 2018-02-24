@@ -44,7 +44,18 @@ defmodule SaxyTest do
              "unexpected closing tag \"bee\", expected: \"bar\""
   end
 
+  test "handles user control flow" do
+    data = "<?xml version=\"1.0\" ?><foo/>"
+
+    handler = fn
+      :start_document, _event_data, _state ->
+        {:stop, :stop_parsing}
+    end
+
+    assert Saxy.parse_string(data, handler, []) == {:ok, :stop_parsing}
+  end
+
   defp event_handler(event_type, data, state) do
-    [{event_type, data} | state]
+    {:ok, [{event_type, data} | state]}
   end
 end

@@ -147,7 +147,8 @@ defmodule Saxy do
     try do
       Parser.match(buffer, 0, :document, initial_state)
     catch
-      :throw, reason -> handle_throw(reason)
+      :throw, reason ->
+        handle_throw(reason)
     else
       {:ok, {:document, _document}, {_buffer, _position}, %{user_state: state}} ->
         {:ok, state}
