@@ -13,6 +13,11 @@ defmodule Saxy.Handler do
   as the result of the callback implementation, which can be used to keep track
   of data when parsing is happening.
 
+  Returning `{:ok, new_state}` continues the parsing process with the new state.
+
+  Returning `{:stop, anything}` stops the prosing process immediately, and `anything` will be returned.
+  This is useful when we want to get the desired return without parsing the whole file.
+
   ## Examples
 
       defmodule MyEventHandler do
@@ -20,30 +25,30 @@ defmodule Saxy.Handler do
 
         def handle_event(:start_document, prolog, state) do
           IO.inspect "Start parsing document"
-          [{:start_document, prolog} | state]
+          {:ok, [{:start_document, prolog} | state]}
         end
 
         def handle_event(:end_document, _data, state) do
           IO.inspect "Finish parsing document"
-          [{:end_document} | state]
+          {:ok, [{:end_document} | state]}
         end
 
         def handle_event(:start_element, {name, attributes}, state) do
           IO.inspect "Start parsing element #{name} with attributes #{inspect(attributes)}"
-          [{:start_element, name, attributes} | state]
+          {:ok, [{:start_element, name, attributes} | state]}
         end
 
         def handle_event(:end_element, {name}, state) do
           IO.inspect "Finish parsing element #{name}"
-          [{:end_element, name} | state]
+          {:ok, [{:end_element, name} | state]}
         end
 
         def handle_event(:characters, chars, state) do
           IO.inspect "Receive characters #{chars}"
-          [{:chacters, chars} | state]
+          {:ok, [{:chacters, chars} | state]}
         end
       end
   """
   @callback handle_event(event_type :: atom, data :: tuple, user_state :: term) ::
-              user_state :: term
+              {:ok, user_state :: term} | {:stop, returning :: term}
 end
