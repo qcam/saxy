@@ -209,7 +209,7 @@ defmodule Saxy.Parser do
                       {:ok, {:element, {tag_name, attributes}}, {new_buffer, new_pos}, new_state}
 
                     {:ok, {:ETag, mismatched_tag}, {_new_buffer, _new_pos}, _new_state} ->
-                      throw({:wrong_closing_tag, {tag_name, mismatched_tag}})
+                      throw({:error, {:wrong_closing_tag, {tag_name, mismatched_tag}}})
                   end
               end
           end
@@ -902,14 +902,14 @@ defmodule Saxy.Parser do
   defp yes?("no"), do: false
 
   defp raise_bad_syntax(rule, buffer, pos) do
-    throw({:bad_syntax, {rule, {buffer, pos}}})
+    throw({:error, {:bad_syntax, {rule, {buffer, pos}}}})
   end
 
   def valid_pi_name?(<<a::utf8, b::utf8, c::utf8>>) do
     cond do
-      not(a in [?x, ?X]) -> true
-      not(b in [?m, ?M]) -> true
-      not(c in [?l, ?L]) -> true
+      not (a in [?x, ?X]) -> true
+      not (b in [?m, ?M]) -> true
+      not (c in [?l, ?L]) -> true
       true -> false
     end
   end

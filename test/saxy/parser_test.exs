@@ -76,7 +76,7 @@ defmodule Saxy.ParserTest do
     buffer = ~s(<?xml ?>)
 
     assert catch_throw(Saxy.Parser.match(buffer, 0, :prolog, make_state())) ==
-             {:bad_syntax, {:XMLDecl, {buffer, 6}}}
+             {:error, {:bad_syntax, {:XMLDecl, {buffer, 6}}}}
 
     buffer = ""
 
@@ -178,7 +178,7 @@ defmodule Saxy.ParserTest do
     buffer = "<foo>Hello World &amp; people!</bar>"
 
     assert catch_throw(Saxy.Parser.match(buffer, 0, :element, make_state())) ==
-             {:wrong_closing_tag, {"foo", "bar"}}
+             {:error, {:wrong_closing_tag, {"foo", "bar"}}}
 
     assert element == {"foo", []}
     assert length(state) == 5
@@ -341,7 +341,9 @@ defmodule Saxy.ParserTest do
 
     buffer = "<?xml this is a joke?>"
 
-    assert {:bad_syntax, reason} = catch_throw(Saxy.Parser.match(buffer, 0, :PI, make_state()))
+    assert {:error, {:bad_syntax, reason}} =
+             catch_throw(Saxy.Parser.match(buffer, 0, :PI, make_state()))
+
     assert reason == {:PITarget, {buffer, 2}}
   end
 
@@ -355,6 +357,6 @@ defmodule Saxy.ParserTest do
   end
 
   defp handler(event_type, data, state) do
-    [{event_type, data} | state]
+    {:ok, [{event_type, data} | state]}
   end
 end

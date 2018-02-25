@@ -147,10 +147,19 @@ defmodule Saxy do
     try do
       Parser.match(buffer, 0, :document, initial_state)
     catch
-      :throw, reason -> {:error, %ParsingError{reason: reason}}
+      :throw, reason ->
+        handle_throw(reason)
     else
       {:ok, {:document, _document}, {_buffer, _position}, %{user_state: state}} ->
         {:ok, state}
     end
+  end
+
+  defp handle_throw({:error, reason}) do
+    {:error, %ParsingError{reason: reason}}
+  end
+
+  defp handle_throw({:stop, returning}) do
+    {:ok, returning}
   end
 end
