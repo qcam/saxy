@@ -7,7 +7,7 @@ Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w
 
 ```elixir
 def deps do
-  [{:saxy, "~> 0.2.0"}]
+  [{:saxy, "~> 0.3.0"}]
 end
 ```
 
