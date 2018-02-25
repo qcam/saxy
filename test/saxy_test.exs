@@ -63,8 +63,6 @@ defmodule SaxyTest do
 
     assert Saxy.parse_string(data, handler, []) ==
              {:error, %Saxy.ParsingError{reason: {:invalid_return, :unexpected}}}
-
-    data = "<?xml version=\"1.0\" ?><foo/>"
   end
 
   defp event_handler(event_type, data, state) do
