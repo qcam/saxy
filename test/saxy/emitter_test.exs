@@ -79,9 +79,7 @@ defmodule Saxy.EmitterTest do
     <foo>First Foo</foo>
     """
 
-    event_handler = fn
-      :start_document, _data, _state -> {:stop, 1}
-    end
+    event_handler = fn :start_document, _data, _state -> {:stop, 1} end
 
     state = %State{
       cont: :binary,

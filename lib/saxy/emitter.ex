@@ -10,6 +10,9 @@ defmodule Saxy.Emitter do
 
       {:stop, returning} ->
         throw({:stop, returning})
+
+      other ->
+        throw({:error, {:invalid_return, other}})
     end
   end
 

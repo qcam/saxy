@@ -47,12 +47,24 @@ defmodule SaxyTest do
   test "handles user control flow" do
     data = "<?xml version=\"1.0\" ?><foo/>"
 
-    handler = fn
-      :start_document, _event_data, _state ->
-        {:stop, :stop_parsing}
+    handler = fn :start_document, _event_data, _state ->
+      {:stop, :stop_parsing}
     end
 
     assert Saxy.parse_string(data, handler, []) == {:ok, :stop_parsing}
+  end
+
+  test "handles invalid handler return" do
+    data = "<?xml version=\"1.0\" ?><foo/>"
+
+    handler = fn :start_document, _event_data, _state ->
+      :unexpected
+    end
+
+    assert Saxy.parse_string(data, handler, []) ==
+             {:error, %Saxy.ParsingError{reason: {:invalid_return, :unexpected}}}
+
+    data = "<?xml version=\"1.0\" ?><foo/>"
   end
 
   defp event_handler(event_type, data, state) do

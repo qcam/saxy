@@ -1,6 +1,9 @@
 defmodule Saxy.ParsingError do
   @type t :: %__MODULE__{
-          reason: {:bad_syntax, any} | {:wrong_closing_tag, {binary, binary}}
+          reason:
+            {:bad_syntax, any}
+            | {:wrong_closing_tag, {binary, binary}}
+            | {:invalid_return, any}
         }
 
   defexception [:reason]
@@ -26,5 +29,8 @@ defmodule Saxy.ParsingError do
   defp format_message(:wrong_closing_tag, {open_tag, end_tag}) do
     "unexpected closing tag #{inspect(end_tag)}, expected: #{inspect(open_tag)}"
   end
-end
 
+  defp format_message(:invalid_return, return) do
+    "unexpected value returned by handler: #{inspect(return)}"
+  end
+end
