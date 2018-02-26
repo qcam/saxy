@@ -18,6 +18,37 @@ defmodule Saxy.Handler do
   Returning `{:stop, anything}` stops the prosing process immediately, and `anything` will be returned.
   This is useful when we want to get the desired return without parsing the whole file.
 
+  ## SAX Events
+
+  There are 6 types of event need to be handled in the handler.
+
+  ### `:start_document`
+
+  The event data will be the XML prolog, which is a keyword list of `:version`, `:encoding` and `:standalone`
+  respectively.
+
+  ### `:start_element`
+
+  The event data is the element, which is a two-element tuple, respectively tag name, attributes.
+
+  ### `:characters`
+
+  The event data is the binary that matches [`CharData*`](https://www.w3.org/TR/xml/#d0e1106).
+
+  Note that it is not trimmed and includes all the whitespace characters that match `CharData`.
+
+  ### `:reference`
+
+  The event data is the binary that represents the reference entity.
+
+  ### `:end_document`
+
+  The event data is an empty tuple.
+
+  ### `:end_element`
+
+  The event data is a one-element tuple contains the tag name of the closing element.
+
   ## Examples
 
       defmodule MyEventHandler do
@@ -47,8 +78,14 @@ defmodule Saxy.Handler do
           IO.inspect "Receive characters #{chars}"
           {:ok, [{:chacters, chars} | state]}
         end
+
+        def handle_event(:reference, ref, state) do
+          IO.inspect "Receive reference #{ref}"
+          {:ok, [{:reference, ref} | state]}
+        end
       end
   """
-  @callback handle_event(event_type :: atom, data :: tuple, user_state :: term) ::
-              {:ok, user_state :: term} | {:stop, returning :: term}
+
+  @callback handle_event(event_type :: atom, data :: any, user_state :: any) ::
+              {:ok, user_state :: any} | {:stop, returning :: any}
 end

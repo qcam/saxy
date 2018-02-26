@@ -2,6 +2,36 @@ defmodule Saxy do
   @moduledoc ~S"""
   Saxy is a XML SAX parser which provides functions to parse XML file in both binary and streaming way.
   Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
+
+  ## SAX Events
+
+  There are currently 6 types of events emitted by the parser.
+
+  * `:start_document`.
+  * `:start_element`.
+  * `:characters`.
+  * `:reference`.
+  * `:end_element`.
+  * `:end_document`.
+
+  See `Saxy.Handler` for more information.
+
+  ## Encoding
+
+  Saxy supports ASCII and UTF-8 encodings and respects the encoding set in XML document prolog. That
+  means that if the prolog declares an encoding that is not supported, it simply stops parsing and returns.
+
+  Though encoding declaration is optional in XML, so when encoding is missing in the document, UTF-8 will be
+  the default encoding.
+
+  ## Creation of atoms
+
+  Saxy does not automatically create new atoms during the parsing process.
+
+  ## XSD Schema
+
+  Saxy does not support XSD schemas.
+
   """
 
   alias Saxy.{Parser, ParsingError, State}
@@ -123,6 +153,13 @@ defmodule Saxy do
          {:start_element, "foo", [{"bar", "value"}]},
          {:start_document, [version: "1.0", encoding: "UTF-8", standalone: false]}
        ]}
+
+  ## Memory usage
+
+  `Saxy.parse_stream/3` takes a `File.Stream` or `Stream` as the input, so you are in control of how many bytes
+  in each chunk in the file you want to buffer.  Anyway, Saxy will try trimming off the parsed parts of buffer
+  when it exceeds 4096 bytes (this number is not configurable yet) to keep the memory usage in a reasonable limit.
+
   """
 
   @spec parse_stream(
