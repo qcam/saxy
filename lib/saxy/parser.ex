@@ -39,8 +39,12 @@ defmodule Saxy.Parser do
            zero_or_one(new_buffer, new_pos, :S, new_state),
          {:ok, {:"?>", _tval}, {new_buffer, new_pos}, new_state} <-
            zero_or_one(new_buffer, new_pos, :"?>", new_state) do
-      xml = [version: version, encoding: encoding, standalone: standalone?]
-      {:ok, {:XMLDecl, xml}, {new_buffer, new_pos}, new_state}
+      if valid_encoding?(encoding) do
+        xml = [version: version, encoding: encoding, standalone: standalone?]
+        {:ok, {:XMLDecl, xml}, {new_buffer, new_pos}, new_state}
+      else
+        throw({:error, {:unsupported_encoding, encoding}})
+      end
     else
       {:error, :"<?xml", {new_buffer, new_pos}, new_state} ->
         {:error, :XMLDecl, {new_buffer, new_pos}, new_state}
@@ -875,7 +879,7 @@ defmodule Saxy.Parser do
     throw({:error, {:bad_syntax, {rule, {buffer, pos}}}})
   end
 
-  def valid_pi_name?(<<a::utf8, b::utf8, c::utf8>>) do
+  defp valid_pi_name?(<<a::utf8, b::utf8, c::utf8>>) do
     cond do
       not (a in [?x, ?X]) -> true
       not (b in [?m, ?M]) -> true
@@ -884,5 +888,9 @@ defmodule Saxy.Parser do
     end
   end
 
-  def valid_pi_name?(<<_any::bits>>), do: true
+  defp valid_pi_name?(<<_any::bits>>), do: true
+
+  defp valid_encoding?("utf-8"), do: true
+  defp valid_encoding?("UTF-8"), do: true
+  defp valid_encoding?(_other), do: false
 end

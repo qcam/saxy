@@ -2,6 +2,7 @@ defmodule Saxy.ParsingError do
   @type t :: %__MODULE__{
           reason:
             {:bad_syntax, any}
+            | {:unsupported_encoding, binary}
             | {:wrong_closing_tag, {binary, binary}}
             | {:invalid_return, any}
         }
@@ -24,6 +25,10 @@ defmodule Saxy.ParsingError do
     char = <<byte>>
 
     "unexpected byte #{inspect(char)}, expected: #{inspect(mismatched_rule)}"
+  end
+
+  defp format_message(:unsupported_encoding, encoding) do
+    "unsupported encoding: #{inspect(encoding)}"
   end
 
   defp format_message(:wrong_closing_tag, {open_tag, end_tag}) do

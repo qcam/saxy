@@ -84,6 +84,13 @@ defmodule Saxy.ParserTest do
              Saxy.Parser.match(buffer, 0, :prolog, make_state())
   end
 
+  test "bad encoding" do
+    buffer = ~s(<?xml version="1.0" encoding="invalid-encoding" ?>)
+
+    assert catch_throw(Saxy.Parser.match(buffer, 0, :prolog, make_state())) ==
+             {:error, {:unsupported_encoding, "invalid-encoding"}}
+  end
+
   test "XMLDecl rule" do
     buffer = ~s(<?xml version="1.0" ?>bar)
 

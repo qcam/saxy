@@ -13,7 +13,7 @@ defmodule Saxy.EmitterTest do
 
   test "emit/3 with a module" do
     xml = """
-    <?xml version="1.0" encoding="utf8" standalone="no"?>
+    <?xml version="1.0" encoding="utf-8" standalone="no"?>
     <foo>First Foo<bar>First Bar</bar><bar>Second Bar</bar>Last Foo</foo>
     """
 
@@ -24,7 +24,7 @@ defmodule Saxy.EmitterTest do
       handler: EventHandler
     }
 
-    prolog = [version: "1.0", encoding: "utf8", standalone: false]
+    prolog = [version: "1.0", encoding: "utf-8", standalone: false]
 
     assert {:ok, _, _, %State{user_state: state}} = Parser.match(xml, 0, :document, state)
     state = Enum.reverse(state)
@@ -44,7 +44,7 @@ defmodule Saxy.EmitterTest do
 
   test "emit/3 with a function" do
     xml = """
-    <?xml version="1.0" encoding="utf8" standalone="no"?>
+    <?xml version="1.0" encoding="utf-8" standalone="no"?>
     <foo>First Foo<bar>First Bar</bar><bar>Second Bar</bar>Last Foo</foo>
     """
 
@@ -55,7 +55,7 @@ defmodule Saxy.EmitterTest do
       handler: &EventHandler.handle_event/3
     }
 
-    prolog = [version: "1.0", encoding: "utf8", standalone: false]
+    prolog = [version: "1.0", encoding: "utf-8", standalone: false]
 
     assert {:ok, _, _, %State{user_state: state}} = Parser.match(xml, 0, :document, state)
     state = Enum.reverse(state)
@@ -75,7 +75,7 @@ defmodule Saxy.EmitterTest do
 
   test "emit/3 handles user :stop message" do
     xml = """
-    <?xml version="1.0" encoding="utf8" standalone="no"?>
+    <?xml version="1.0" encoding="utf-8" standalone="no"?>
     <foo>First Foo</foo>
     """
 
