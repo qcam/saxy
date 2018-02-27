@@ -23,6 +23,13 @@ defmodule Saxy do
   Though encoding declaration is optional in XML, so when encoding is missing in the document, UTF-8 will be
   the default encoding.
 
+  ## Entity Reference converting
+
+  The parser converts character and entity reference, for example `&amp;` will be converted to `&` and `&#60;`
+  to `<`.
+
+  There is currently no support for external entity references.
+
   ## Creation of atoms
 
   Saxy does not automatically create new atoms during the parsing process.
