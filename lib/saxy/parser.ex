@@ -253,7 +253,7 @@ defmodule Saxy.Parser do
               Emitter.emit(:characters, cdata, new_state)
 
             {:Reference, ref} ->
-              Emitter.emit(:reference, ref, new_state)
+              Emitter.emit(:characters, ref, new_state)
 
             _ ->
               new_state
