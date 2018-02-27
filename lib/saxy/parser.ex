@@ -253,7 +253,7 @@ defmodule Saxy.Parser do
               Emitter.emit(:characters, cdata, new_state)
 
             {:Reference, ref} ->
-              Emitter.emit(:reference, ref, new_state)
+              Emitter.emit(:characters, ref, new_state)
 
             _ ->
               new_state
@@ -407,13 +407,15 @@ defmodule Saxy.Parser do
           {:ok, {:";", _tval}, {new_buffer, new_pos}, new_state} ->
             case matched do
               {:DecChar, ref} ->
-                {:ok, {:Reference, "&#" <> ref <> ";"}, {new_buffer, new_pos}, new_state}
+                {charcode, <<>>} = Integer.parse(ref)
+                {:ok, {:Reference, <<charcode::utf8>>}, {new_buffer, new_pos}, new_state}
 
               {:HexChar, ref} ->
-                {:ok, {:Reference, "&#x" <> ref <> ";"}, {new_buffer, new_pos}, new_state}
+                {charcode, <<>>} = Integer.parse(ref, 16)
+                {:ok, {:Reference, <<charcode::utf8>>}, {new_buffer, new_pos}, new_state}
 
-              {:Name, ref} ->
-                {:ok, {:Reference, "&" <> ref <> ";"}, {new_buffer, new_pos}, new_state}
+              {:Name, ref_name} ->
+                {:ok, {:Reference, convert_entity_ref(ref_name)}, {new_buffer, new_pos}, new_state}
             end
         end
     end
@@ -893,4 +895,11 @@ defmodule Saxy.Parser do
   defp valid_encoding?("utf-8"), do: true
   defp valid_encoding?("UTF-8"), do: true
   defp valid_encoding?(_other), do: false
+
+  defp convert_entity_ref(name) do
+    case Saxy.Entities.convert(name) do
+      {:ok, character} -> character
+      :error -> "&#{name};"
+    end
+  end
 end

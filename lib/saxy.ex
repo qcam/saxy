@@ -5,12 +5,11 @@ defmodule Saxy do
 
   ## SAX Events
 
-  There are currently 6 types of events emitted by the parser.
+  There are currently 5 types of events emitted by the parser.
 
   * `:start_document`.
   * `:start_element`.
   * `:characters`.
-  * `:reference`.
   * `:end_element`.
   * `:end_document`.
 
@@ -23,6 +22,13 @@ defmodule Saxy do
 
   Though encoding declaration is optional in XML, so when encoding is missing in the document, UTF-8 will be
   the default encoding.
+
+  ## Entity Reference converting
+
+  The parser converts character and entity reference, for example `&amp;` will be converted to `&` and `&#60;`
+  to `<`.
+
+  There is currently no support for external entity references.
 
   ## Creation of atoms
 

@@ -230,7 +230,7 @@ defmodule Saxy.ParserTest do
     assert {:ok, {:element, element}, {^buffer, 51}, _state} =
              Saxy.Parser.match(buffer, 0, :element, make_state())
 
-    assert element == {"foo", [{"bar:1", "789"}, {"bar-1", "456"}, {"bar1", "foo &amp; bar"}]}
+    assert element == {"foo", [{"bar:1", "789"}, {"bar-1", "456"}, {"bar1", "foo & bar"}]}
   end
 
   test "CDSect rule" do
@@ -254,10 +254,10 @@ defmodule Saxy.ParserTest do
   test "Reference rule" do
     buffer = "&amp; bar"
 
-    assert {:ok, {:Reference, ref}, {^buffer, 5}, %{user_state: state}} =
+    assert {:ok, {:Reference, char}, {^buffer, 5}, %{user_state: state}} =
              Saxy.Parser.match(buffer, 0, :Reference, make_state())
 
-    assert ref == "&amp;"
+    assert char == "&"
     assert state == []
 
     buffer = "&#999; bar"
@@ -265,15 +265,15 @@ defmodule Saxy.ParserTest do
     assert {:ok, {:Reference, ref}, {^buffer, 6}, %{user_state: state}} =
              Saxy.Parser.match(buffer, 0, :Reference, make_state())
 
-    assert ref == "&#999;"
+    assert ref == "ϧ"
     assert state == []
 
-    buffer = "&#xAAF980; bar"
+    buffer = "&#x232A; bar"
 
-    assert {:ok, {:Reference, ref}, {^buffer, 10}, %{user_state: state}} =
+    assert {:ok, {:Reference, ref}, {^buffer, 8}, %{user_state: state}} =
              Saxy.Parser.match(buffer, 0, :Reference, make_state())
 
-    assert ref == "&#xAAF980;"
+    assert ref == "〉"
     assert state == []
   end
 

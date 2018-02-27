@@ -33,13 +33,9 @@ defmodule Saxy.Handler do
 
   ### `:characters`
 
-  The event data is the binary that matches [`CharData*`](https://www.w3.org/TR/xml/#d0e1106).
+  The event data is the binary that matches [`CharData*`](https://www.w3.org/TR/xml/#d0e1106) and [Reference](https://www.w3.org/TR/xml/#NT-Reference).
 
   Note that it is not trimmed and includes all the whitespace characters that match `CharData`.
-
-  ### `:reference`
-
-  The event data is the binary that represents the reference entity.
 
   ### `:end_document`
 
@@ -77,11 +73,6 @@ defmodule Saxy.Handler do
         def handle_event(:characters, chars, state) do
           IO.inspect "Receive characters #{chars}"
           {:ok, [{:chacters, chars} | state]}
-        end
-
-        def handle_event(:reference, ref, state) do
-          IO.inspect "Receive reference #{ref}"
-          {:ok, [{:reference, ref} | state]}
         end
       end
   """
