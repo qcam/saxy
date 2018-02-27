@@ -5,12 +5,11 @@ defmodule Saxy do
 
   ## SAX Events
 
-  There are currently 6 types of events emitted by the parser.
+  There are currently 5 types of events emitted by the parser.
 
   * `:start_document`.
   * `:start_element`.
   * `:characters`.
-  * `:reference`.
   * `:end_element`.
   * `:end_document`.
 
