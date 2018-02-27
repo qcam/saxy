@@ -896,5 +896,10 @@ defmodule Saxy.Parser do
   defp valid_encoding?("UTF-8"), do: true
   defp valid_encoding?(_other), do: false
 
-  defp convert_entity_ref(name), do: "&#{name};"
+  defp convert_entity_ref(name) do
+    case Saxy.Entities.convert(name) do
+      {:ok, character} -> character
+      :error -> "&#{name};"
+    end
+  end
 end
