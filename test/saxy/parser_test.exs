@@ -265,15 +265,15 @@ defmodule Saxy.ParserTest do
     assert {:ok, {:Reference, ref}, {^buffer, 6}, %{user_state: state}} =
              Saxy.Parser.match(buffer, 0, :Reference, make_state())
 
-    assert ref == "&#999;"
+    assert ref == "ϧ"
     assert state == []
 
-    buffer = "&#xAAF980; bar"
+    buffer = "&#x232A; bar"
 
-    assert {:ok, {:Reference, ref}, {^buffer, 10}, %{user_state: state}} =
+    assert {:ok, {:Reference, ref}, {^buffer, 8}, %{user_state: state}} =
              Saxy.Parser.match(buffer, 0, :Reference, make_state())
 
-    assert ref == "&#xAAF980;"
+    assert ref == "〉"
     assert state == []
   end
 
