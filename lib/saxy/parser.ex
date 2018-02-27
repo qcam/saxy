@@ -3,6 +3,8 @@ defmodule Saxy.Parser do
 
   alias Saxy.{Buffering, Emitter}
 
+  @maximum_unicode_character 0x10FFFF
+
   def match(buffer, position, :document, state) do
     with {:ok, {:prolog, prolog}, {new_buffer, new_pos}, new_state} <-
            match(buffer, position, :prolog, state),
@@ -14,6 +16,8 @@ defmodule Saxy.Parser do
            zero_or_more(new_buffer, new_pos, :Misc, new_state, []) do
       new_state = Emitter.emit(:end_document, {}, new_state)
       {:ok, {:document, {}}, {new_buffer, new_pos}, new_state}
+    else
+      match_error -> handle_match_error(match_error)
     end
   end
 
@@ -23,6 +27,8 @@ defmodule Saxy.Parser do
          {:ok, {:Misc, _}, {new_buffer, new_pos}, new_state} <-
            zero_or_more(new_buffer, new_pos, :Misc, new_state, []) do
       {:ok, {:prolog, xml}, {new_buffer, new_pos}, new_state}
+    else
+      match_error -> handle_match_error(match_error)
     end
   end
 
@@ -51,6 +57,9 @@ defmodule Saxy.Parser do
 
       {:error, :VersionInfo, {new_buffer, new_pos}, _new_state} ->
         raise_bad_syntax(:XMLDecl, new_buffer, new_pos)
+
+      match_error ->
+        handle_match_error(match_error)
     end
   end
 
@@ -80,6 +89,9 @@ defmodule Saxy.Parser do
           mismatched_token in [:S, :version] ->
             {:error, :VersionInfo, {new_buffer, new_pos}, new_state}
         end
+
+      match_error ->
+        handle_match_error(match_error)
     end
   end
 
@@ -89,6 +101,9 @@ defmodule Saxy.Parser do
          {:ok, {:DecChar, chars}, {new_buffer, new_pos}, new_state} <-
            one_or_more(new_buffer, new_pos, :DecChar, new_state, <<>>) do
       {:ok, {:VersionNum, "1." <> chars}, {new_buffer, new_pos}, new_state}
+    else
+      match_error ->
+        handle_match_error(match_error)
     end
   end
 
@@ -115,6 +130,9 @@ defmodule Saxy.Parser do
 
       {:error, _error, {new_buffer, new_pos}, _new_state} ->
         raise_bad_syntax(:EncodingDecl, new_buffer, new_pos)
+
+      match_error ->
+        handle_match_error(match_error)
     end
   end
 
@@ -125,6 +143,9 @@ defmodule Saxy.Parser do
           {:ok, {:EncNameChar, chars}, {new_buffer, new_pos}, new_state} ->
             {:ok, {:EncName, start_char <> chars}, {new_buffer, new_pos}, new_state}
         end
+
+      match_error ->
+        handle_match_error(match_error)
     end
   end
 
@@ -141,7 +162,13 @@ defmodule Saxy.Parser do
            match(new_buffer, new_pos, :YesNo, new_state),
          {:ok, {:quote, ^open_quote_val}, {new_buffer, new_pos}, new_state} <-
            match(new_buffer, new_pos, :quote, new_state) do
-      {:ok, {:SDDecl, yes?(standalone)}, {new_buffer, new_pos}, new_state}
+      case yes?(standalone) do
+        :error ->
+          raise_bad_syntax(:YesNo, buffer, position)
+
+        {:ok, standalone?} ->
+          {:ok, {:SDDecl, standalone?}, {new_buffer, new_pos}, new_state}
+      end
     else
       {:error, :S, {new_buffer, _new_pos}, new_state} ->
         {:error, :SDDecl, {new_buffer, position}, new_state}
@@ -149,8 +176,8 @@ defmodule Saxy.Parser do
       {:error, :standalone, {new_buffer, _new_pos}, new_state} ->
         {:error, :SDDecl, {new_buffer, position}, new_state}
 
-      {:error, _error, {new_buffer, new_pos}, _new_state} ->
-        raise_bad_syntax(:SDDecl, new_buffer, new_pos)
+      match_error ->
+        handle_match_error(match_error)
     end
   end
 
@@ -186,11 +213,17 @@ defmodule Saxy.Parser do
                       throw({:error, {:wrong_closing_tag, {tag_name, mismatched_tag}}})
                   end
               end
+
+            match_error ->
+              handle_match_error(match_error)
           end
       end
     else
       {:error, :<, {new_buffer, new_pos}, new_state} ->
         {:error, :element, {new_buffer, new_pos}, new_state}
+
+      match_error ->
+        handle_match_error(match_error)
     end
   end
 
@@ -242,7 +275,7 @@ defmodule Saxy.Parser do
       <<"<", _rest::bits>> ->
         match(buffer, position, :element, state)
 
-      _ ->
+      _other ->
         {:error, :ContentComponent, {buffer, position}, state}
     end
     |> case do
@@ -391,33 +424,28 @@ defmodule Saxy.Parser do
     {:ok, buffer, position, next_cont} = Buffering.maybe_buffer(buffer, position, state.cont)
     state = %{state | cont: next_cont}
 
-    case Buffering.subbuffer(buffer, position) do
-      <<"&#x", _rest::bits>> ->
-        one_or_more(buffer, position + 3, :HexChar, state, <<>>)
-
-      <<"&#", _rest::bits>> ->
-        one_or_more(buffer, position + 2, :DecChar, state, <<>>)
-
-      <<"&", _rest::bits>> ->
-        match(buffer, position + 1, :Name, state)
-    end
+    buffer
+    |> Buffering.subbuffer(position)
+    |> match_reference(buffer, position, state)
     |> case do
-      {:ok, matched, {new_buffer, new_pos}, new_state} ->
-        case match(new_buffer, new_pos, :";", new_state) do
-          {:ok, {:";", _tval}, {new_buffer, new_pos}, new_state} ->
-            case matched do
-              {:DecChar, ref} ->
-                {charcode, <<>>} = Integer.parse(ref)
-                {:ok, {:Reference, <<charcode::utf8>>}, {new_buffer, new_pos}, new_state}
+      {:ok, {rule, ref_chars}, {new_buffer, new_pos}, new_state}
+      when rule in [:DecChar, :HexChar, :Name] ->
+        case convert_reference(rule, ref_chars) do
+          {:ok, char} ->
+            case match(new_buffer, new_pos, :";", new_state) do
+              {:ok, {:";", _tval}, {new_buffer, new_pos}, new_state} ->
+                {:ok, {:Reference, char}, {new_buffer, new_pos}, new_state}
 
-              {:HexChar, ref} ->
-                {charcode, <<>>} = Integer.parse(ref, 16)
-                {:ok, {:Reference, <<charcode::utf8>>}, {new_buffer, new_pos}, new_state}
-
-              {:Name, ref_name} ->
-                {:ok, {:Reference, convert_entity_ref(ref_name)}, {new_buffer, new_pos}, new_state}
+              match_error ->
+                handle_match_error(match_error)
             end
+
+          :error ->
+            {:error, :Reference, {new_buffer, new_pos}, new_state}
         end
+
+      match_error ->
+        handle_match_error(match_error)
     end
   end
 
@@ -576,6 +604,10 @@ defmodule Saxy.Parser do
       :error ->
         {:error, {:AttValueChar, quote_val}, {buffer, position}, state}
     end
+  end
+
+  def match(buffer, position, rule) do
+    raise_bad_syntax(rule, buffer, position)
   end
 
   defp zero_or_one(buffer, position, rule, state, default \\ nil) do
@@ -801,6 +833,20 @@ defmodule Saxy.Parser do
     {:ok, {char, byte_size(char)}}
   end
 
+  defp match_token(_buffer, _token), do: :error
+
+  defp match_reference(<<"&#x", _rest::bits>>, buffer, position, state) do
+    one_or_more(buffer, position + 3, :HexChar, state, <<>>)
+  end
+
+  defp match_reference(<<"&#", _rest::bits>>, buffer, position, state) do
+    one_or_more(buffer, position + 2, :DecChar, state, <<>>)
+  end
+
+  defp match_reference(<<"&", _rest::bits>>, buffer, position, state) do
+    match(buffer, position + 1, :Name, state)
+  end
+
   defp name_start_char?(charcode) do
     cond do
       charcode == ?: -> true
@@ -874,12 +920,9 @@ defmodule Saxy.Parser do
     end
   end
 
-  defp yes?("yes"), do: true
-  defp yes?("no"), do: false
-
-  defp raise_bad_syntax(rule, buffer, pos) do
-    throw({:error, {:bad_syntax, {rule, {buffer, pos}}}})
-  end
+  defp yes?("yes"), do: {:ok, true}
+  defp yes?("no"), do: {:ok, false}
+  defp yes?(_other), do: :error
 
   defp valid_pi_name?(<<a::utf8, b::utf8, c::utf8>>) do
     cond do
@@ -896,10 +939,38 @@ defmodule Saxy.Parser do
   defp valid_encoding?("UTF-8"), do: true
   defp valid_encoding?(_other), do: false
 
-  defp convert_entity_ref(name) do
+  defp convert_reference(:Name, name) do
     case Saxy.Entities.convert(name) do
-      {:ok, character} -> character
-      :error -> "&#{name};"
+      {:ok, character} -> {:ok, character}
+      :error -> {:ok, "&#{name};"}
     end
+  end
+
+  defp convert_reference(:HexChar, hex) do
+    case Integer.parse(hex, 16) do
+      {charcode, <<>>} when charcode <= @maximum_unicode_character ->
+        {:ok, <<charcode::utf8>>}
+
+      _other ->
+        :error
+    end
+  end
+
+  defp convert_reference(:DecChar, dec) do
+    case Integer.parse(dec) do
+      {charcode, <<>>} when charcode <= @maximum_unicode_character ->
+        {:ok, <<charcode::utf8>>}
+
+      _other ->
+        :error
+    end
+  end
+
+  defp handle_match_error({:error, rule, {buffer, position}, _state}) do
+    raise_bad_syntax(rule, buffer, position)
+  end
+
+  defp raise_bad_syntax(rule, buffer, pos) do
+    throw({:error, {:bad_syntax, {rule, {buffer, pos}}}})
   end
 end

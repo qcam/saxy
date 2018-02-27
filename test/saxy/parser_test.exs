@@ -275,6 +275,16 @@ defmodule Saxy.ParserTest do
 
     assert ref == "〉"
     assert state == []
+
+    buffer = "&#x9999999; bar"
+
+    assert {:error, :Reference, {^buffer, 10}, _state} =
+             Saxy.Parser.match(buffer, 0, :Reference, make_state())
+
+    buffer = "&#x99&&&"
+
+    assert {:error, {:bad_syntax, {:";", {buffer, 5}}}} ==
+             catch_throw(Saxy.Parser.match(buffer, 0, :Reference, make_state()))
   end
 
   test "Misc rule" do
@@ -352,6 +362,35 @@ defmodule Saxy.ParserTest do
              catch_throw(Saxy.Parser.match(buffer, 0, :PI, make_state()))
 
     assert reason == {:PITarget, {buffer, 2}}
+  end
+
+  describe "malformed XML" do
+    test "handles bad tag" do
+      buffer = "<foo&bar"
+
+      assert {:error, {:bad_syntax, reason}} =
+               catch_throw(Saxy.Parser.match(buffer, 0, :document, make_state()))
+
+      assert reason == {:>, {buffer, 4}}
+
+      buffer = """
+      <foo><!--HELLO</foo>
+      """
+
+      assert {:error, {:bad_syntax, reason}} =
+               catch_throw(Saxy.Parser.match(buffer, 0, :document, make_state()))
+
+      assert reason == {:Comment, {buffer, 21}}
+
+      buffer = """
+      <foo><!DOCTYPE</foo>
+      """
+
+      assert {:error, {:bad_syntax, reason}} =
+               catch_throw(Saxy.Parser.match(buffer, 0, :document, make_state()))
+
+      assert reason == {:Name, {buffer, 6}}
+    end
   end
 
   defp make_state() do

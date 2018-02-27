@@ -252,7 +252,7 @@ defmodule Saxy.Entities do
     "Zeta" => 918,
     "zeta" => 950,
     "zwj" => 8205,
-    "zwnj" => 8204,
+    "zwnj" => 8204
   }
 
   def convert(name) do
