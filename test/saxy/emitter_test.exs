@@ -1,7 +1,7 @@
 defmodule Saxy.EmitterTest do
   use ExUnit.Case
 
-  alias Saxy.{Parser, Handler, State}
+  alias Saxy.Handler
 
   defmodule EventHandler do
     @behaviour Handler
@@ -17,28 +17,23 @@ defmodule Saxy.EmitterTest do
     <foo>First Foo<bar>First Bar</bar><bar>Second Bar</bar>Last Foo</foo>
     """
 
-    state = %State{
-      cont: :binary,
-      user_state: [],
-      prolog: [],
-      handler: EventHandler
-    }
-
-    prolog = [version: "1.0", encoding: "utf-8", standalone: false]
-
-    assert {:ok, _, _, %State{user_state: state}} = Parser.match(xml, 0, :document, state)
+    assert {:ok, state} = Saxy.parse_string(xml, EventHandler, [])
     state = Enum.reverse(state)
-    assert [{:start_document, ^prolog} | state] = state
+    assert [{:start_document, prolog} | state] = state
+    assert Keyword.fetch!(prolog, :version) == "1.0"
+    assert Keyword.fetch!(prolog, :encoding) == "utf-8"
+    assert Keyword.fetch!(prolog, :standalone) == false
+
     assert [{:start_element, {"foo", []}} | state] = state
     assert [{:characters, "First Foo"} | state] = state
     assert [{:start_element, {"bar", []}} | state] = state
     assert [{:characters, "First Bar"} | state] = state
-    assert [{:end_element, {"bar"}} | state] = state
+    assert [{:end_element, "bar"} | state] = state
     assert [{:start_element, {"bar", []}} | state] = state
     assert [{:characters, "Second Bar"} | state] = state
-    assert [{:end_element, {"bar"}} | state] = state
+    assert [{:end_element, "bar"} | state] = state
     assert [{:characters, "Last Foo"} | state] = state
-    assert [{:end_element, {"foo"}} | state] = state
+    assert [{:end_element, "foo"} | state] = state
     assert [{:end_document, {}} | []] = state
   end
 
@@ -48,28 +43,24 @@ defmodule Saxy.EmitterTest do
     <foo>First Foo<bar>First Bar</bar><bar>Second Bar</bar>Last Foo</foo>
     """
 
-    state = %State{
-      cont: :binary,
-      user_state: [],
-      prolog: [],
-      handler: &EventHandler.handle_event/3
-    }
-
-    prolog = [version: "1.0", encoding: "utf-8", standalone: false]
-
-    assert {:ok, _, _, %State{user_state: state}} = Parser.match(xml, 0, :document, state)
+    assert {:ok, state} = Saxy.parse_string(xml, &EventHandler.handle_event/3, [])
     state = Enum.reverse(state)
-    assert [{:start_document, ^prolog} | state] = state
+
+    assert [{:start_document, prolog} | state] = state
+    assert Keyword.fetch!(prolog, :version) == "1.0"
+    assert Keyword.fetch!(prolog, :encoding) == "utf-8"
+    assert Keyword.fetch!(prolog, :standalone) == false
+
     assert [{:start_element, {"foo", []}} | state] = state
     assert [{:characters, "First Foo"} | state] = state
     assert [{:start_element, {"bar", []}} | state] = state
     assert [{:characters, "First Bar"} | state] = state
-    assert [{:end_element, {"bar"}} | state] = state
+    assert [{:end_element, "bar"} | state] = state
     assert [{:start_element, {"bar", []}} | state] = state
     assert [{:characters, "Second Bar"} | state] = state
-    assert [{:end_element, {"bar"}} | state] = state
+    assert [{:end_element, "bar"} | state] = state
     assert [{:characters, "Last Foo"} | state] = state
-    assert [{:end_element, {"foo"}} | state] = state
+    assert [{:end_element, "foo"} | state] = state
     assert [{:end_document, {}} | []] = state
   end
 
@@ -81,13 +72,6 @@ defmodule Saxy.EmitterTest do
 
     event_handler = fn :start_document, _data, _state -> {:stop, 1} end
 
-    state = %State{
-      cont: :binary,
-      user_state: [],
-      prolog: [],
-      handler: event_handler
-    }
-
-    assert catch_throw(Parser.match(xml, 0, :document, state)) == {:stop, 1}
+    assert Saxy.parse_string(xml, event_handler, []) == {:ok, 1}
   end
 end

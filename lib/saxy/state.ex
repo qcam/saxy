@@ -1,7 +1,7 @@
 defmodule Saxy.State do
   @moduledoc false
 
-  @enforce_keys [:handler, :cont, :user_state, :prolog]
+  @enforce_keys [:handler, :user_state, :prolog]
 
-  defstruct @enforce_keys
+  defstruct @enforce_keys ++ [stack: []]
 end
