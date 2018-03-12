@@ -79,4 +79,6 @@ defmodule Saxy.Handler do
 
   @callback handle_event(event_type :: atom, data :: any, user_state :: any) ::
               {:ok, user_state :: any} | {:stop, returning :: any}
+
+  @callback handle_entity_reference(reference_name :: binary) :: binary
 end

@@ -5,6 +5,8 @@ defmodule Saxy.Parser.ElementTest do
 
   alias Saxy.ParseError
 
+  alias Saxy.TestHandlers.StackHandler
+
   test "parse_element/2 with full element having no attributes" do
     buffer = "<foo></foo>"
 
@@ -305,17 +307,13 @@ defmodule Saxy.Parser.ElementTest do
   defp make_state(state \\ []) do
     %Saxy.State{
       prolog: nil,
-      handler: &event_handler/3,
+      handler: StackHandler,
       user_state: state
     }
   end
 
   defp make_cont() do
     :done
-  end
-
-  defp event_handler(event_type, event_data, user_state) do
-    {:ok, [{event_type, event_data} | user_state]}
   end
 
   defp find_events(state, event_type) do

@@ -5,6 +5,8 @@ defmodule Saxy.Parser.PrologTest do
 
   alias Saxy.ParseError
 
+  alias Saxy.TestHandlers.StackHandler
+
   test "parse_prolog/2 with all properties declared" do
     buffer = """
     <?xml version="1.0" encoding="utf-8" standalone='yes' ?> <foo></foo>
@@ -233,13 +235,9 @@ defmodule Saxy.Parser.PrologTest do
   defp make_state(state \\ []) do
     %Saxy.State{
       prolog: nil,
-      handler: &event_handler/3,
+      handler: StackHandler,
       user_state: state
     }
-  end
-
-  defp event_handler(event_type, event_data, user_state) do
-    {:ok, [{event_type, event_data} | user_state]}
   end
 
   defp make_cont(), do: :done

@@ -234,15 +234,10 @@ defmodule Saxy.Parser.Element do
 
   def parse_att_value_entity_ref(<<?;, rest::bits>>, cont, original, pos, state, attributes, q, att_name, acc, len) do
     name = binary_part(original, pos, len)
+    converted = Emitter.convert_entity_reference(name, state)
+    acc = [acc | converted]
 
-    case Utils.convert_entity_ref(name) do
-      :error ->
-        # TODO: Trigger convert entity handler
-        parse_att_value(rest, cont, original, pos + len + 1, state, attributes, q, att_name, acc, 0)
-
-      char ->
-        parse_att_value(rest, cont, original, pos + len + 1, state, attributes, q, att_name, [acc | char], 0)
-    end
+    parse_att_value(rest, cont, original, pos + len + 1, state, attributes, q, att_name, acc, 0)
   end
 
   buffering_parse_fun(:parse_att_value_entity_ref, 10, "")
@@ -480,15 +475,9 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_entity_ref(<<?;, rest::bits>>, cont, original, pos, state, acc, len) do
-    entity = binary_part(original, pos, len)
-
-    case Utils.convert_entity_ref(entity) do
-      :error ->
-        parse_chardata(rest, cont, original, pos + len + 1, state, acc, 0)
-
-      char ->
-        parse_chardata(rest, cont, original, pos + len + 1, state, [acc | char], 0)
-    end
+    name = binary_part(original, pos, len)
+    char = Emitter.convert_entity_reference(name, state)
+    parse_chardata(rest, cont, original, pos + len + 1, state, [acc | char], 0)
   end
 
   buffering_parse_fun(:parse_element_entity_ref, 7, "")

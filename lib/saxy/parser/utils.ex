@@ -2,10 +2,11 @@ defmodule Saxy.Parser.Utils do
   @moduledoc false
 
   alias Saxy.{
-    Entities,
     HandlerError,
     ParseError,
   }
+
+  @compile {:inline, [syntax_error: 3]}
 
   def syntax_error(<<>>, _state, token) do
     {:error, %ParseError{reason: {:syntax, token}, next_byte: :eof}}
@@ -13,12 +14,6 @@ defmodule Saxy.Parser.Utils do
 
   def syntax_error(<<byte::utf8, _::bits>>, _state, token) do
     {:error, %ParseError{reason: {:syntax, token}, next_byte: <<byte::utf8>>}}
-  end
-
-  @compile {:inline, [convert_entity_ref: 1]}
-
-  def convert_entity_ref(name) do
-    Entities.convert(name)
   end
 
   @compile {:inline, [compute_char_len: 1]}
@@ -31,6 +26,8 @@ defmodule Saxy.Parser.Utils do
       true -> 4
     end
   end
+
+  @compile {:inline, [bad_return_error: 1]}
 
   def bad_return_error(reason) do
     {:error, %HandlerError{reason: {:bad_return, reason}}}

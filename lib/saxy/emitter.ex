@@ -16,11 +16,13 @@ defmodule Saxy.Emitter do
     end
   end
 
-  def do_emit(event_type, data, handler, user_state) when is_atom(handler) do
-    handler.handle_event(event_type, data, user_state)
+  @compile {:inline, [convert_entity_reference: 2]}
+
+  def convert_entity_reference(reference_name, %State{handler: handler}) do
+    handler.handle_entity_reference(reference_name)
   end
 
-  def do_emit(event_type, data, handler, user_state) when is_function(handler, 3) do
-    handler.(event_type, data, user_state)
+  defp do_emit(event_type, data, handler, user_state) do
+    handler.handle_event(event_type, data, user_state)
   end
 end

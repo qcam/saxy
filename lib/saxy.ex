@@ -100,8 +100,7 @@ defmodule Saxy do
           state :: term
         ) :: {:ok, state :: term} | {:error, exception :: ParsingError.t()}
 
-  def parse_string(data, handler, state)
-      when is_binary(data) and (is_atom(handler) or is_function(handler, 3)) do
+  def parse_string(data, handler, state) when is_binary(data) and is_atom(handler) do
     initial_state = %State{
       prolog: nil,
       handler: handler,
@@ -173,8 +172,7 @@ defmodule Saxy do
           state :: term
         ) :: {:ok, state :: term} | {:error, exception :: ParsingError.t()}
 
-  def parse_stream(%module{} = stream, handler, state)
-      when module in [File.Stream, Stream] and (is_atom(handler) or is_function(handler, 3)) do
+  def parse_stream(%module{} = stream, handler, state) when module in [File.Stream, Stream] do
     initial_state = %State{
       prolog: nil,
       handler: handler,

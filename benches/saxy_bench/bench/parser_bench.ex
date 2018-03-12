@@ -4,6 +4,8 @@ defmodule EventHandler do
     {:ok, [{event_type, event_data} | acc]}
   end
 
+  def handle_entity_reference(_), do: <<>>
+
   # Handler for Erlsom
   def handle_event(event, acc) do
     [event | acc]
