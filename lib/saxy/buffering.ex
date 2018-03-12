@@ -1,4 +1,6 @@
 defmodule Saxy.Buffering do
+  @moduledoc false
+
   defmacro buffering_parse_fun(fun_name, arity, token \\ "")
   defmacro buffering_parse_fun(fun_name, arity, token) do
     quoted_params =

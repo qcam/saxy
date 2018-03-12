@@ -1,4 +1,6 @@
 defmodule Saxy.Parser.Utils do
+  @moduledoc false
+
   alias Saxy.{
     Entities,
     HandlerError,

@@ -43,7 +43,7 @@ defmodule Saxy.Handler do
 
   ### `:end_element`
 
-  The event data is a one-element tuple contains the tag name of the closing element.
+  The event data is the tag name of the closing element.
 
   ## Examples
 
@@ -65,7 +65,7 @@ defmodule Saxy.Handler do
           {:ok, [{:start_element, name, attributes} | state]}
         end
 
-        def handle_event(:end_element, {name}, state) do
+        def handle_event(:end_element, name, state) do
           IO.inspect "Finish parsing element #{name}"
           {:ok, [{:end_element, name} | state]}
         end

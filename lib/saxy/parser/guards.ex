@@ -1,4 +1,6 @@
 defmodule Saxy.Guards do
+  @moduledoc false
+
   # TODO: Use defguard when supporting Elixir 1.6+.
 
   defmacro is_whitespace(charcode) do

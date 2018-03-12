@@ -1,4 +1,6 @@
 defmodule Saxy.Parser do
+  @moduledoc false
+
   import Saxy.Parser.Prolog, only: [parse_prolog: 5]
 
   def parse_document(<<buffer::bits>>, cont, state) do

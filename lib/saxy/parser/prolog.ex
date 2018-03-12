@@ -1,4 +1,6 @@
 defmodule Saxy.Parser.Prolog do
+  @moduledoc false
+
   import Saxy.Guards
 
   import Saxy.Buffering, only: [buffering_parse_fun: 3]

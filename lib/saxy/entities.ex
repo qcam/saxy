@@ -1,4 +1,6 @@
 defmodule Saxy.Entities do
+  @moduledoc false
+
   @mappings %{
     "psi" => "ψ",
     "ldquo" => "“",

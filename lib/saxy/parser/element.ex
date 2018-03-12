@@ -1,4 +1,6 @@
 defmodule Saxy.Parser.Element do
+  @moduledoc false
+
   import Saxy.Guards
 
   import Saxy.Buffering, only: [buffering_parse_fun: 3, maybe_commit: 4]
