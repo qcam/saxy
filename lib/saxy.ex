@@ -23,12 +23,15 @@ defmodule Saxy do
   Though encoding declaration is optional in XML, so when encoding is missing in the document, UTF-8 will be
   the default encoding.
 
-  ## Entity Reference converting
+  ## Reference
 
-  The parser converts character and entity reference, for example `&amp;` will be converted to `&` and `&#60;`
-  to `<`.
+  Saxy converts character references by default, for example `&#65;` is converted to `"A"` and `&#x26;` is
+  converted to `"&"`.
 
-  There is currently no support for external entity references.
+  The parser **DOES NOT** convert any entity reference, the handler that uses `Saxy.Handler` behaviour needs to convert
+  all entity references during parsing by implementing `handle_entity_reference/1` callback.
+
+  See `Saxy.Handler` for more details.
 
   ## Creation of atoms
 
@@ -80,6 +83,10 @@ defmodule Saxy do
         def handle_event(:characters, chars, state) do
           IO.inspect "Receive characters #{chars}"
           [{:chacters, chars} | state]
+        end
+
+        def handle_entity_reference(reference_name) do
+          MyEntitiesConverter.convert(reference_name)
         end
       end
 
@@ -145,6 +152,10 @@ defmodule Saxy do
         def handle_event(:characters, chars, state) do
           IO.inspect "Receive characters #{chars}"
           [{:chacters, chars} | state]
+        end
+
+        def handle_entity_reference(reference_name) do
+          MyEntitiesConverter.convert(reference_name)
         end
       end
 

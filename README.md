@@ -11,7 +11,7 @@ Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w
 
 ```elixir
 def deps do
-  [{:saxy, "~> 0.3.0"}]
+  [{:saxy, "~> 0.4.0"}]
 end
 ```
 
@@ -48,6 +48,10 @@ defmodule MyEventHandler do
   def handle_event(:characters, chars, state) do
     IO.inspect "Receive characters #{chars}"
     [{:chacters, chars} | state]
+  end
+
+  def handle_entity_reference(reference_name) do
+    MyHTMLEntityConverter.convert(reference_name)
   end
 end
 ```
