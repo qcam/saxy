@@ -7,7 +7,7 @@ defmodule Saxy.MixProject do
     [
       app: :saxy,
       version: @version,
-      elixir: "~> 1.6",
+      elixir: "~> 1.3",
       description: description(),
       deps: deps(),
       package: package(),
