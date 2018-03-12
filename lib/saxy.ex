@@ -103,13 +103,12 @@ defmodule Saxy do
   def parse_string(data, handler, state)
       when is_binary(data) and (is_atom(handler) or is_function(handler, 3)) do
     initial_state = %State{
-      cont: :binary,
       prolog: nil,
       handler: handler,
       user_state: state
     }
 
-    parse(data, initial_state)
+    Parser.parse_document(data, :done, initial_state)
   end
 
   @doc ~S"""
@@ -177,32 +176,11 @@ defmodule Saxy do
   def parse_stream(%module{} = stream, handler, state)
       when module in [File.Stream, Stream] and (is_atom(handler) or is_function(handler, 3)) do
     initial_state = %State{
-      cont: stream,
       prolog: nil,
       handler: handler,
       user_state: state
     }
 
-    parse(<<>>, initial_state)
-  end
-
-  defp parse(buffer, initial_state) do
-    try do
-      Parser.match(buffer, 0, :document, initial_state)
-    catch
-      :throw, reason ->
-        handle_throw(reason)
-    else
-      {:ok, {:document, _document}, {_buffer, _position}, %{user_state: state}} ->
-        {:ok, state}
-    end
-  end
-
-  defp handle_throw({:error, reason}) do
-    {:error, %ParsingError{reason: reason}}
-  end
-
-  defp handle_throw({:stop, returning}) do
-    {:ok, returning}
+    Parser.parse_document(<<>>, stream, initial_state)
   end
 end

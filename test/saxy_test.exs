@@ -1,47 +1,39 @@
 defmodule SaxyTest do
   use ExUnit.Case
 
+  alias Saxy.{
+    ParseError,
+    HandlerError
+  }
+
   test "parse_string/3" do
     data = File.read!("./test/support/fixture/food.xml")
-    {:ok, state} = Saxy.parse_string(data, &event_handler/3, [])
-
-    state = Enum.reverse(state)
-    prolog = [version: "1.0", encoding: "UTF-8", standalone: false]
-
-    assert [{:start_document, ^prolog} | state] = state
-    assert length(state) == 104
+    assert {:ok, _state} = Saxy.parse_string(data, &event_handler/3, [])
   end
 
   test "parse_stream/3" do
     stream = File.stream!("./test/support/fixture/food.xml", [], 1024)
-    {:ok, state} = Saxy.parse_stream(stream, &event_handler/3, [])
-
-    state = Enum.reverse(state)
-    prolog = [version: "1.0", encoding: "UTF-8", standalone: false]
-
-    assert [{:start_document, ^prolog} | state] = state
-    assert length(state) == 104
+    assert {:ok, _state} = Saxy.parse_stream(stream, &event_handler/3, [])
   end
 
   test "parsing error" do
     data = "<?xml ?><foo/>"
 
     assert {:error, exception} = Saxy.parse_string(data, &event_handler/3, [])
-    assert Saxy.ParsingError.message(exception) == "unexpected byte \"?\", expected: :XMLDecl"
+    assert ParseError.message(exception) == "unexpected byte \"?\", expected token: :version"
 
     data = "<?xml"
 
     assert {:error, exception} = Saxy.parse_string(data, &event_handler/3, [])
 
-    assert Saxy.ParsingError.message(exception) ==
-             "unexpected byte at end of input, expected: :XMLDecl"
+    assert ParseError.message(exception) ==
+             "unexpected end of input, expected token: :version"
 
     data = "<foo><bar></bee></foo>"
 
     assert {:error, exception} = Saxy.parse_string(data, &event_handler/3, [])
 
-    assert Saxy.ParsingError.message(exception) ==
-             "unexpected closing tag \"bee\", expected: \"bar\""
+    assert ParseError.message(exception) == "unexpected ending tag \"bee\", expected tag: \"bar\""
   end
 
   test "handles user control flow" do
@@ -61,8 +53,8 @@ defmodule SaxyTest do
       :unexpected
     end
 
-    assert Saxy.parse_string(data, handler, []) ==
-             {:error, %Saxy.ParsingError{reason: {:invalid_return, :unexpected}}}
+    assert {:error, error} = Saxy.parse_string(data, handler, [])
+    assert HandlerError.message(error) == "unexpected return :unexpected in :start_document event handler"
   end
 
   defp event_handler(event_type, data, state) do
