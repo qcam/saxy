@@ -1,10 +1,6 @@
 # Saxy
 
-![Sa xi Chuong Duong](http://www.alan.vn/files/posts/made-in-viet-nam/2017/03/xa-xi-chuong-duong-1488861958.jpg)
-
-======
-
-Saxy is a XML SAX parser which provides functions to parse XML file in both binary and streaming way.
+Saxy (Sá xị) is a XML SAX parser which provides functions to parse XML file in both binary and streaming way.
 Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
 
 ## Installation
@@ -63,6 +59,12 @@ initial_state = []
 
 Saxy.parse_string(data, MyEventHandler, initial_state)
 ```
+
+## Where does the name come from?
+
+![Sa xi Chuong Duong](http://www.alan.vn/files/posts/made-in-viet-nam/2017/03/xa-xi-chuong-duong-1488861958.jpg)
+
+👆 Sa xi is an awesome soft drink that made by [Chuong Duong](http://www.cdbeco.com.vn/en).
 
 ## Contributing
 
