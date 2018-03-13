@@ -15,6 +15,8 @@ end
 
 Full documentation is available on [HexDocs](https://hexdocs.pm/saxy/).
 
+### SAX Parser
+
 A SAX event handler implementation is required before starting parsing.
 
 ```elixir
@@ -58,6 +60,47 @@ Then parse your XML with:
 initial_state = []
 
 Saxy.parse_string(data, MyEventHandler, initial_state)
+```
+
+### Streaming parsing
+
+Saxy's SAX parser accepts file streams as the input.
+
+```elixir
+stream = File.stream!("/path/to/file")
+
+Saxy.parse_stream(stream, MyEventHandler, initial_state)
+```
+
+Or even a normal stream
+
+```elixir
+stream = File.stream!("/path/to/file") |> Stream.filter(&(&1 != "\n"))
+
+Saxy.parse_stream(stream, MyEventHandler, initial_state)
+```
+
+### Simple form parsing
+
+Saxy also supports parsing XML documents into simple-form format.
+
+```elixir
+Saxy.SimpleForm.parse_string(data)
+
+[
+  {"menu", [],
+   [
+     {"movie",
+      [{"id", "tt0120338"}, {"url", "https://www.imdb.com/title/tt0120338/"}],
+      [{"name", [], ["Titanic"]}, {"characters", [], ["Jack &amp; Rose"]}]},
+     {"movie",
+      [{"id", "tt0109830"}, {"url", "https://www.imdb.com/title/tt0109830/"}],
+      [
+        {"name", [], ["Forest Gump"]},
+        {"characters", [], ["Forest &amp; Jenny"]}
+      ]}
+   ]}
+]
 ```
 
 ## Where does the name come from?
