@@ -15,6 +15,10 @@ defmodule Saxy do
 
   See `Saxy.Handler` for more information.
 
+  ## Simple form parsing
+
+  SAX supports parsing XML document into a simple format. See `Saxy.SimpleForm` for more details.
+
   ## Encoding
 
   Saxy supports ASCII and UTF-8 encodings and respects the encoding set in XML document prolog. That
@@ -105,7 +109,7 @@ defmodule Saxy do
           data :: binary,
           handler :: module | function,
           state :: term
-        ) :: {:ok, state :: term} | {:error, exception :: ParsingError.t()}
+        ) :: {:ok, state :: term} | {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
 
   def parse_string(data, handler, state) when is_binary(data) and is_atom(handler) do
     initial_state = %State{
@@ -172,8 +176,8 @@ defmodule Saxy do
   ## Memory usage
 
   `Saxy.parse_stream/3` takes a `File.Stream` or `Stream` as the input, so you are in control of how many bytes
-  in each chunk in the file you want to buffer.  Anyway, Saxy will try trimming off the parsed parts of buffer
-  when it exceeds 4096 bytes (this number is not configurable yet) to keep the memory usage in a reasonable limit.
+  in each chunk in the file you want to buffer. Anyway, Saxy will try trimming off the parsed parts of buffer
+  when it exceeds 2048 bytes (this number is not configurable yet) to keep the memory usage in a reasonable limit.
 
   """
 
