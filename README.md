@@ -1,9 +1,21 @@
-# Saxy
+Saxy
+===
 
-Saxy (Sá xị) is a XML SAX parser which provides functions to parse XML file in both binary and streaming way.
+Saxy (Sá xị) is a XML SAX parser in Elixir that focuses on speed and standard compliance.
+
 Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
 
+## Features
+
+* SAX parsing for XML 1.0.
+* Large file parsing in native Elixir stream.
+* XML Simple DOM.
+* Quickly return during parsing process.
+* Manual entity references conversion.
+
 ## Installation
+
+Add `:saxy` to your `mix.exs`.
 
 ```elixir
 def deps do
@@ -64,7 +76,7 @@ Saxy.parse_string(data, MyEventHandler, initial_state)
 
 ### Streaming parsing
 
-Saxy's SAX parser accepts file streams as the input.
+Saxy's SAX parser accepts file stream as the input.
 
 ```elixir
 stream = File.stream!("/path/to/file")
@@ -72,7 +84,7 @@ stream = File.stream!("/path/to/file")
 Saxy.parse_stream(stream, MyEventHandler, initial_state)
 ```
 
-Or even a normal stream
+Or it even accepts a normal stream.
 
 ```elixir
 stream = File.stream!("/path/to/file") |> Stream.filter(&(&1 != "\n"))
@@ -102,6 +114,13 @@ Saxy.SimpleForm.parse_string(data)
    ]}
 ]
 ```
+
+### Limitations
+
+* No XSD supported.
+* No DTD supported, when the parser encounters a `<!DOCTYPE`, it simply stops
+  parsing.
+* Manual conversion of entity reference is required.
 
 ## Where does the name come from?
 
