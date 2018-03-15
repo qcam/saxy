@@ -316,7 +316,7 @@ defmodule Saxy.Parser.Prolog do
   buffering_parse_fun(:parse_prolog_misc_comment, 7, "--")
 
   def parse_prolog_misc_comment(<<charcode, rest::bits>>, cont, original, pos, state, prolog, len)
-      when charcode <= 0x7F do
+      when is_ascii(charcode) do
     parse_prolog_misc_comment(rest, cont, original, pos, state, prolog, len + 1)
   end
 
@@ -370,7 +370,7 @@ defmodule Saxy.Parser.Prolog do
   buffering_parse_fun(:parse_prolog_pi_content, 7, "?")
 
   def parse_prolog_pi_content(<<charcode, rest::bits>>, cont, original, pos, state, prolog, len)
-      when charcode <= 0x7F do
+      when is_ascii(charcode) do
     parse_prolog_pi_content(rest, cont, original, pos, state, prolog, len + 1)
   end
 

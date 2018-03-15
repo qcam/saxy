@@ -196,7 +196,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_att_value(<<charcode, rest::bits>>, cont, original, pos, state, attributes, q, att_name, acc, len)
-      when charcode <= 0x7F do
+      when is_ascii(charcode) do
     parse_att_value(rest, cont, original, pos, state, attributes, q, att_name, acc, len + 1)
   end
 
@@ -295,7 +295,8 @@ defmodule Saxy.Parser.Element do
 
   buffering_parse_fun(:parse_element_content, 5, "")
 
-  def parse_element_content(<<charcode, rest::bits>>, cont, original, pos, state) when charcode <= 0x7F do
+  def parse_element_content(<<charcode, rest::bits>>, cont, original, pos, state)
+      when is_ascii(charcode) do
     parse_chardata(rest, cont, original, pos, state, "", 1)
   end
 
@@ -365,7 +366,8 @@ defmodule Saxy.Parser.Element do
   buffering_parse_fun(:parse_element_cdata, 6, "]")
   buffering_parse_fun(:parse_element_cdata, 6, "]]")
 
-  def parse_element_cdata(<<charcode, rest::bits>>, cont, original, pos, state, len) when charcode <= 0x7F do
+  def parse_element_cdata(<<charcode, rest::bits>>, cont, original, pos, state, len)
+      when is_ascii(charcode) do
     parse_element_cdata(rest, cont, original, pos, state, len + 1)
   end
 
@@ -391,7 +393,8 @@ defmodule Saxy.Parser.Element do
     parse_element_content_reference(rest, cont, original, pos + len + 1, state, chars)
   end
 
-  def parse_chardata_whitespace(<<charcode, rest::bits>>, cont, original, pos, state, len) when charcode <= 0x7F do
+  def parse_chardata_whitespace(<<charcode, rest::bits>>, cont, original, pos, state, len)
+      when is_ascii(charcode) do
     parse_chardata(rest, cont, original, pos, state, "", len + 1)
   end
 
@@ -425,7 +428,8 @@ defmodule Saxy.Parser.Element do
     parse_element_content_reference(rest, cont, original, pos + len + 1, state, [acc | chars])
   end
 
-  def parse_chardata(<<charcode, rest::bits>>, cont, original, pos, state, acc, len) when charcode < 0x7F do
+  def parse_chardata(<<charcode, rest::bits>>, cont, original, pos, state, acc, len)
+      when is_ascii(charcode) do
     parse_chardata(rest, cont, original, pos, state, acc, len + 1)
   end
 
@@ -572,7 +576,7 @@ defmodule Saxy.Parser.Element do
   buffering_parse_fun(:parse_element_processing_instruction_content, 7, "?")
 
   def parse_element_processing_instruction_content(<<charcode, rest::bits>>, cont, original, pos, state, name, len)
-      when charcode <= 0x7F do
+      when is_ascii(charcode) do
     parse_element_processing_instruction_content(rest, cont, original, pos, state, name, len + 1)
   end
 
@@ -597,7 +601,7 @@ defmodule Saxy.Parser.Element do
     Utils.syntax_error("--->", state, {:token, :comment})
   end
 
-  def parse_element_content_comment(<<charcode, rest::bits>>, cont, original, pos, state, len) when charcode <= 0x7F do
+  def parse_element_content_comment(<<charcode, rest::bits>>, cont, original, pos, state, len) when is_ascii(charcode) do
     parse_element_content_comment(rest, cont, original, pos, state, len + 1)
   end
 
@@ -718,7 +722,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_misc_comment_char(<<charcode, rest::bits>>, cont, original, pos, state, len)
-      when charcode <= 0x7F do
+      when is_ascii(charcode) do
     parse_element_misc_comment_char(rest, cont, original, pos, state, len + 1)
   end
 
@@ -774,7 +778,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_misc_pi_content(<<charcode, rest::bits>>, cont, original, pos, state, len)
-      when charcode <= 0x7F do
+      when is_ascii(charcode) do
     parse_element_misc_pi_content(rest, cont, original, pos, state, len + 1)
   end
 

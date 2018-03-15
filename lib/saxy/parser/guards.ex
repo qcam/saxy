@@ -3,6 +3,12 @@ defmodule Saxy.Guards do
 
   # TODO: Use defguard when supporting Elixir 1.6+.
 
+  defmacro is_ascii(charcode) do
+    quote do
+      unquote(charcode) <= 0x7F
+    end
+  end
+
   defmacro is_whitespace(charcode) do
     quote do
       unquote(charcode) in [0xA, 0x9, 0xD, 0x20]
