@@ -19,7 +19,7 @@ Add `:saxy` to your `mix.exs`.
 
 ```elixir
 def deps do
-  [{:saxy, "~> 0.4.0"}]
+  [{:saxy, "~> 0.5.0"}]
 end
 ```
 
