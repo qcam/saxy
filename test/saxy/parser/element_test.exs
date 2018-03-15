@@ -32,6 +32,8 @@ defmodule Saxy.Parser.ElementTest do
         <actor>Jerry</actor>
       </actors>
     </item>
+    <!--a very bottom comment-->
+    <?foo what a instruction ?>
     """
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
@@ -269,6 +271,8 @@ defmodule Saxy.Parser.ElementTest do
           <actor>Jerry</actor>
         </actors>
       </item>
+      <!--a very bottom comment-->
+      <?foo what a instruction ?>
       """
       |> String.codepoints()
       |> Stream.map(&(&1))
