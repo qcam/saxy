@@ -80,7 +80,7 @@ defmodule Saxy.Parser.Element do
          {:ok, state} <- Emitter.emit(:end_element, tag_name, state) do
       case stack do
         [] ->
-          parse_element_misc(rest, state)
+          parse_element_misc(rest, cont, original, pos + 2, state)
 
         _ ->
           {original, pos} = maybe_commit(original, pos, cont, @max_buffer_size)
@@ -632,7 +632,7 @@ defmodule Saxy.Parser.Element do
 
           case stack do
             [] ->
-              parse_element_misc(rest, state)
+              parse_element_misc(rest, cont, original, pos + len + 1, state)
 
             [_parent | _stack] ->
               {original, pos} = maybe_commit(original, pos, cont, @max_buffer_size)
@@ -664,18 +664,125 @@ defmodule Saxy.Parser.Element do
     Utils.syntax_error(buffer, state, {:token, :end_tag})
   end
 
-  # TODO: Also parse comments and PI here.
+  buffering_parse_fun(:parse_element_misc, 5, "")
 
-  def parse_element_misc(<<whitespace::integer, rest::bits>>, state)
-      when is_whitespace(whitespace) do
-    parse_element_misc(rest, state)
-  end
-
-  def parse_element_misc(<<>>, state) do
+  def parse_element_misc(<<>>, _cont, _original, _pos, state) do
     case Emitter.emit(:end_document, {}, state) do
       {:ok, state} -> {:ok, state}
       {:stop, state} -> {:stop, state}
       {:error, other} -> Utils.bad_return_error(other)
     end
+  end
+
+  def parse_element_misc(<<whitespace::integer, rest::bits>>, cont, original, pos, state)
+      when is_whitespace(whitespace) do
+    parse_element_misc(rest, cont, original, pos + 1, state)
+  end
+
+  def parse_element_misc(<<?<, rest::bits>>, cont, original, pos, state) do
+    parse_element_misc_rest(rest, cont, original, pos + 1, state)
+  end
+
+  buffering_parse_fun(:parse_element_misc_rest, 5, "")
+
+  def parse_element_misc_rest(<<?!, rest::bits>>, cont, original, pos, state) do
+    parse_element_misc_comment(rest, cont, original, pos + 1, state)
+  end
+
+  def parse_element_misc_rest(<<??, rest::bits>>, cont, original, pos, state) do
+    parse_element_misc_pi(rest, cont, original, pos + 1, state)
+  end
+
+  buffering_parse_fun(:parse_element_misc_comment, 5, "")
+  buffering_parse_fun(:parse_element_misc_comment, 5, "-")
+
+  def parse_element_misc_comment(<<"--", rest::bits>>, cont, original, pos, state) do
+    parse_element_misc_comment_char(rest, cont, original, pos + 2, state, 0)
+  end
+
+  def parse_element_misc_comment(<<buffer::bits>>, _cont, _original, _pos, state) do
+    Utils.syntax_error(buffer, state, {:token, :--})
+  end
+
+  buffering_parse_fun(:parse_element_misc_comment_char, 6, "")
+  buffering_parse_fun(:parse_element_misc_comment_char, 6, "-")
+  buffering_parse_fun(:parse_element_misc_comment_char, 6, "--")
+  buffering_parse_fun(:parse_element_misc_comment_char, 6, "---")
+
+  def parse_element_misc_comment_char(<<"--->", _rest::bits>>, _cont, _original, _pos, state, _len) do
+    Utils.syntax_error("--->", state, {:token, :comment})
+  end
+
+  def parse_element_misc_comment_char(<<"-->", rest::bits>>, cont, original, pos, state, len) do
+    parse_element_misc(rest, cont, original, pos + len + 3, state)
+  end
+
+  def parse_element_misc_comment_char(<<charcode, rest::bits>>, cont, original, pos, state, len)
+      when charcode <= 0x7F do
+    parse_element_misc_comment_char(rest, cont, original, pos, state, len + 1)
+  end
+
+  def parse_element_misc_comment_char(<<charcode::utf8, rest::bits>>, cont, original, pos, state, len) do
+    parse_element_misc_comment_char(rest, cont, original, pos, state, len + Utils.compute_char_len(charcode))
+  end
+
+  def parse_element_misc_comment_char(<<buffer::bits>>, _cont, _original, _pos, state, _len) do
+    Utils.syntax_error(buffer, state, {:token, :"-->"})
+  end
+
+  buffering_parse_fun(:parse_element_misc_pi, 5, "")
+
+  def parse_element_misc_pi(<<char, rest::bits>>, cont, original, pos, state)
+      when is_name_start_char(char) do
+    parse_element_misc_pi_name(rest, cont, original, pos, state, 1)
+  end
+
+  def parse_element_misc_pi(<<charcode::utf8, rest::bits>>, cont, original, pos, state)
+      when is_name_start_char(charcode) do
+    parse_element_misc_pi_name(rest, cont, original, pos, state, Utils.compute_char_len(charcode))
+  end
+
+  def parse_element_misc_pi(<<buffer::bits>>, _cont, _original, _pos, state) do
+    Utils.syntax_error(buffer, state, {:token, :processing_instruction})
+  end
+
+  def parse_element_misc_pi_name(<<charcode, rest::bits>>, cont, original, pos, state, len)
+      when is_name_char(charcode) do
+    parse_element_misc_pi_name(rest, cont, original, pos, state, len + 1)
+  end
+
+  def parse_element_misc_pi_name(<<charcode::utf8, rest::bits>>, cont, original, pos, state, len)
+      when is_name_char(charcode) do
+    parse_element_misc_pi_name(rest, cont, original, pos, state, len + Utils.compute_char_len(charcode))
+  end
+
+  def parse_element_misc_pi_name(<<rest::bits>>, cont, original, pos, state, len) do
+    name = binary_part(original, pos, len)
+
+    if Utils.valid_pi_name?(name) do
+      parse_element_misc_pi_content(rest, cont, original, pos + len, state, 0)
+    else
+      Utils.syntax_error(rest, state, {:invalid_pi, name})
+    end
+  end
+
+  buffering_parse_fun(:parse_element_misc_pi_content, 6, "")
+  buffering_parse_fun(:parse_element_misc_pi_content, 6, "?")
+
+  def parse_element_misc_pi_content(<<"?>", rest::bits>>, cont, original, pos, state, len) do
+    parse_element_misc(rest, cont, original, pos + len + 2, state)
+  end
+
+  def parse_element_misc_pi_content(<<charcode, rest::bits>>, cont, original, pos, state, len)
+      when charcode <= 0x7F do
+    parse_element_misc_pi_content(rest, cont, original, pos, state, len + 1)
+  end
+
+  def parse_element_misc_pi_content(<<charcode::utf8, rest::bits>>, cont, original, pos, state, len) do
+    parse_element_misc_pi_content(rest, cont, original, pos, state, len + Utils.compute_char_len(charcode))
+  end
+
+  def parse_element_misc_pi_content(<<buffer::bits>>, _cont, _original, _pos, state, _len) do
+    Utils.syntax_error(buffer, state, {:token, :processing_instruction})
   end
 end
