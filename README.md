@@ -115,6 +115,15 @@ Saxy.SimpleForm.parse_string(data)
 ]
 ```
 
+### Benchmarking
+
+Performance varies from document to document and depends on the complexity of
+the XML document. But it often gives 1.4X better performance than erlsom.
+For some large documents, [Saxy can be 4X
+faster](benches/README.md#soccer-11mb-xml-file).
+
+The benchmark suite can be found in [`benches/` directory](benches/).
+
 ### Limitations
 
 * No XSD supported.
