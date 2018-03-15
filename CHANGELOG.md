@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.0
+
+* Introduce Simple Form parsing.
+* Parse misc after finishing parsing root element.
+
 ## v0.4.0
 
 * Supported Elixir v1.3.

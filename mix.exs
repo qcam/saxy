@@ -1,7 +1,7 @@
 defmodule Saxy.MixProject do
   use Mix.Project
 
-  @version "0.4.0"
+  @version "0.5.0"
 
   def project do
     [
@@ -23,8 +23,7 @@ defmodule Saxy.MixProject do
   def application(), do: []
 
   defp description() do
-    "Saxy is a XML SAX parser which provides functions to parse XML file" <>
-      " in both binary and streaming way."
+    "Saxy a XML SAX parser in Elixir that focuses on speed and standard compliance."
   end
 
   defp package() do
