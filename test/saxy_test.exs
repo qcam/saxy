@@ -22,6 +22,11 @@ defmodule SaxyTest do
     assert {:ok, _state} = Saxy.parse_stream(stream, StackHandler, [])
   end
 
+  test "parse_stream/3 with unicode" do
+    stream = File.stream!("./test/support/fixture/unicode.xml", [], 1)
+    assert {:ok, _state} = Saxy.parse_stream(stream, StackHandler, [])
+  end
+
   test "parsing error" do
     data = "<?xml ?><foo/>"
 

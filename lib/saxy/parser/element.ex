@@ -201,6 +201,8 @@ defmodule Saxy.Parser.Element do
     parse_att_value(rest, cont, original, pos, state, attributes, q, att_name, acc, len + 1)
   end
 
+  buffering_parse_fun(:parse_att_value, 10, :utf8)
+
   def parse_att_value(<<charcode::utf8, rest::bits>>, cont, original, pos, state, attributes, q, att_name, acc, len) do
     parse_att_value(rest, cont, original, pos, state, attributes, q, att_name, acc, len + Utils.compute_char_len(charcode))
   end
@@ -301,6 +303,8 @@ defmodule Saxy.Parser.Element do
     parse_chardata(rest, cont, original, pos, state, "", 1)
   end
 
+  buffering_parse_fun(:parse_element_content, 5, :utf8)
+
   def parse_element_content(<<charcode::utf8, rest::bits>>, cont, original, pos, state) do
     parse_chardata(rest, cont, original, pos, state, "", Utils.compute_char_len(charcode))
   end
@@ -399,6 +403,8 @@ defmodule Saxy.Parser.Element do
     parse_chardata(rest, cont, original, pos, state, "", len + 1)
   end
 
+  buffering_parse_fun(:parse_chardata_whitespace, 6, :utf8)
+
   def parse_chardata_whitespace(<<charcode::utf8, rest::bits>>, cont, original, pos, state, len) do
     parse_chardata(rest, cont, original, pos, state, "", len + Utils.compute_char_len(charcode))
   end
@@ -434,6 +440,8 @@ defmodule Saxy.Parser.Element do
     parse_chardata(rest, cont, original, pos, state, acc, len + 1)
   end
 
+  buffering_parse_fun(:parse_chardata, 7, :utf8)
+
   def parse_chardata(<<charcode::utf8, rest::bits>>, cont, original, pos, state, acc, len) do
     parse_chardata(rest, cont, original, pos, state, acc, len + Utils.compute_char_len(charcode))
   end
@@ -444,8 +452,8 @@ defmodule Saxy.Parser.Element do
     Utils.syntax_error(buffer, state, {:token, :chardata})
   end
 
-  buffering_parse_fun(:parse_element_content_reference, 7, "")
-  buffering_parse_fun(:parse_element_content_reference, 7, "#")
+  buffering_parse_fun(:parse_element_content_reference, 6, "")
+  buffering_parse_fun(:parse_element_content_reference, 6, "#")
 
   def parse_element_content_reference(<<charcode, rest::bits>>, cont, original, pos, state, acc)
        when is_name_start_char(charcode) do

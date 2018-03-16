@@ -22,10 +22,32 @@ defmodule Saxy.Buffering do
         10 -> quote(do: &(unquote(fun_name)(&1, &2, &3, &4, &5, acc1, acc2, acc3, acc4, acc5)))
       end
 
-    quote do
-      def unquote(fun_name)(unquote(token), unquote_splicing(quoted_params))
-          when cont != :done do
-        Saxy.Buffering.maybe_buffer(unquote(token), cont, original, pos, state, unquote(quoted_fun))
+    if token == :utf8 do
+      quote do
+        # 2-byte/3-byte/4-byte unicode
+        def unquote(fun_name)(<<1::size(1), rest::size(7)>>, unquote_splicing(quoted_params))
+            when cont != :done do
+          Saxy.Buffering.maybe_buffer(<<1::size(1), rest::size(7)>>, cont, original, pos, state, unquote(quoted_fun))
+        end
+
+        # 3-byte/4-byte unicode
+        def unquote(fun_name)(<<1::size(1), 1::size(1), rest::6-bits, next_char::bytes-size(1)>>, unquote_splicing(quoted_params))
+            when cont != :done do
+          Saxy.Buffering.maybe_buffer(<<1::size(1), 1::size(1), rest::6-bits, next_char::binary>>, cont, original, pos, state, unquote(quoted_fun))
+        end
+
+        # # 4-byte unicode
+        # def unquote(fun_name)(<<1::1-bits, 1::1-bits, 1::1-bits, rest::5-bits, next_char::bytes-size(2)>>, unquote_splicing(quoted_params))
+        #     when cont != :done do
+        #   Saxy.Buffering.maybe_buffer(<<1::1-bits, 1::1-bits, 1::1-bits, rest::5-bits, next_char::binary>>, cont, original, pos, state, unquote(quoted_fun))
+        # end
+      end
+    else
+      quote do
+        def unquote(fun_name)(unquote(token), unquote_splicing(quoted_params))
+            when cont != :done do
+          Saxy.Buffering.maybe_buffer(unquote(token), cont, original, pos, state, unquote(quoted_fun))
+        end
       end
     end
   end
