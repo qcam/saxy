@@ -3,14 +3,11 @@ defmodule Saxy.Parser.Element do
 
   import Saxy.Guards
 
-  import Saxy.Buffering, only: [buffering_parse_fun: 3, maybe_commit: 4]
+  import Saxy.Buffering, only: [buffering_parse_fun: 3, maybe_commit: 2]
 
   alias Saxy.Emitter
 
   alias Saxy.Parser.Utils
-
-  # TODO: Make this configurable.
-  @max_buffer_size 2048
 
   def parse_element(<<?<, rest::bits>>, cont, original, pos, state) do
     parse_open_tag(rest, cont, original, pos + 1, state)
@@ -83,8 +80,12 @@ defmodule Saxy.Parser.Element do
           parse_element_misc(rest, cont, original, pos + 2, state)
 
         _ ->
-          {original, pos} = maybe_commit(original, pos, cont, @max_buffer_size)
-          parse_element_content(rest, cont, original, pos + 2, state)
+          if cont != :done do
+            original = maybe_commit(original, pos)
+            parse_element_content(rest, cont, original, 2, state)
+          else
+            parse_element_content(rest, cont, original, pos + 2, state)
+          end
       end
     else
       {:stop, state} ->
@@ -639,8 +640,12 @@ defmodule Saxy.Parser.Element do
               parse_element_misc(rest, cont, original, pos + len + 1, state)
 
             [_parent | _stack] ->
-              {original, pos} = maybe_commit(original, pos, cont, @max_buffer_size)
-              parse_element_content(rest, cont, original, pos + len + 1, state)
+              if cont != :done do
+                original = maybe_commit(original, pos)
+                parse_element_content(rest, cont, original, len + 1, state)
+              else
+                parse_element_content(rest, cont, original, pos + len + 1, state)
+              end
           end
 
         {:stop, state} ->

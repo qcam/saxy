@@ -12,48 +12,44 @@ defmodule Saxy.Buffering do
         9 -> quote(do: [cont, original, pos, state, acc1, acc2, acc3, acc4])
         10 -> quote(do: [cont, original, pos, state, acc1, acc2, acc3, acc4, acc5])
       end
-    quoted_mfa =
+    quoted_fun =
       case arity do
-        5 -> quote(do: {__MODULE__, unquote(fun_name), []})
-        6 -> quote(do: {__MODULE__, unquote(fun_name), [acc1]})
-        7 -> quote(do: {__MODULE__, unquote(fun_name), [acc1, acc2]})
-        8 -> quote(do: {__MODULE__, unquote(fun_name), [acc1, acc2, acc3]})
-        9 -> quote(do: {__MODULE__, unquote(fun_name), [acc1, acc2, acc3, acc4]})
-        10 -> quote(do: {__MODULE__, unquote(fun_name), [acc1, acc2, acc3, acc4, acc5]})
+        5 -> quote(do: &(unquote(fun_name)(&1, &2, &3, &4, &5)))
+        6 -> quote(do: &(unquote(fun_name)(&1, &2, &3, &4, &5, acc1)))
+        7 -> quote(do: &(unquote(fun_name)(&1, &2, &3, &4, &5, acc1, acc2)))
+        8 -> quote(do: &(unquote(fun_name)(&1, &2, &3, &4, &5, acc1, acc2, acc3)))
+        9 -> quote(do: &(unquote(fun_name)(&1, &2, &3, &4, &5, acc1, acc2, acc3, acc4)))
+        10 -> quote(do: &(unquote(fun_name)(&1, &2, &3, &4, &5, acc1, acc2, acc3, acc4, acc5)))
       end
 
     quote do
       def unquote(fun_name)(unquote(token), unquote_splicing(quoted_params))
           when cont != :done do
-        Saxy.Buffering.maybe_buffer(unquote(token), cont, original, pos, state, unquote(quoted_mfa))
+        Saxy.Buffering.maybe_buffer(unquote(token), cont, original, pos, state, unquote(quoted_fun))
       end
     end
   end
 
   @compile {:inline, [maybe_buffer: 6]}
 
-  def maybe_buffer(<<buffer::bits>>, cont, original, pos, state, {mod, fun, args}) do
+  def maybe_buffer(<<buffer::bits>>, cont, original, pos, state, fun) do
     case do_buffer(cont) do
       :done ->
-        apply(mod, fun, [buffer, :done, original, pos, state] ++ args)
+        fun.(buffer, :done, original, pos, state)
 
       {:ok, {cont_bytes, next_cont}} ->
         buffer = [buffer | cont_bytes] |> IO.iodata_to_binary()
         original = [original | cont_bytes] |> IO.iodata_to_binary()
-        apply(mod, fun, [buffer, next_cont, original, pos, state] ++ args)
+        fun.(buffer, next_cont, original, pos, state)
     end
   end
 
-  def maybe_commit(buffer, pos, :done, _max), do: {buffer, pos}
+  @compile {:inline, [maybe_commit: 2]}
 
-  def maybe_commit(buffer, pos, _cont, max) do
+  def maybe_commit(buffer, pos) do
     buffer_size = byte_size(buffer)
 
-    if buffer_size < max do
-      {buffer, pos}
-    else
-      {binary_part(buffer, pos, buffer_size - pos), 0}
-    end
+    binary_part(buffer, pos, buffer_size - pos)
   end
 
   defp do_buffer(cont) do

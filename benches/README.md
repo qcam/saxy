@@ -90,3 +90,37 @@ Comparison:
 saxy           14.09
 erlsom          3.05 - 4.62x slower
 ```
+
+## Streaming parsing
+
+### Soccer (1.1MB XML file)
+
+```
+Name                    ips        average  deviation         median         99th %
+saxy.binary           14.04       71.25 ms     ±3.71%       71.20 ms       80.35 ms
+saxy.stream           12.58       79.51 ms     ±3.50%       79.12 ms       88.43 ms
+erlsom.stream          4.68      213.73 ms    ±11.47%      211.54 ms      274.33 ms
+erlsom.binary          3.52      284.45 ms     ±2.31%      284.33 ms      302.44 ms
+
+Comparison:
+saxy.binary           14.04
+saxy.stream           12.58 - 1.12x slower
+erlsom.stream          4.68 - 3.00x slower
+erlsom.binary          3.52 - 3.99x slower
+```
+
+### 30MB file
+
+```
+Name                    ips        average  deviation         median         99th %
+saxy.binary            0.25         4.04 s     ±0.43%         4.04 s         4.05 s
+saxy.stream           0.189         5.29 s     ±0.55%         5.29 s         5.32 s
+erlsom.stream         0.160         6.23 s    ±13.55%         6.23 s         7.08 s
+erlsom.binary         0.133         7.51 s     ±9.02%         7.51 s         8.19 s
+
+Comparison:
+saxy.binary            0.25
+saxy.stream           0.189 - 1.31x slower
+erlsom.stream         0.160 - 1.54x slower
+erlsom.binary         0.133 - 1.86x slower
+```
