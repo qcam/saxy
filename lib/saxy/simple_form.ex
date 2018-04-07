@@ -50,9 +50,25 @@ defmodule Saxy.SimpleForm do
 
   """
 
-  @spec parse_string(data :: binary) :: {:ok, term} | {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
+  @doc """
+  Parse given string into simple form.
 
-  def parse_string(data) when is_binary(data) do
-    Saxy.parse_string(data, __MODULE__.Handler, [])
+  ## Options
+
+  * `:expand_entity` - specifies how external entity references should be handled. Three supported strategies respectively are:
+    * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
+    * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
+    * `{mod, fun, args}` - take the applied result of the specified MFA.
+
+  """
+
+  @spec parse_string(data :: binary, options :: Keyword.t()) ::
+          {:ok, term} | {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
+
+  def parse_string(data, options \\ []) when is_binary(data) do
+    case Saxy.parse_string(data, __MODULE__.Handler, {[], options}, options) do
+      {:ok, {stack, _options}} -> {:ok, stack}
+      {:error, _reason} = error -> error
+    end
   end
 end

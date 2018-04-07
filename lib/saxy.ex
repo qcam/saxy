@@ -21,21 +21,19 @@ defmodule Saxy do
 
   ## Encoding
 
-  Saxy supports ASCII and UTF-8 encodings and respects the encoding set in XML document prolog. That
-  means that if the prolog declares an encoding that is not supported, it simply stops parsing and returns.
+  Saxy supports UTF-8 encodings and respects the encoding set in XML document prolog, that
+  means that if the prolog declares an encoding that Saxy does not support, it stops parsing.
 
-  Though encoding declaration is optional in XML, so when encoding is missing in the document, UTF-8 will be
+  Though encoding declaration is optional in XML, when encoding is missing in the document, UTF-8 will be
   the default encoding.
 
   ## Reference
 
-  Saxy converts character references by default, for example `&#65;` is converted to `"A"` and `&#x26;` is
-  converted to `"&"`.
+  Saxy expands character references and XML 1.0 predefined entity references by default, for example `&#65;`
+  is expanded to `"A"`, `&#x26;` to `"&"`, and `&amp;` to `"&"`.
 
-  The parser **DOES NOT** convert any entity reference, the handler that uses `Saxy.Handler` behaviour needs to convert
-  all entity references during parsing by implementing `handle_entity_reference/1` callback.
-
-  See `Saxy.Handler` for more details.
+  Saxy does not expand external entity references, but provides an option where you can specify the strategy
+  of how they should be handled. See more in `Saxy.parse_string/4`.
 
   ## Creation of atoms
 
@@ -44,6 +42,13 @@ defmodule Saxy do
   ## XSD Schema
 
   Saxy does not support XSD schemas.
+
+  ## Shared options
+
+  * `:expand_entity` - specifies how external entity references should be handled. Three supported strategies respectively are:
+    * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
+    * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
+    * `{mod, fun, args}` - take the applied result of the specified MFA.
 
   """
 
@@ -58,6 +63,10 @@ defmodule Saxy do
 
   The third argument `state` can be used to keep track of data and parsing progress when parsing is happening, which will be
   returned when parsing finishes.
+
+  ### Options
+
+  See the “Shared options” section at the module documentation.
 
   ## Examples
 
@@ -88,10 +97,6 @@ defmodule Saxy do
           IO.inspect "Receive characters #{chars}"
           [{:chacters, chars} | state]
         end
-
-        def handle_entity_reference(reference_name) do
-          MyEntitiesConverter.convert(reference_name)
-        end
       end
 
       iex> xml = "<?xml version='1.0' ?><foo bar='value'></foo>"
@@ -107,18 +112,21 @@ defmodule Saxy do
 
   @spec parse_string(
           data :: binary,
-          handler :: module | function,
-          state :: term
-        ) :: {:ok, state :: term} | {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
+          handler :: module() | function(),
+          initial_state :: term(),
+          options :: Keyword.t()
+        ) :: {:ok, state :: term()} | {:error, exception :: ParsingError.t()}
+  def parse_string(data, handler, initial_state, options \\ []) when is_binary(data) and is_atom(handler) do
+    expand_entity = Keyword.get(options, :expand_entity, :keep)
 
-  def parse_string(data, handler, state) when is_binary(data) and is_atom(handler) do
-    initial_state = %State{
+    state = %State{
       prolog: nil,
       handler: handler,
-      user_state: state
+      user_state: initial_state,
+      expand_entity: expand_entity
     }
 
-    Parser.parse_document(data, :done, initial_state)
+    Parser.parse_document(data, :done, state)
   end
 
   @doc ~S"""
@@ -157,10 +165,6 @@ defmodule Saxy do
           IO.inspect "Receive characters #{chars}"
           [{:chacters, chars} | state]
         end
-
-        def handle_entity_reference(reference_name) do
-          MyEntitiesConverter.convert(reference_name)
-        end
       end
 
       iex> stream = File.stream!("/path/to/file.xml")
@@ -179,21 +183,29 @@ defmodule Saxy do
   in each chunk in the file you want to buffer. Anyway, Saxy will try trimming off the parsed parts of buffer
   when it exceeds 2048 bytes (this number is not configurable yet) to keep the memory usage in a reasonable limit.
 
+  ### Options
+
+  See the “Shared options” section at the module documentation.
+
   """
 
   @spec parse_stream(
           stream :: File.Stream.t() | Stream.t(),
-          handler :: module | function,
-          state :: term
-        ) :: {:ok, state :: term} | {:error, exception :: ParsingError.t()}
+          handler :: module() | function(),
+          initial_state :: term(),
+          options :: Keyword.t()
+        ) :: {:ok, state :: term()} | {:error, exception :: ParsingError.t()}
 
-  def parse_stream(%module{} = stream, handler, state) when module in [File.Stream, Stream] do
-    initial_state = %State{
+  def parse_stream(%module{} = stream, handler, initial_state, options \\ []) when module in [File.Stream, Stream] do
+    expand_entity = Keyword.get(options, :expand_entity, :keep)
+
+    state = %State{
       prolog: nil,
       handler: handler,
-      user_state: state
+      user_state: initial_state,
+      expand_entity: expand_entity
     }
 
-    Parser.parse_document(<<>>, stream, initial_state)
+    Parser.parse_document(<<>>, stream, state)
   end
 end

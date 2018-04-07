@@ -59,10 +59,6 @@ defmodule MyEventHandler do
     IO.inspect "Receive characters #{chars}"
     [{:chacters, chars} | state]
   end
-
-  def handle_entity_reference(reference_name) do
-    MyHTMLEntityConverter.convert(reference_name)
-  end
 end
 ```
 

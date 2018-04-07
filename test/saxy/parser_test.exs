@@ -8,7 +8,7 @@ defmodule Saxy.ParserTest do
   test "streaming parsing" do
     buffer = ""
     stream = File.stream!("./test/support/fixture/food.xml", [], 200)
-    state = %Saxy.State{user_state: [], handler: StackHandler, prolog: []}
+    state = %Saxy.State{user_state: [], handler: StackHandler, prolog: [], expand_entity: :keep}
 
     assert {:ok, state} = parse_document(buffer, stream, state)
 
@@ -16,7 +16,7 @@ defmodule Saxy.ParserTest do
 
     buffer = ""
     stream = File.stream!("./test/support/fixture/complex.xml", [], 200)
-    state = %Saxy.State{user_state: [], handler: StackHandler, prolog: []}
+    state = %Saxy.State{user_state: [], handler: StackHandler, prolog: [], expand_entity: :keep}
 
     assert {:ok, state} = parse_document(buffer, stream, state)
 
@@ -25,14 +25,14 @@ defmodule Saxy.ParserTest do
 
   test "binary parsing" do
     buffer = File.read!("./test/support/fixture/food.xml")
-    state = %Saxy.State{user_state: [], handler: StackHandler, prolog: []}
+    state = %Saxy.State{user_state: [], handler: StackHandler, prolog: [], expand_entity: :keep}
 
     assert {:ok, state} = parse_document(buffer, :done, state)
 
     assert length(state) == 74
 
     buffer = File.read!("./test/support/fixture/complex.xml")
-    state = %Saxy.State{user_state: [], handler: StackHandler, prolog: []}
+    state = %Saxy.State{user_state: [], handler: StackHandler, prolog: [], expand_entity: :keep}
 
     assert {:ok, state} = parse_document(buffer, :done, state)
 

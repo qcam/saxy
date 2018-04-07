@@ -312,7 +312,8 @@ defmodule Saxy.Parser.ElementTest do
     %Saxy.State{
       prolog: nil,
       handler: StackHandler,
-      user_state: state
+      user_state: state,
+      expand_entity: :keep
     }
   end
 
