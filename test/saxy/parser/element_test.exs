@@ -7,7 +7,7 @@ defmodule Saxy.Parser.ElementTest do
 
   alias Saxy.TestHandlers.StackHandler
 
-  test "parse_element/2 with full element having no attributes" do
+  test "parses element having no attributes" do
     buffer = "<foo></foo>"
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
@@ -20,7 +20,7 @@ defmodule Saxy.Parser.ElementTest do
     assert events == []
   end
 
-  test "parse_element/2 with full document" do
+  test "parses element with nested children" do
     buffer = """
     <item name="[日本語] Tom &amp; Jerry" category='movie' >
       <author name='William Hanna &#x26; Joseph Barbera' />
@@ -65,7 +65,7 @@ defmodule Saxy.Parser.ElementTest do
     assert events == []
   end
 
-  test "parse_element/2 with empty element having no attributes" do
+  test "parses empty element" do
     buffer = "<foo />"
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
@@ -102,7 +102,7 @@ defmodule Saxy.Parser.ElementTest do
     assert events == []
   end
 
-  test "parse_element/2 with content" do
+  test "parses element content" do
     buffer = "<foo>Lorem Ipsum Lorem Ipsum</foo>"
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
@@ -132,7 +132,7 @@ defmodule Saxy.Parser.ElementTest do
     assert events == []
   end
 
-  test "parse_element/2 with comment" do
+  test "parses comments" do
     buffer = "<foo><!--IGNORE ME--></foo>"
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
@@ -145,14 +145,14 @@ defmodule Saxy.Parser.ElementTest do
     assert events == []
   end
 
-  test "parse_element/2 with malformed comment" do
+  test "handles malformed comments" do
     buffer = "<foo><!--IGNORE ME---></foo>"
 
     assert {:error, error} = parse_element(buffer, make_cont(), buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"-\", expected token: :comment"
   end
 
-  test "parse_element/2 with reference" do
+  test "parses element references" do
     buffer = "<foo>Tom &#x26; Jerry</foo>"
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
@@ -169,7 +169,7 @@ defmodule Saxy.Parser.ElementTest do
     assert find_event(state, :characters, "Tom & Jerry")
   end
 
-  test "parse_element/2 with malformed reference" do
+  test "handles malformed references in element" do
     buffer = "<foo>Tom &#xt5; Jerry</foo>"
 
     assert {:error, error} = parse_element(buffer, make_cont(), buffer, 0, make_state())
@@ -186,35 +186,35 @@ defmodule Saxy.Parser.ElementTest do
     assert ParseError.message(error) == "unexpected byte \" \", expected token: :entity_ref"
   end
 
-  test "parse_element/2 with CDATA" do
+  test "parses CDATA" do
     buffer = "<foo><![CDATA[John Cena <foo></foo> &amp;]]></foo>"
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
     assert find_events(state, :characters) == [{:characters, "John Cena <foo></foo> &amp;"}]
   end
 
-  test "parse_element/2 with malformed CDATA" do
+  test "handles malformed CDATA" do
     buffer = "<foo><![CDATA[John Cena </foo>"
 
     assert {:error, error} = parse_element(buffer, make_cont(), buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected end of input, expected token: :\"]]\""
   end
 
-  test "parse_element/2 with processing instruction" do
+  test "parses processing instruction" do
     buffer = "<foo><?hello the instruction?></foo>"
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
     assert length(state.user_state) == 3
   end
 
-  test "parse_element/2 with malformed processing instruction" do
+  test "handles malformed processing instruction" do
     buffer = "<foo><?hello the instruction"
 
     assert {:error, error} = parse_element(buffer, make_cont(), buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected end of input, expected token: :processing_instruction"
   end
 
-  test "parse_element/2 with attributes" do
+  test "parses element attributes" do
     buffer = "<foo abc='123' def=\"456\" g:hi='789' />"
 
     assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
@@ -258,7 +258,7 @@ defmodule Saxy.Parser.ElementTest do
     assert find_event(state, :end_element, "foo")
   end
 
-  test "parse_element/2 with streaming" do
+  test "streaming parsing" do
     stream =
       """
       <item name="[日本語] Tom &amp; Jerry" category='movie'>

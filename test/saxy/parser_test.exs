@@ -5,7 +5,7 @@ defmodule Saxy.ParserTest do
 
   alias Saxy.TestHandlers.StackHandler
 
-  test "streaming parsing" do
+  test "supports streaming parsing" do
     buffer = ""
     stream = File.stream!("./test/support/fixture/food.xml", [], 200)
     state = %Saxy.State{user_state: [], handler: StackHandler, prolog: [], expand_entity: :keep}
@@ -23,7 +23,7 @@ defmodule Saxy.ParserTest do
     assert length(state) == 79
   end
 
-  test "binary parsing" do
+  test "supports binary parsing" do
     buffer = File.read!("./test/support/fixture/food.xml")
     state = %Saxy.State{user_state: [], handler: StackHandler, prolog: [], expand_entity: :keep}
 

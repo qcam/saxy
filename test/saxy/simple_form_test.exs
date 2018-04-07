@@ -1,7 +1,7 @@
 defmodule Saxy.SimpleFormTest do
   use ExUnit.Case, async: true
 
-  test "parse_string/1 with simple XML and default options" do
+  test "parses simple XML and default options" do
     xml = """
     <?xml version="1.0" encoding="utf-8" ?>
     <menu>
@@ -29,7 +29,7 @@ defmodule Saxy.SimpleFormTest do
     assert second_children == [{"name", [], ["Forest Gump"]}, {"characters", [], ["Forest & Jenny"]}]
   end
 
-  test "parse_string/2 with food XML" do
+  test "parses a sample XML" do
     xml = File.read!("./test/support/fixture/food.xml")
 
     assert {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml)
@@ -38,7 +38,7 @@ defmodule Saxy.SimpleFormTest do
     assert length(children) == 5
   end
 
-  test "parse_string/1 with customized entity handlers" do
+  test "parses XML document with customized entity handler" do
     xml = """
     <?xml version="1.0" encoding="utf-8" ?>
     <menu>

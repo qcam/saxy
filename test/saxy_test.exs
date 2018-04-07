@@ -12,12 +12,12 @@ defmodule SaxyTest do
     StackHandler
   }
 
-  test "parse_string/3" do
+  test "parse_string/3 parses a XML document binary" do
     data = File.read!("./test/support/fixture/food.xml")
     assert {:ok, _state} = Saxy.parse_string(data, StackHandler, [])
   end
 
-  test "parse_string/4 expanding entities" do
+  test "parse_string/4 parses XML binary with multiple \":expand_entity\" strategy" do
     data = """
     <?xml version="1.0" ?>
     <foo>Something &unknown;</foo>
@@ -54,17 +54,17 @@ defmodule SaxyTest do
     ]
   end
 
-  test "parse_stream/3" do
+  test "parse_stream/3 parses XML document stream" do
     stream = File.stream!("./test/support/fixture/food.xml", [], 1024)
     assert {:ok, _state} = Saxy.parse_stream(stream, StackHandler, [])
   end
 
-  test "parse_stream/3 with unicode" do
+  test "parse_stream/3 handles trailing unicode codepoints when buffering" do
     stream = File.stream!("./test/support/fixture/unicode.xml", [], 1)
     assert {:ok, _state} = Saxy.parse_stream(stream, StackHandler, [])
   end
 
-  test "parsing error" do
+  test "returns parsing errors" do
     data = "<?xml ?><foo/>"
 
     assert {:error, exception} = Saxy.parse_string(data, StackHandler, [])
@@ -84,13 +84,13 @@ defmodule SaxyTest do
     assert ParseError.message(exception) == "unexpected ending tag \"bee\", expected tag: \"bar\""
   end
 
-  test "handles user control flow" do
+  test "supports controling parsing flow" do
     data = "<?xml version=\"1.0\" ?><foo/>"
 
     assert Saxy.parse_string(data, FastReturnHandler, []) == {:ok, :fast_return}
   end
 
-  test "handles invalid handler return" do
+  test "handles invalid return in handler" do
     data = "<?xml version=\"1.0\" ?><foo/>"
 
     assert {:error, error} = Saxy.parse_string(data, WrongHandler, [])

@@ -7,7 +7,7 @@ defmodule Saxy.Parser.PrologTest do
 
   alias Saxy.TestHandlers.StackHandler
 
-  test "parse_prolog/2 with all properties declared" do
+  test "parses prologs with all properties declared" do
     buffer = """
     <?xml version="1.0" encoding="utf-8" standalone='yes' ?> <foo></foo>
     """
@@ -18,7 +18,7 @@ defmodule Saxy.Parser.PrologTest do
     assert Keyword.get(prolog, :standalone) == true
   end
 
-  test "parse_prolog/2 with 'version' and 'standalone' declared" do
+  test "parses prologs with version and standalone declared" do
     buffer = """
     <?xml version="1.0" standalone='yes' ?> <foo></foo>
     """
@@ -29,7 +29,7 @@ defmodule Saxy.Parser.PrologTest do
     assert Keyword.get(prolog, :standalone) == true
   end
 
-  test "parse_prolog/2 with 'version' and 'encoding' declared" do
+  test "parses prologs with version and encoding declared" do
     buffer = """
     <?xml version="1.0" encoding="UTF-8" ?> <foo></foo>
     """
@@ -39,7 +39,7 @@ defmodule Saxy.Parser.PrologTest do
     assert Keyword.get(prolog, :encoding) == "UTF-8"
   end
 
-  test "parse_prolog/2 with only 'version' declared" do
+  test "parses prologs with only version declared" do
     buffer = """
     <?xml version = "1.0" ?> <foo></foo>
     """
@@ -49,7 +49,7 @@ defmodule Saxy.Parser.PrologTest do
     assert Keyword.get(prolog, :encoding) == nil
   end
 
-  test "parse_prolog/2 with no prolog declared" do
+  test "supports document with no prolog declaration" do
     buffer = """
     <foo></foo>
     """
@@ -58,7 +58,7 @@ defmodule Saxy.Parser.PrologTest do
     assert prolog == []
   end
 
-  test "parse_prolog/2 with no version declaration" do
+  test "raises error for prolog missing version" do
     buffer = """
     <?xml encoding="utf-8" ?> <foo></foo>
     """
@@ -67,7 +67,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"e\", expected token: :version"
   end
 
-  test "parse_prolog/2 with encoding and standalone in the wrong place" do
+  test "returns error when encoding and standalone in the wrong place" do
     buffer = """
     <?xml version="1.0" standalone="yes" encoding="utf-8" ?>
     <foo></foo>
@@ -77,7 +77,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"e\", expected token: :xml_decl_close"
   end
 
-  test "parse_prolog/2 with malformed version" do
+  test "returns error for invalid version value" do
     buffer = """
     <?xml version= "2.0" ?> <foo></foo>
     """
@@ -86,7 +86,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"2\", expected token: :\"1.\""
   end
 
-  test "parse_prolog/2 with wrong version declared" do
+  test "returns error for malformed version declaration" do
     buffer = """
     <?xml version="1.2e" ?> <foo></foo>
     """
@@ -95,7 +95,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"e\", expected token: :version_num"
   end
 
-  test "parse_prolog/2 with wrong version closing quote" do
+  test "returns error for wrong ending quote in version declaration" do
     buffer = """
     <?xml version="1.0' ?> <foo></foo>
     """
@@ -104,7 +104,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"'\", expected token: :version_num"
   end
 
-  test "parse_prolog/2 with malformed encoding in quote" do
+  test "returns error for malformed encoding declaration" do
     buffer = """
     <?xml version="1.0" encoding='UTF-8" ?> <foo></foo>
     """
@@ -120,7 +120,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"'\", expected token: :encoding_name"
   end
 
-  test "parse_prolog/2 with bad encoding value" do
+  test "return error for invalid encoding value" do
     buffer = """
     <?xml version="1.0" encoding='<hello>' ?> <foo></foo>
     """
@@ -136,7 +136,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"<\", expected token: :encoding_name"
   end
 
-  test "parse_prolog/2 with malformed standalone in quote" do
+  test "returns error for malformed standalone declaration" do
     buffer = """
     <?xml version="1.0" standalone="yes' ?> <foo></foo>
     """
@@ -152,7 +152,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"\\\"\", expected token: :quote"
   end
 
-  test "parse_prolog/2 with wrong standalone value" do
+  test "returns error for invalid standalone value" do
     buffer = """
     <?xml version="1.0" standalone="foo" ?> <foo></foo>
     """
@@ -161,7 +161,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"f\", expected token: :yes_or_no"
   end
 
-  test "parse_prolog/2 with malformed XMLDecl close" do
+  test "return error for malformed XMLDecl" do
     buffer = """
     <?xml version="1.0" x?> <foo></foo>
     """
@@ -170,7 +170,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"x\", expected token: :xml_decl_close"
   end
 
-  test "parse_prolog/2 with Misc" do
+  test "parses Misc at the end of XMLDecl" do
     buffer = """
     <?xml version="1.0" ?>
     <?foo hello world ?><foo/>
@@ -187,7 +187,7 @@ defmodule Saxy.Parser.PrologTest do
 
     assert {:error, error} = parse_prolog(buffer, make_cont(), buffer, 0, make_state())
     assert ParseError.message(error) ==
-      "unexpected target name \"xMl\" at the start of processing instruction, the target names \"XML\", \"xml\", and so on are reserved for standardization" 
+      "unexpected target name \"xMl\" at the start of processing instruction, the target names \"XML\", \"xml\", and so on are reserved for standardization"
 
     buffer = """
     <?xml version="1.0" ?>
@@ -199,7 +199,7 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"!\", expected token: :processing_instruction"
   end
 
-  test "parse_prolog/2 with streaming" do
+  test "parses prolog with a stream" do
     buffer = ""
     stream = Stream.map(["<?xml version", "='1.0' ?>", "<foo/>"], &(&1))
     state = make_state() |> Map.put(:cont, stream)
