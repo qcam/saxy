@@ -20,7 +20,7 @@ defmodule Saxy.Handler do
 
   ## SAX Events
 
-  There are 6 types of event need to be handled in the handler.
+  There are a couple of events that need to be handled in the handler.
 
   ### `:start_document`
 
@@ -73,10 +73,6 @@ defmodule Saxy.Handler do
         def handle_event(:characters, chars, state) do
           IO.inspect "Receive characters #{chars}"
           {:ok, [{:chacters, chars} | state]}
-        end
-
-        def handle_entity_reference(reference_name) do
-          MyHTMLEntities.convert(reference_name)
         end
       end
   """
