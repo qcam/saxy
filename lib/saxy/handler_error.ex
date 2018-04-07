@@ -1,4 +1,8 @@
 defmodule Saxy.HandlerError do
+  @moduledoc """
+  Returned when the implemented handler returns unexpected value.
+  """
+
   defexception [:reason]
 
   def message(%__MODULE__{} = exception) do

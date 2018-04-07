@@ -3,45 +3,50 @@ defmodule Saxy do
   Saxy is a XML SAX parser which provides functions to parse XML file in both binary and streaming way.
   Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
 
-  ## SAX Events
+  ## Parsing mode
 
-  There are currently 5 types of events emitted by the parser.
+  Saxy can be used in two modes: SAX and simple form.
 
-  * `:start_document`.
-  * `:start_element`.
-  * `:characters`.
-  * `:end_element`.
-  * `:end_document`.
+  ### SAX (Simple API for XML)
+
+  SAX is an event driven algorithm for parsing XML documents. A SAX parser takes XML document as the input
+  and emits events out to a pre-configured event handler during parsing.
+
+  There are 5 types of SAX events supported by Saxy:
+
+  * `:start_document` - after prolog is parsed.
+  * `:start_element` - when open tag is parsed.
+  * `:characters` - when a chunk of `CharData` is parsed.
+  * `:end_element` - when end tag is parsed.
+  * `:end_document` - when the root element is closed.
 
   See `Saxy.Handler` for more information.
 
-  ## Simple form parsing
+  ### Simple form
 
-  SAX supports parsing XML document into a simple format. See `Saxy.SimpleForm` for more details.
+  Saxy supports parsing XML documents into a simple format. See `Saxy.SimpleForm` for more details.
 
   ## Encoding
 
-  Saxy supports UTF-8 encodings and respects the encoding set in XML document prolog, that
-  means that if the prolog declares an encoding that Saxy does not support, it stops parsing.
+  Saxy **only** supports UTF-8 encoding. It also respects the encoding set in XML document prolog, which means
+  that if the declared encoding is not UTF-8, the parser stops. Anyway, when there is no encoding declared,
+  Saxy defaults the encoding to UTF-8.
 
-  Though encoding declaration is optional in XML, when encoding is missing in the document, UTF-8 will be
-  the default encoding.
+  ## Reference expansion
 
-  ## Reference
-
-  Saxy expands character references and XML 1.0 predefined entity references by default, for example `&#65;`
+  Saxy supports expanding character references and XML 1.0 predefined entity references, for example `&#65;`
   is expanded to `"A"`, `&#x26;` to `"&"`, and `&amp;` to `"&"`.
 
-  Saxy does not expand external entity references, but provides an option where you can specify the strategy
-  of how they should be handled. See more in `Saxy.parse_string/4`.
+  Saxy does not expand external entity references, but provides an option to specify how they should be handled.
+  See more in "Shared options" section.
 
   ## Creation of atoms
 
-  Saxy does not automatically create new atoms during the parsing process.
+  Saxy does not create atoms during the parsing process.
 
-  ## XSD Schema
+  ## DTD and XSD
 
-  Saxy does not support XSD schemas.
+  Saxy does not support DTD (Doctype Definition) and XSD schemas.
 
   ## Shared options
 
@@ -52,14 +57,14 @@ defmodule Saxy do
 
   """
 
-  alias Saxy.{Parser, ParsingError, State}
+  alias Saxy.{Parser, State}
 
   @doc ~S"""
   Parses XML binary data.
 
   This function takes XML binary, SAX event handler (see more at `Saxy.Handler`) and an initial state as the input, it returns
   `{:ok, state}` if parsing is successful, otherwise `{:error, exception}`, where `exception` is a
-  `Saxy.ParsingError` struct which can be converted into readable message with `Exception.message/1`.
+  `Saxy.ParseError` struct which can be converted into readable message with `Exception.message/1`.
 
   The third argument `state` can be used to keep track of data and parsing progress when parsing is happening, which will be
   returned when parsing finishes.
@@ -70,32 +75,27 @@ defmodule Saxy do
 
   ## Examples
 
-      defmodule MyEventHandler do
+      defmodule MyTestHandler do
         @behaviour Saxy.Handler
 
         def handle_event(:start_document, prolog, state) do
-          IO.inspect "Start parsing document"
-          [{:start_document, prolog} | state]
+          {:ok, [{:start_document, prolog} | state]}
         end
 
         def handle_event(:end_document, _data, state) do
-          IO.inspect "Finish parsing document"
-          [{:end_document} | state]
+          {:ok, [{:end_document} | state]}
         end
 
         def handle_event(:start_element, {name, attributes}, state) do
-          IO.inspect "Start parsing element #{name} with attributes #{inspect(attributes)}"
-          [{:start_element, name, attributes} | state]
+          {:ok, [{:start_element, name, attributes} | state]}
         end
 
         def handle_event(:end_element, {name}, state) do
-          IO.inspect "Finish parsing element #{name}"
-          [{:end_element, name} | state]
+          {:ok, [{:end_element, name} | state]}
         end
 
         def handle_event(:characters, chars, state) do
-          IO.inspect "Receive characters #{chars}"
-          [{:chacters, chars} | state]
+          {:ok, [{:chacters, chars} | state]}
         end
       end
 
@@ -115,7 +115,7 @@ defmodule Saxy do
           handler :: module() | function(),
           initial_state :: term(),
           options :: Keyword.t()
-        ) :: {:ok, state :: term()} | {:error, exception :: ParsingError.t()}
+        ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
   def parse_string(data, handler, initial_state, options \\ []) when is_binary(data) and is_atom(handler) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
 
@@ -134,36 +134,31 @@ defmodule Saxy do
 
   This function takes a stream, SAX event handler (see more at `Saxy.Handler`) and an initial state as the input, it returns
   `{:ok, state}` if parsing is successful, otherwise `{:error, exception}`, where `exception` is a
-  `Saxy.ParsingError` struct which can be converted into readable message with `Exception.message/1`.
+  `Saxy.ParseError` struct which can be converted into readable message with `Exception.message/1`.
 
   ## Examples
 
-      defmodule MyEventHandler do
+      defmodule MyTestHandler do
         @behaviour Saxy.Handler
 
         def handle_event(:start_document, prolog, state) do
-          IO.inspect "Start parsing document"
-          [{:start_document, prolog} | state]
+          {:ok, [{:start_document, prolog} | state]}
         end
 
         def handle_event(:end_document, _data, state) do
-          IO.inspect "Finish parsing document"
-          [{:end_document} | state]
+          {:ok, [{:end_document} | state]}
         end
 
         def handle_event(:start_element, {name, attributes}, state) do
-          IO.inspect "Start parsing element #{name} with attributes #{inspect(attributes)}"
-          [{:start_element, name, attributes} | state]
+          {:ok, [{:start_element, name, attributes} | state]}
         end
 
         def handle_event(:end_element, {name}, state) do
-          IO.inspect "Finish parsing element #{name}"
-          [{:end_element, name} | state]
+          {:ok, [{:end_element, name} | state]}
         end
 
         def handle_event(:characters, chars, state) do
-          IO.inspect "Receive characters #{chars}"
-          [{:chacters, chars} | state]
+          {:ok, [{:chacters, chars} | state]}
         end
       end
 
@@ -179,9 +174,12 @@ defmodule Saxy do
 
   ## Memory usage
 
-  `Saxy.parse_stream/3` takes a `File.Stream` or `Stream` as the input, so you are in control of how many bytes
-  in each chunk in the file you want to buffer. Anyway, Saxy will try trimming off the parsed parts of buffer
-  when it exceeds 2048 bytes (this number is not configurable yet) to keep the memory usage in a reasonable limit.
+  `Saxy.parse_stream/3` takes a `File.Stream` or `Stream` as the input, so the amount of bytes to buffer in each
+  chunk can be controlled by `File.stream!/3` API.
+
+  During parsing, the actual memory used by Saxy might be higher than the number configured for each chunk, since
+  Saxy holds in memory some parsed parts of the original binary to leverage Erlang sub-binary extracting. Anyway,
+  Saxy tries to free those up when it makes sense.
 
   ### Options
 
@@ -194,7 +192,7 @@ defmodule Saxy do
           handler :: module() | function(),
           initial_state :: term(),
           options :: Keyword.t()
-        ) :: {:ok, state :: term()} | {:error, exception :: ParsingError.t()}
+        ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
 
   def parse_stream(%module{} = stream, handler, initial_state, options \\ []) when module in [File.Stream, Stream] do
     expand_entity = Keyword.get(options, :expand_entity, :keep)

@@ -1,4 +1,8 @@
 defmodule Saxy.ParseError do
+  @moduledoc """
+  Returned when parser encounters malformed token during parsing.
+  """
+
   defexception [:reason, :next_byte]
 
   def message(%__MODULE__{} = exception) do

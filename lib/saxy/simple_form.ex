@@ -1,9 +1,9 @@
 defmodule Saxy.SimpleForm do
   @moduledoc ~S"""
-  This provides function(s) to parse a XML document to
+  Provides functions to parse a XML document to
   [simple-form](http://erlang.org/doc/man/xmerl.html#export_simple-3) data structure.
 
-  ## Simple Form data structure
+  ## Data structure
 
   Simple form is a basic representation of the parsed XML document. It contains a root
   element, and all elements are in the following format:
@@ -13,7 +13,19 @@ defmodule Saxy.SimpleForm do
   content = (element | binary)*
   ```
 
-  ## Example
+  """
+
+  @doc """
+  Parse given string into simple form.
+
+  ## Options
+
+  * `:expand_entity` - specifies how external entity references should be handled. Three supported strategies respectively are:
+    * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
+    * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
+    * `{mod, fun, args}` - take the applied result of the specified MFA.
+
+  ## Examples
 
   Given this XML document.
 
@@ -47,18 +59,6 @@ defmodule Saxy.SimpleForm do
             ]}
          ]}
       ]
-
-  """
-
-  @doc """
-  Parse given string into simple form.
-
-  ## Options
-
-  * `:expand_entity` - specifies how external entity references should be handled. Three supported strategies respectively are:
-    * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
-    * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
-    * `{mod, fun, args}` - take the applied result of the specified MFA.
 
   """
 
