@@ -12,11 +12,7 @@ defmodule Saxy.MixProject do
       deps: deps(),
       package: package(),
       name: "Saxy",
-      docs: [
-        main: "Saxy",
-        source_ref: "v#{@version}",
-        source_url: "https://github.com/qcam/saxy"
-      ]
+      docs: docs()
     ]
   end
 
@@ -34,9 +30,20 @@ defmodule Saxy.MixProject do
     ]
   end
 
-  defp deps do
+  defp deps() do
     [
       {:ex_doc, "~> 0.16", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs() do
+    [
+      main: "Saxy",
+      extras: [
+        "guides/getting-started-with-sax.md"
+      ],
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/qcam/saxy"
     ]
   end
 end
