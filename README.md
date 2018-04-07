@@ -116,16 +116,14 @@ Saxy.SimpleForm.parse_string(data)
 Performance varies from document to document and depends on the complexity of
 the XML document. But it often gives 1.4X better performance than erlsom.
 For some large documents, [Saxy can be 4X
-faster](benches/README.md#soccer-11mb-xml-file).
+faster](https://github.com/qcam/saxy-bench#soccer-11mb-xml-file-1).
 
-The benchmark suite can be found in [`benches/` directory](benches/).
+The benchmark suite can be found in [this repository](https://github.com/qcam/saxy-bench).
 
 ### Limitations
 
 * No XSD supported.
-* No DTD supported, when the parser encounters a `<!DOCTYPE`, it simply stops
-  parsing.
-* Manual conversion of entity reference is required.
+* No DTD supported, when the parser encounters a `<!DOCTYPE`, it simply stops parsing.
 
 ## Where does the name come from?
 
