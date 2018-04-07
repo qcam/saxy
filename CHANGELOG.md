@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+* Introduce `:expand_entity` option.
+* Hard deprecate `Saxy.Handler.handle_entity_reference/1` callback.
+* Fix a UTF-8 buffering bug for streaming parsing.
+
 ## v0.5.0
 
 * Introduce Simple Form parsing.
