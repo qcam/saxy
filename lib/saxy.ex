@@ -107,18 +107,21 @@ defmodule Saxy do
 
   @spec parse_string(
           data :: binary,
-          handler :: module | function,
-          state :: term
-        ) :: {:ok, state :: term} | {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
+          handler :: module() | function(),
+          initial_state :: term(),
+          options :: Keyword.t()
+        ) :: {:ok, state :: term()} | {:error, exception :: ParsingError.t()}
+  def parse_string(data, handler, initial_state, options \\ []) when is_binary(data) and is_atom(handler) do
+    expand_entity = Keyword.get(options, :expand_entity, :keep)
 
-  def parse_string(data, handler, state) when is_binary(data) and is_atom(handler) do
-    initial_state = %State{
+    state = %State{
       prolog: nil,
       handler: handler,
-      user_state: state
+      user_state: initial_state,
+      expand_entity: expand_entity
     }
 
-    Parser.parse_document(data, :done, initial_state)
+    Parser.parse_document(data, :done, state)
   end
 
   @doc ~S"""
@@ -183,17 +186,21 @@ defmodule Saxy do
 
   @spec parse_stream(
           stream :: File.Stream.t() | Stream.t(),
-          handler :: module | function,
-          state :: term
-        ) :: {:ok, state :: term} | {:error, exception :: ParsingError.t()}
+          handler :: module() | function(),
+          initial_state :: term(),
+          options :: Keyword.t()
+        ) :: {:ok, state :: term()} | {:error, exception :: ParsingError.t()}
 
-  def parse_stream(%module{} = stream, handler, state) when module in [File.Stream, Stream] do
-    initial_state = %State{
+  def parse_stream(%module{} = stream, handler, initial_state, options \\ []) when module in [File.Stream, Stream] do
+    expand_entity = Keyword.get(options, :expand_entity, :keep)
+
+    state = %State{
       prolog: nil,
       handler: handler,
-      user_state: state
+      user_state: initial_state,
+      expand_entity: expand_entity
     }
 
-    Parser.parse_document(<<>>, stream, initial_state)
+    Parser.parse_document(<<>>, stream, state)
   end
 end

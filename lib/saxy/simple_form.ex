@@ -50,9 +50,13 @@ defmodule Saxy.SimpleForm do
 
   """
 
-  @spec parse_string(data :: binary) :: {:ok, term} | {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
+  @spec parse_string(data :: binary, options :: Keyword.t()) ::
+          {:ok, term} | {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
 
-  def parse_string(data) when is_binary(data) do
-    Saxy.parse_string(data, __MODULE__.Handler, [])
+  def parse_string(data, options \\ []) when is_binary(data) do
+    case Saxy.parse_string(data, __MODULE__.Handler, {[], options}, options) do
+      {:ok, {stack, _options}} -> {:ok, stack}
+      {:error, _reason} = error -> error
+    end
   end
 end

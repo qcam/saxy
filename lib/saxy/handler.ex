@@ -83,33 +83,4 @@ defmodule Saxy.Handler do
 
   @callback handle_event(event_type :: atom, data :: any, user_state :: any) ::
               {:ok, user_state :: any} | {:stop, returning :: any}
-
-  @doc """
-  Callback for entity reference conversion.
-
-  Saxy does not handle any entity reference conversion during parsing, this callback will be triggered every
-  time the parser encounters an entity reference.
-
-  ## Examples
-
-      defmodule MyEventHandler do
-        def handle_event(_event_type, _event_data, state) do
-          {:ok, state}
-        end
-
-        def handle_entity_reference("amp") do
-          "&"
-        end
-
-        def handle_entity_reference("gt") do
-          "<"
-        end
-
-        def handle_entity_reference(_unknown) do
-          ""
-        end
-      end
-  """
-
-  @callback handle_entity_reference(reference_name :: binary) :: binary
 end
