@@ -31,16 +31,16 @@ defmodule Saxy.Buffering do
         end
 
         # 3-byte/4-byte unicode
-        def unquote(fun_name)(<<1::size(1), 1::size(1), rest::6-bits, next_char::bytes-size(1)>>, unquote_splicing(quoted_params))
+        def unquote(fun_name)(<<1::size(1), 1::size(1), rest::6-bits, next_char::1-bytes>>, unquote_splicing(quoted_params))
             when cont != :done do
           Saxy.Buffering.maybe_buffer(<<1::size(1), 1::size(1), rest::6-bits, next_char::binary>>, cont, original, pos, state, unquote(quoted_fun))
         end
 
         # # 4-byte unicode
-        # def unquote(fun_name)(<<1::1-bits, 1::1-bits, 1::1-bits, rest::5-bits, next_char::bytes-size(2)>>, unquote_splicing(quoted_params))
-        #     when cont != :done do
-        #   Saxy.Buffering.maybe_buffer(<<1::1-bits, 1::1-bits, 1::1-bits, rest::5-bits, next_char::binary>>, cont, original, pos, state, unquote(quoted_fun))
-        # end
+        def unquote(fun_name)(<<1::size(1), 1::size(1), 1::size(1), rest::5-bits, next_char::2-bytes>>, unquote_splicing(quoted_params))
+            when cont != :done do
+          Saxy.Buffering.maybe_buffer(<<1::size(1), 1::size(1), 1::size(1), rest::5-bits, next_char::binary>>, cont, original, pos, state, unquote(quoted_fun))
+        end
       end
     else
       quote do

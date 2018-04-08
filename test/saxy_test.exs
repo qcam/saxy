@@ -61,7 +61,19 @@ defmodule SaxyTest do
 
   test "parse_stream/3 handles trailing unicode codepoints when buffering" do
     stream = File.stream!("./test/support/fixture/unicode.xml", [], 1)
-    assert {:ok, _state} = Saxy.parse_stream(stream, StackHandler, [])
+    assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
+    assert state == [
+      {:end_document, {}},
+      {:end_element, "songs"},
+      {:end_element, "song"},
+      {:characters, "Eva Braun 𠜎 𠜱 𠝹𠱓"},
+      {:start_element, {"song", [{"singer", "Die Ärtze"}]}},
+      {:end_element, "song"},
+      {:characters, "Über den Wolken"},
+      {:start_element, {"song", [{"singer", "Reinhard Mey"}]}},
+      {:start_element, {"songs", []}},
+      {:start_document, [version: "1.0"]}
+    ]
   end
 
   test "returns parsing errors" do
