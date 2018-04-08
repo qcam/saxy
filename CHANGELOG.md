@@ -1,10 +1,11 @@
 # Changelog
 
-## Unreleased
+## v0.6.0
 
-* Introduce `:expand_entity` option.
-* Hard deprecate `Saxy.Handler.handle_entity_reference/1` callback.
-* Fix a UTF-8 buffering bug for streaming parsing.
+* Introduce `:expand_entity` option ([#14](https://github.com/qcam/saxy/pull/14)).
+* Hard deprecate `Saxy.Handler.handle_entity_reference/1` callback ([#14](https://github.com/qcam/saxy/pull/14)).
+* Fix a UTF-8 buffering bug for streaming parsing ([#13](https://github.com/qcam/saxy/pull/13), [#15](https://github.com/qcam/saxy/pull/15)).
+* Return only root tag in simple form parsing ([e8c062](https://github.com/qcam/saxy/commit/e8c062e94f91ccea4491cec29c4c7861e7b7163b)).
 
 ## v0.5.0
 
