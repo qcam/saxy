@@ -13,6 +13,8 @@ defmodule Saxy.SimpleForm do
   content = (element | binary)*
   ```
 
+  See "Types" section for more information.
+
   """
 
   @doc """
@@ -62,13 +64,25 @@ defmodule Saxy.SimpleForm do
 
   """
 
+  @type tag_name() :: String.t()
+
+  @type attributes() :: [{name :: String.t(), value :: String.t()}]
+
+  @type content() :: [String.t() | Saxy.SimpleForm.t()]
+
+  @type t() :: {tag_name(), attributes(), content()}
+
   @spec parse_string(data :: binary, options :: Keyword.t()) ::
-          {:ok, term} | {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
+          {:ok, Saxy.SimpleForm.t()} ::
+          {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
 
   def parse_string(data, options \\ []) when is_binary(data) do
     case Saxy.parse_string(data, __MODULE__.Handler, {[], options}, options) do
-      {:ok, {stack, _options}} -> {:ok, stack}
-      {:error, _reason} = error -> error
+      {:ok, {[document], _options}} ->
+        {:ok, document}
+
+      {:error, _reason} = error ->
+        error
     end
   end
 end

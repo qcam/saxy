@@ -95,20 +95,18 @@ Saxy also supports parsing XML documents into simple-form format.
 ```elixir
 Saxy.SimpleForm.parse_string(data)
 
-[
-  {"menu", [],
-   [
-     {"movie",
-      [{"id", "tt0120338"}, {"url", "https://www.imdb.com/title/tt0120338/"}],
-      [{"name", [], ["Titanic"]}, {"characters", [], ["Jack &amp; Rose"]}]},
-     {"movie",
-      [{"id", "tt0109830"}, {"url", "https://www.imdb.com/title/tt0109830/"}],
-      [
-        {"name", [], ["Forest Gump"]},
-        {"characters", [], ["Forest &amp; Jenny"]}
-      ]}
-   ]}
-]
+{"menu", [],
+ [
+   {"movie",
+    [{"id", "tt0120338"}, {"url", "https://www.imdb.com/title/tt0120338/"}],
+    [{"name", [], ["Titanic"]}, {"characters", [], ["Jack &amp; Rose"]}]},
+   {"movie",
+    [{"id", "tt0109830"}, {"url", "https://www.imdb.com/title/tt0109830/"}],
+    [
+      {"name", [], ["Forest Gump"]},
+      {"characters", [], ["Forest &amp; Jenny"]}
+    ]}
+ ]}
 ```
 
 ### Benchmarking

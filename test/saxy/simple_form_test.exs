@@ -18,7 +18,7 @@ defmodule Saxy.SimpleFormTest do
 
     assert {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml)
 
-    assert [{"menu", [], elements}] = simple_form
+    assert {"menu", [], elements} = simple_form
 
     assert [first_element | elements] = elements
     assert {"movie", [{"id", "tt0120338"}, {"url", "https://www.imdb.com/title/tt0120338/"}], first_children} = first_element
@@ -34,7 +34,7 @@ defmodule Saxy.SimpleFormTest do
 
     assert {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml)
 
-    assert [{"breakfast_menu", [], children}] = simple_form
+    assert {"breakfast_menu", [], children} = simple_form
     assert length(children) == 5
   end
 
@@ -55,7 +55,7 @@ defmodule Saxy.SimpleFormTest do
 
     assert {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml, expand_entity: {__MODULE__, :handle_entity_reference, []})
 
-    assert [{"menu", [], elements}] = simple_form
+    assert {"menu", [], elements} = simple_form
 
     assert [first_element | elements] = elements
     assert {"movie", [{"id", "tt0120338"}, {"url", "https://www.imdb.com/title/tt0120338/"}], first_children} = first_element
