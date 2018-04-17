@@ -1,17 +1,16 @@
 Saxy
 ===
 
-Saxy (Sá xị) is a XML SAX parser in Elixir that focuses on speed and standard compliance.
+Saxy (Sá xị) is an XML SAX parser in Elixir that focuses on speed, usability and standard compliance.
 
 Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
 
-## Features
+## Highlight features
 
-* SAX parsing for XML 1.0.
-* Large file parsing in native Elixir stream.
-* XML Simple DOM.
-* Quickly return during parsing process.
-* Manual entity references conversion.
+* A incredibly fast XML 1.0 SAX parser.
+* Native support for streaming parsing large XML files.
+* Parse XML documents into simple DOM format.
+* Support quick returning in event handlers.
 
 ## Installation
 
@@ -19,7 +18,7 @@ Add `:saxy` to your `mix.exs`.
 
 ```elixir
 def deps do
-  [{:saxy, "~> 0.5.0"}]
+  [{:saxy, "~> 0.6.0"}]
 end
 ```
 
@@ -27,7 +26,7 @@ end
 
 Full documentation is available on [HexDocs](https://hexdocs.pm/saxy/).
 
-### SAX Parser
+### SAX parser
 
 A SAX event handler implementation is required before starting parsing.
 
@@ -36,33 +35,33 @@ defmodule MyEventHandler do
   @behaviour Saxy.Handler
 
   def handle_event(:start_document, prolog, state) do
-    IO.inspect "Start parsing document"
+    IO.inspect("Start parsing document")
     [{:start_document, prolog} | state]
   end
 
   def handle_event(:end_document, _data, state) do
-    IO.inspect "Finish parsing document"
+    IO.inspect("Finish parsing document")
     [{:end_document} | state]
   end
 
   def handle_event(:start_element, {name, attributes}, state) do
-    IO.inspect "Start parsing element #{name} with attributes #{inspect(attributes)}"
+    IO.inspect("Start parsing element #{name} with attributes #{inspect(attributes)}")
     [{:start_element, name, attributes} | state]
   end
 
   def handle_event(:end_element, {name}, state) do
-    IO.inspect "Finish parsing element #{name}"
+    IO.inspect("Finish parsing element #{name}")
     [{:end_element, name} | state]
   end
 
   def handle_event(:characters, chars, state) do
-    IO.inspect "Receive characters #{chars}"
+    IO.inspect("Receive characters #{chars}")
     [{:chacters, chars} | state]
   end
 end
 ```
 
-Then parse your XML with:
+Then start parsing XML documents with:
 
 ```elixir
 initial_state = []
@@ -72,7 +71,7 @@ Saxy.parse_string(data, MyEventHandler, initial_state)
 
 ### Streaming parsing
 
-Saxy's SAX parser accepts file stream as the input.
+Saxy also accepts file stream as the input:
 
 ```elixir
 stream = File.stream!("/path/to/file")
@@ -80,7 +79,7 @@ stream = File.stream!("/path/to/file")
 Saxy.parse_stream(stream, MyEventHandler, initial_state)
 ```
 
-Or it even accepts a normal stream.
+It even supports parsing a normal stream.
 
 ```elixir
 stream = File.stream!("/path/to/file") |> Stream.filter(&(&1 != "\n"))
@@ -88,9 +87,13 @@ stream = File.stream!("/path/to/file") |> Stream.filter(&(&1 != "\n"))
 Saxy.parse_stream(stream, MyEventHandler, initial_state)
 ```
 
-### Simple form parsing
+### Simple DOM format exporting
 
-Saxy also supports parsing XML documents into simple-form format.
+Sometimes it will be convenient to just export the XML document into simple DOM
+format, which is a 3-element tuple including the tag name, attributes, and a
+list of its children.
+
+`Saxy.SimpleForm` module has this nicely supported:
 
 ```elixir
 Saxy.SimpleForm.parse_string(data)
@@ -111,10 +114,10 @@ Saxy.SimpleForm.parse_string(data)
 
 ### Benchmarking
 
-Performance varies from document to document and depends on the complexity of
-the XML document. But it often gives 1.4X better performance than erlsom.
-For some large documents, [Saxy can be 4X
-faster](https://github.com/qcam/saxy-bench#soccer-11mb-xml-file-1).
+Benchmarking in XML is hard and highly depends on the complexity of the
+document. Saxy usually yields **1.4 times** better than [Erlsom](https://github.com/willemdj/erlsom)
+in benchmark results. With deeply nested documents, it is particularly noticeably
+faster with [**4.35 times faster**](https://github.com/qcam/saxy-bench#soccer-11mb-xml-file-1).
 
 The benchmark suite can be found in [this repository](https://github.com/qcam/saxy-bench).
 
@@ -123,11 +126,11 @@ The benchmark suite can be found in [this repository](https://github.com/qcam/sa
 * No XSD supported.
 * No DTD supported, when the parser encounters a `<!DOCTYPE`, it simply stops parsing.
 
-## Where does the name come from?
+## Where did the name come from?
 
 ![Sa xi Chuong Duong](http://www.alan.vn/files/posts/made-in-viet-nam/2017/03/xa-xi-chuong-duong-1488861958.jpg)
 
-👆 Sa xi is an awesome soft drink that made by [Chuong Duong](http://www.cdbeco.com.vn/en).
+☝️  Sa Xi, pronounced like `sa-see`, is an awesome soft drink made by [Chuong Duong](http://www.cdbeco.com.vn/en).
 
 ## Contributing
 
