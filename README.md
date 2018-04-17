@@ -5,7 +5,7 @@ Saxy (Sá xị) is an XML SAX parser in Elixir that focuses on speed, usability 
 
 Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
 
-## Highlight features
+## Features highlight
 
 * A incredibly fast XML 1.0 SAX parser.
 * Native support for streaming parsing large XML files.
