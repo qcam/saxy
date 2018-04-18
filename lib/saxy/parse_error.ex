@@ -26,4 +26,8 @@ defmodule Saxy.ParseError do
   defp format_message(:syntax, {:invalid_pi, pi_name}, _next_byte) do
     "unexpected target name #{inspect(pi_name)} at the start of processing instruction, the target names \"XML\", \"xml\", and so on are reserved for standardization"
   end
+
+  defp format_message(:syntax, {:invalid_encoding, encoding}, _next_byte) do
+    "unexpected encoding declaration #{inspect(encoding)}, only UTF-8 is supported"
+  end
 end
