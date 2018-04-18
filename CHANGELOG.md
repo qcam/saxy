@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* Brought back UTF-8 encoding validation ([#16](https://github.com/qcam/saxy/pull/16)).
+
 ## v0.6.0
 
 * Introduce `:expand_entity` option ([#14](https://github.com/qcam/saxy/pull/14)).
