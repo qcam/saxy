@@ -134,6 +134,13 @@ defmodule Saxy.Parser.PrologTest do
 
     assert {:error, error} = parse_prolog(buffer, make_cont(), buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"<\", expected token: :encoding_name"
+
+    buffer = """
+    <?xml version="1.0" encoding="abc" ?> <foo></foo>
+    """
+
+    assert {:error, error} = parse_prolog(buffer, make_cont(), buffer, 0, make_state())
+    assert ParseError.message(error) == "unexpected encoding declaration \"abc\", only UTF-8 is supported"
   end
 
   test "returns error for malformed standalone declaration" do

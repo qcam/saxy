@@ -161,7 +161,11 @@ defmodule Saxy.Parser.Prolog do
       when charcode in '\'"' and open_quote == charcode do
     encoding = binary_part(original, pos, len)
 
-    parse_standalone(rest, cont, original, pos + len + 1, state, [{:encoding, encoding} | prolog])
+    if Utils.valid_encoding?(encoding) do
+      parse_standalone(rest, cont, original, pos + len + 1, state, [{:encoding, encoding} | prolog])
+    else
+      Utils.syntax_error(rest, state, {:invalid_encoding, encoding})
+    end
   end
 
   def parse_encoding_decl_enc_name(<<charcode::integer, rest::bits>>, cont, original, pos, state, prolog, open_quote, len)

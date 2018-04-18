@@ -39,4 +39,10 @@ defmodule Saxy.Parser.Utils do
        when x in [?X, ?x] or m in [?M, ?m] or l in [?L, ?l], do: false
 
   def valid_pi_name?(<<_::bits>>), do: true
+
+  @compile {:inline, [valid_encoding?: 1]}
+
+  def valid_encoding?(encoding) do
+    String.upcase(encoding, :ascii) == "UTF-8"
+  end
 end
