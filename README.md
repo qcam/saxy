@@ -49,7 +49,7 @@ defmodule MyEventHandler do
     [{:start_element, name, attributes} | state]
   end
 
-  def handle_event(:end_element, {name}, state) do
+  def handle_event(:end_element, name, state) do
     IO.inspect("Finish parsing element #{name}")
     [{:end_element, name} | state]
   end
