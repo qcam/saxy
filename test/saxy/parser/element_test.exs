@@ -18,6 +18,17 @@ defmodule Saxy.Parser.ElementTest do
     assert [{:end_element, "foo"} | events] = events
     assert [{:end_document, {}} | events] = events
     assert events == []
+
+    buffer = "<fóo></fóo>"
+
+    assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
+
+    events = Enum.reverse(state.user_state)
+
+    assert [{:start_element, {"fóo", []}} | events] = events
+    assert [{:end_element, "fóo"} | events] = events
+    assert [{:end_document, {}} | events] = events
+    assert events == []
   end
 
   test "parses element with nested children" do
