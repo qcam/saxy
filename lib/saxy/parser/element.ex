@@ -20,7 +20,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_open_tag(<<charcode, rest::bits>>, cont, original, pos, state)
-      when is_name_start_char(charcode) do
+      when is_ascii(charcode) and is_name_start_char(charcode) do
     parse_open_tag_name(rest, cont, original, pos, state, 1)
   end
 
@@ -36,7 +36,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_open_tag_name(<<charcode, rest::bits>>, cont, original, pos, state, len)
-      when is_name_char(charcode) do
+      when is_ascii(charcode) and is_name_char(charcode) do
     parse_open_tag_name(rest, cont, original, pos, state, len + 1)
   end
 
@@ -97,7 +97,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_sattribute(<<charcode, rest::bits>>, cont, original, pos, state, attributes)
-      when is_name_start_char(charcode) do
+      when is_ascii(charcode) and is_name_start_char(charcode) do
     parse_attribute_name(rest, cont, original, pos, state, attributes, 1)
   end
 
@@ -119,7 +119,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_attribute_name(<<charcode, rest::bits>>, cont, original, pos, state, attributes, len)
-      when is_name_char(charcode) do
+      when is_ascii(charcode) and is_name_char(charcode) do
     parse_attribute_name(rest, cont, original, pos, state, attributes, len + 1)
   end
 
@@ -212,7 +212,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_att_value_entity_ref(<<charcode, rest::bits>>, cont, original, pos, state, attributes, q, att_name, acc, 0)
-      when is_name_start_char(charcode) do
+      when is_ascii(charcode) and is_name_start_char(charcode) do
     parse_att_value_entity_ref(rest, cont, original, pos, state, attributes, q, att_name, acc, 1)
   end
 
@@ -222,7 +222,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_att_value_entity_ref(<<charcode, rest::bits>>, cont, original, pos, state, attributes, q, att_name, acc, len)
-       when is_name_char(charcode) do
+       when is_ascii(charcode) and is_name_char(charcode) do
     parse_att_value_entity_ref(rest, cont, original, pos, state, attributes, q, att_name, acc, len + 1)
   end
 
@@ -619,7 +619,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_close_tag_name(<<charcode, rest::bits>>, cont, original, pos, state, 0)
-       when is_name_start_char(charcode) do
+       when is_ascii(charcode) and is_name_start_char(charcode) do
     parse_close_tag_name(rest, cont, original, pos, state, 1)
   end
 
@@ -668,7 +668,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_close_tag_name(<<charcode, rest::bits>>, cont, original, pos, state, len)
-       when is_name_char(charcode) do
+       when is_ascii(charcode) and is_name_char(charcode) do
     parse_close_tag_name(rest, cont, original, pos, state, len + 1)
   end
 
