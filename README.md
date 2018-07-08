@@ -128,7 +128,7 @@ The benchmark suite can be found in [this repository](https://github.com/qcam/sa
 
 ## Where did the name come from?
 
-![Sa xi Chuong Duong](http://www.alan.vn/files/posts/made-in-viet-nam/2017/03/xa-xi-chuong-duong-1488861958.jpg)
+![Sa xi Chuong Duong](./saxi.jpg)
 
 ☝️  Sa Xi, pronounced like `sa-see`, is an awesome soft drink made by [Chuong Duong](http://www.cdbeco.com.vn/en).
 
