@@ -372,8 +372,11 @@ defmodule Saxy.Parser.ElementTest do
 
     check all attribute_value_chars <- string(:printable),
               reference <- reference_generator do
-      attribute_value = Enum.shuffle([attribute_value_chars, reference])
-                        |> IO.iodata_to_binary()
+      attribute_value =
+        [attribute_value_chars, reference]
+        |> Enum.shuffle()
+        |> IO.iodata_to_binary()
+
       buffer = "<foo foo='#{attribute_value}'></foo>"
 
       assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
