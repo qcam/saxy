@@ -4,15 +4,19 @@ matrix:
   include:
     - otp_release: 18.3
       elixir: 1.3.4
+      script: mix test --exclude property --trace
     - otp_release: 18.3
       elixir: 1.4.4
+      script: mix test --exclude property --trace
     - otp_release: 19.3
       elixir: 1.4.4
+      script: mix test --exclude property --trace
     - otp_release: 19.3
       elixir: 1.5.3
+      script: mix test --trace
     - otp_release: 19.3
       elixir: 1.6.3
+      script: mix test --trace
 
 sudo: false
 
-script: mix test --trace

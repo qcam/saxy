@@ -1,5 +1,6 @@
 defmodule Saxy.Parser.ElementTest do
   use ExUnit.Case, async: true
+  use ExUnitProperties
 
   import Saxy.Parser.Element, only: [parse_element: 5]
 
@@ -319,6 +320,77 @@ defmodule Saxy.Parser.ElementTest do
     assert events == []
   end
 
+  @tag :property
+
+  property "element name" do
+    check all name <- name() do
+      buffer = "<#{name}></#{name}>"
+      assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
+
+      events = Enum.reverse(state.user_state)
+
+      assert [{:start_element, {^name, []}} | events] = events
+      assert [{:end_element, ^name} | events] = events
+      assert [{:end_document, {}} | events] = events
+      assert events == []
+    end
+
+    check all name <- name() do
+      buffer = "<#{name}/>"
+      assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
+
+      events = Enum.reverse(state.user_state)
+
+      assert [{:start_element, {^name, []}} | events] = events
+      assert [{:end_element, ^name} | events] = events
+      assert [{:end_document, {}} | events] = events
+      assert events == []
+    end
+  end
+
+  property "attribute name" do
+    check all attribute_name <- name() do
+      buffer = "<foo #{attribute_name}='bar'></foo>"
+
+      assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
+      events = Enum.reverse(state.user_state)
+
+      element = {"foo", [{attribute_name, "bar"}]}
+
+      assert [{:start_element, ^element} | events] = events
+      assert [{:end_element, "foo"} | events] = events
+      assert [{:end_document, {}} | events] = events
+      assert events == []
+    end
+  end
+
+  property "attribute value" do
+    reference_generator =
+      gen all name <- name() do
+        "&" <> name <> ";"
+      end
+
+    check all attribute_value_chars <- string(:printable),
+              reference <- reference_generator do
+      attribute_value =
+        [attribute_value_chars, reference]
+        |> Enum.shuffle()
+        |> IO.iodata_to_binary()
+
+      buffer = "<foo foo='#{attribute_value}'></foo>"
+
+      assert {:ok, state} = parse_element(buffer, make_cont(), buffer, 0, make_state())
+      events = Enum.reverse(state.user_state)
+
+      element = {"foo", [{"foo", attribute_value}]}
+
+      assert [{:start_element, ^element} | events] = events
+      assert [{:end_element, "foo"} | events] = events
+      assert [{:end_document, {}} | events] = events
+      assert events == []
+    end
+  end
+
   defp make_state(state \\ []) do
     %Saxy.State{
       prolog: nil,
@@ -340,5 +412,23 @@ defmodule Saxy.Parser.ElementTest do
     Enum.find(state.user_state, fn {type, data} ->
       type == event_type && data == event_data
     end)
+  end
+
+  defp name() do
+    name_start_char_ranges = [
+      ?:, ?A..?Z, ?a..?z, ?_, 0xC0..0xD6, 0xD8..0xF6,
+      0xF8..0x2FF, 0x370..0x200D, 0x2070..0x218F,
+      0x2C00..0x2FEF, 0x3001..0xD7FF, 0xF900..0xFDCF,
+      0xFDF0..0xFFFD, 0x10000..0xEFFFF
+    ]
+
+    name_char_ranges = name_start_char_ranges ++ [
+      ?0..?9, ?-, ?., 0xB7, 0x300..0x036F, 0x203F..0x2040
+    ]
+
+    gen all start_char <- string(name_start_char_ranges, min_length: 1, max_length: 4),
+            chars <- string(name_char_ranges) do
+      start_char <> chars
+    end
   end
 end
