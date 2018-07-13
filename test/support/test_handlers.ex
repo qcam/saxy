@@ -21,3 +21,32 @@ defmodule Saxy.TestHandlers.WrongHandler do
     :something_wrong
   end
 end
+
+# For docs test
+
+defmodule Person do
+  @derive {
+    Saxy.Builder,
+    name: "person",
+    attributes: [:gender],
+    children: [:name]
+  }
+
+  defstruct [:name, :gender]
+end
+
+defmodule User do
+  defstruct [:username, :name]
+end
+
+defimpl Saxy.Builder, for: User do
+  import Saxy.XML
+
+  def build(user) do
+    element(
+      "Person",
+      [{"userName", user.username}],
+      [element("Name", [], user.name)]
+    )
+  end
+end
