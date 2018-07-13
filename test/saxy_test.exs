@@ -109,5 +109,25 @@ defmodule SaxyTest do
     assert HandlerError.message(error) == "unexpected return :something_wrong in :start_document event handler"
   end
 
+  describe "encode!/2" do
+    import Saxy.XML
+
+    test "encodes XML document into string" do
+      root = element("foo", [], "foo")
+      assert Saxy.encode!(root) == ~s(<?xml version="1.0"?><foo>foo</foo>)
+    end
+  end
+
+  describe "encode_to_iodata!/2" do
+    import Saxy.XML
+
+    test "encodes XML document into IO data" do
+      root = element("foo", [], "foo")
+      assert xml = Saxy.encode_to_iodata!(root)
+      assert is_list(xml)
+      assert IO.iodata_to_binary(xml) == ~s(<?xml version="1.0"?><foo>foo</foo>)
+    end
+  end
+
   def convert_entity("unknown"), do: "known"
 end
