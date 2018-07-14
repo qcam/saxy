@@ -38,8 +38,8 @@ defmodule Saxy.BuilderTest do
     {:ok, naive_datetime} = NaiveDateTime.new(~D[2018-01-01], ~T[23:04:00.005])
     assert build(naive_datetime) == {:characters, "2018-01-01T23:04:00.005"}
 
-    {:ok, datetime, 0} = DateTime.from_iso8601("2018-01-01T23:04:00.005Z")
-    assert build(datetime) == {:characters, "2018-01-01T23:04:00.005Z"}
+    datetime = DateTime.utc_now()
+    assert build(datetime) == {:characters, DateTime.to_iso8601(datetime)}
   end
 
   defmodule Struct do
