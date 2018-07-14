@@ -12,6 +12,8 @@ defmodule SaxyTest do
     StackHandler
   }
 
+  doctest Saxy
+
   test "parse_string/3 parses a XML document binary" do
     data = File.read!("./test/support/fixture/food.xml")
     assert {:ok, _state} = Saxy.parse_string(data, StackHandler, [])
