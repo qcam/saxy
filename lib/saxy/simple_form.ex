@@ -31,36 +31,39 @@ defmodule Saxy.SimpleForm do
 
   Given this XML document.
 
-  ```
-  <?xml version="1.0" encoding="utf-8" ?>
-  <menu>
-    <movie url="https://www.imdb.com/title/tt0120338/" id="tt0120338">
-      <name>Titanic</name>
-      <characters>Jack &amp; Rose</characters>
-    </movie>
-    <movie url="https://www.imdb.com/title/tt0109830/" id="tt0109830">
-      <name>Forest Gump</name>
-      <characters>Forest &amp; Jenny</characters>
-    </movie>
-  </menu>)
-  ```
-
-      iex> {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml)
-
-      [
-        {"menu", [],
-         [
-           {"movie",
-            [{"id", "tt0120338"}, {"url", "https://www.imdb.com/title/tt0120338/"}],
-            [{"name", [], ["Titanic"]}, {"characters", [], ["Jack &amp; Rose"]}]},
-           {"movie",
-            [{"id", "tt0109830"}, {"url", "https://www.imdb.com/title/tt0109830/"}],
-            [
-              {"name", [], ["Forest Gump"]},
-              {"characters", [], ["Forest &amp; Jenny"]}
-            ]}
-         ]}
-      ]
+      iex> xml = \"\"\"
+      ...> <?xml version="1.0" encoding="utf-8" ?>
+      ...> <menu>
+      ...>   <movie url="https://www.imdb.com/title/tt0120338/" id="tt0120338">
+      ...>     <name>Titanic</name>
+      ...>     <characters>Jack &amp; Rose</characters>
+      ...>   </movie>
+      ...>   <movie url="https://www.imdb.com/title/tt0109830/" id="tt0109830">
+      ...>     <name>Forest Gump</name>
+      ...>     <characters>Forest &amp; Jenny</characters>
+      ...>   </movie>
+      ...> </menu>
+      ...> \"\"\"
+      iex> Saxy.SimpleForm.parse_string(xml)
+      {:ok,
+       {"menu", [],
+        [
+          {"movie",
+           [
+             {"id", "tt0120338"},
+             {"url", "https://www.imdb.com/title/tt0120338/"}
+           ],
+           [{"name", [], ["Titanic"]}, {"characters", [], ["Jack & Rose"]}]},
+          {"movie",
+           [
+             {"id", "tt0109830"},
+             {"url", "https://www.imdb.com/title/tt0109830/"}
+           ],
+           [
+             {"name", [], ["Forest Gump"]},
+             {"characters", [], ["Forest & Jenny"]}
+           ]}
+        ]}}
 
   """
 
