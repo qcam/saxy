@@ -1,13 +1,18 @@
 defmodule Saxy do
   @moduledoc ~S"""
-  Saxy is a XML SAX parser which provides functions to parse XML file in both binary and streaming way.
-  Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
+  Saxy is an XML SAX parser and encoder.
 
-  ## Parsing mode
+  Saxy provides functions to parse XML file in both binary and streaming way in compliant
+  with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
 
-  Saxy can be used in two modes: SAX and simple form.
+  Saxy also offers DSL and API to build, compose and encode XML document.
+  See "Encoder" section below for more information.
 
-  ### SAX (Simple API for XML)
+  ## Parser
+
+  Saxy parser supports two modes of parsing: SAX and simple form.
+
+  ### SAX mode (Simple API for XML)
 
   SAX is an event driven algorithm for parsing XML documents. A SAX parser takes XML document as the input
   and emits events out to a pre-configured event handler during parsing.
@@ -22,17 +27,17 @@ defmodule Saxy do
 
   See `Saxy.Handler` for more information.
 
-  ### Simple form
+  ### Simple form mode
 
   Saxy supports parsing XML documents into a simple format. See `Saxy.SimpleForm` for more details.
 
-  ## Encoding
+  ### Encoding
 
   Saxy **only** supports UTF-8 encoding. It also respects the encoding set in XML document prolog, which means
   that if the declared encoding is not UTF-8, the parser stops. Anyway, when there is no encoding declared,
   Saxy defaults the encoding to UTF-8.
 
-  ## Reference expansion
+  ### Reference expansion
 
   Saxy supports expanding character references and XML 1.0 predefined entity references, for example `&#65;`
   is expanded to `"A"`, `&#x26;` to `"&"`, and `&amp;` to `"&"`.
@@ -40,20 +45,50 @@ defmodule Saxy do
   Saxy does not expand external entity references, but provides an option to specify how they should be handled.
   See more in "Shared options" section.
 
-  ## Creation of atoms
+  ### Creation of atoms
 
   Saxy does not create atoms during the parsing process.
 
-  ## DTD and XSD
+  ### DTD and XSD
 
   Saxy does not support DTD (Doctype Definition) and XSD schemas.
 
-  ## Shared options
+  ### Shared options
 
   * `:expand_entity` - specifies how external entity references should be handled. Three supported strategies respectively are:
-    * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
-    * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
-    * `{mod, fun, args}` - take the applied result of the specified MFA.
+  * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
+  * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
+  * `{mod, fun, args}` - take the applied result of the specified MFA.
+
+  ## Encoder
+
+  Saxy offers two APIs to build simple form and encode XML document.
+
+  Use `Saxy.XML` to build and compose XML simple form, then `Saxy.encode!/2`
+  to encode the built element into XML binary.
+
+      iex> import Saxy.XML
+      iex> element = element("person", [gender: "female"], "Alice")
+      {"person", [{"gender", "female"}], [{:characters, "Alice"}]}
+      iex> Saxy.encode!(element, [])
+      "<?xml version=\"1.0\"?><person gender=\"female\">Alice</person>"
+
+  See `Saxy.XML` for more XML building APIs.
+
+  Saxy also provides `Saxy.Builder` protocol to help composing structs into simple form.
+
+      defmodule Person do
+        @derive {Saxy.Builder, name: "person", attributes: [:gender], children: [:name]}
+
+        defstruct [:gender, :name]
+      end
+
+      iex> jack = %Person{gender: :male, name: "Jack"}
+      iex> john = %Person{gender: :male, name: "John"}
+      iex> import Saxy.XML
+      iex> root = element("people", [], [jack, john])
+      iex> Saxy.encode!(root, [])
+      "<?xml version=\"1.0\"?><people><person gender=\"male\">Jack</person><person gender=\"male\">John</person></people>"
 
   """
 
