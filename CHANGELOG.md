@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## v0.7.0
 
+* Introduce XML encoder [#17](https://github.com/qcam/saxy/pull/17).
+* Fix wrong ASCII code point matching [#20](https://github.com/qcam/saxy/pull/20).
 * Brought back UTF-8 encoding validation ([#16](https://github.com/qcam/saxy/pull/16)).
 
 ## v0.6.0

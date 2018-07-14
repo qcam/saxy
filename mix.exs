@@ -20,7 +20,7 @@ defmodule Saxy.MixProject do
   def application(), do: []
 
   defp description() do
-    "Saxy a XML SAX parser in Elixir that focuses on speed and standard compliance."
+    "Saxy is an XML parser and encoder in Elixir that focuses on speed and standard compliance."
   end
 
   defp package() do

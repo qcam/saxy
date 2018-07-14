@@ -1,13 +1,14 @@
 Saxy
 ===
 
-Saxy (Sá xị) is an XML SAX parser in Elixir that focuses on speed, usability and standard compliance.
+Saxy (Sá xị) is an XML SAX parser and encoder in Elixir that focuses on speed, usability and standard compliance.
 
 Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/).
 
 ## Features highlight
 
-* A incredibly fast XML 1.0 SAX parser.
+* An incredibly fast XML 1.0 SAX parser.
+* An extremely fast XML encoder.
 * Native support for streaming parsing large XML files.
 * Parse XML documents into simple DOM format.
 * Support quick returning in event handlers.
@@ -18,7 +19,7 @@ Add `:saxy` to your `mix.exs`.
 
 ```elixir
 def deps do
-  [{:saxy, "~> 0.6.0"}]
+  [{:saxy, "~> 0.7.0"}]
 end
 ```
 
@@ -112,12 +113,49 @@ Saxy.SimpleForm.parse_string(data)
  ]}
 ```
 
+### XML builder
+
+Saxy offers two APIs to build simple form and encode XML document.
+
+Use `Saxy.XML` to build and compose XML simple form, then `Saxy.encode!/2`
+to encode the built element into XML binary.
+
+```elixir
+iex> import Saxy.XML
+iex> element = element("person", [gender: "female"], "Alice")
+{"person", [{"gender", "female"}], [{:characters, "Alice"}]}
+iex> Saxy.encode!(element, [])
+"<?xml version=\"1.0\"?><person gender=\"female\">Alice</person>"
+```
+
+See `Saxy.XML` for more XML building APIs.
+
+Saxy also provides `Saxy.Builder` protocol to help composing structs into simple form.
+
+```elixir
+defmodule Person do
+  @derive {Saxy.Builder, name: "person", attributes: [:gender], children: [:name]}
+
+  defstruct [:gender, :name]
+end
+
+iex> jack = %Person{gender: :male, name: "Jack"}
+iex> john = %Person{gender: :male, name: "John"}
+iex> import Saxy.XML
+iex> root = element("people", [], [jack, john])
+iex> Saxy.encode!(root, [])
+"<?xml version=\"1.0\"?><people><person gender=\"male\">Jack</person><person gender=\"male\">John</person></people>"
+```
+
 ### Benchmarking
 
 Benchmarking in XML is hard and highly depends on the complexity of the
 document. Saxy usually yields **1.4 times** better than [Erlsom](https://github.com/willemdj/erlsom)
 in benchmark results. With deeply nested documents, it is particularly noticeably
 faster with [**4.35 times faster**](https://github.com/qcam/saxy-bench#soccer-11mb-xml-file-1).
+
+As for XML builder, Saxy is usually 4 times faster than [xml_builder](https://github.com/joshnuss/xml_builder) on
+simple element encoding, and 17 times faster in deeply nested elements encoding.
 
 The benchmark suite can be found in [this repository](https://github.com/qcam/saxy-bench).
 
