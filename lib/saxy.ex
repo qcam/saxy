@@ -56,9 +56,9 @@ defmodule Saxy do
   ### Shared options
 
   * `:expand_entity` - specifies how external entity references should be handled. Three supported strategies respectively are:
-  * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
-  * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
-  * `{mod, fun, args}` - take the applied result of the specified MFA.
+    * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
+    * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
+    * `{mod, fun, args}` - take the applied result of the specified MFA.
 
   ## Encoder
 
