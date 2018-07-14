@@ -1,6 +1,8 @@
 defmodule Saxy.SimpleFormTest do
   use ExUnit.Case, async: true
 
+  doctest Saxy.SimpleForm
+
   test "parses simple XML and default options" do
     xml = """
     <?xml version="1.0" encoding="utf-8" ?>

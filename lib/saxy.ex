@@ -139,14 +139,12 @@ defmodule Saxy do
       end
 
       iex> xml = "<?xml version='1.0' ?><foo bar='value'></foo>"
-      iex> Saxy.parse_string(xml, MyEventHandler, [])
+      iex> Saxy.parse_string(xml, MyTestHandler, [])
       {:ok,
-       [
-         {:end_document},
-         {:end_element, "foo"},
-         {:start_element, "foo", [{"bar", "value"}]},
-         {:start_document, [version: "1.0", encoding: "UTF-8", standalone: false]}
-       ]}
+       [{:end_document},
+        {:end_element, "foo"},
+        {:start_element, "foo", [{"bar", "value"}]},
+        {:start_document, [version: "1.0"]}]}
   """
 
   @spec parse_string(
@@ -201,15 +199,13 @@ defmodule Saxy do
         end
       end
 
-      iex> stream = File.stream!("/path/to/file.xml")
-      iex> Saxy.parse_stream(stream, MyEventHandler, [])
+      iex> stream = File.stream!("./test/support/fixture/foo.xml")
+      iex> Saxy.parse_stream(stream, MyTestHandler, [])
       {:ok,
-       [
-         {:end_document},
-         {:end_element, "foo"},
-         {:start_element, "foo", [{"bar", "value"}]},
-         {:start_document, [version: "1.0", encoding: "UTF-8", standalone: false]}
-       ]}
+       [{:end_document},
+        {:end_element, "foo"},
+        {:start_element, "foo", [{"bar", "value"}]},
+        {:start_document, [version: "1.0"]}]}
 
   ## Memory usage
 
