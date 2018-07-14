@@ -6,30 +6,6 @@ defmodule Saxy.BuilderTest do
 
   doctest Saxy.Builder
 
-  test "builds number" do
-    check all integer <- integer() do
-      assert build(integer) == {:characters, Integer.to_string(integer)}
-    end
-
-    check all float <- float() do
-      assert build(float) == {:characters, Float.to_string(float)}
-    end
-  end
-
-  test "builds bitstring" do
-    check all string <- string(:printable) do
-      assert build(string) == {:characters, string}
-    end
-  end
-
-  test "builds atom" do
-    assert build(nil) == {:characters, ""}
-
-    check all atom <- atom(:alphanumeric) do
-      assert build(atom) == {:characters, Atom.to_string(atom)}
-    end
-  end
-
   test "builds pre-built simple-form element" do
     element = Saxy.XML.element(:foo, [], [])
     assert build(element) == element
@@ -87,5 +63,31 @@ defmodule Saxy.BuilderTest do
 
     underived_struct = %UnderivedStruct{}
     assert_raise Protocol.UndefinedError, fn -> build(underived_struct) end
+  end
+
+  @tag :property
+
+  property "number" do
+    check all integer <- integer() do
+      assert build(integer) == {:characters, Integer.to_string(integer)}
+    end
+
+    check all float <- float() do
+      assert build(float) == {:characters, Float.to_string(float)}
+    end
+  end
+
+  property "bitstring" do
+    check all string <- string(:printable) do
+      assert build(string) == {:characters, string}
+    end
+  end
+
+  property "atom" do
+    assert build(nil) == {:characters, ""}
+
+    check all atom <- atom(:alphanumeric) do
+      assert build(atom) == {:characters, Atom.to_string(atom)}
+    end
   end
 end
