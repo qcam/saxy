@@ -6,14 +6,14 @@ defmodule Saxy.Parser.Utils do
     ParseError
   }
 
-  @compile {:inline, [syntax_error: 3]}
+  @compile {:inline, [syntax_error: 4]}
 
-  def syntax_error(<<>>, _state, token) do
+  def syntax_error(buffer, pos, _state, token) when byte_size(buffer) == pos do
     {:error, %ParseError{reason: {:syntax, token}, next_byte: :eof}}
   end
 
-  def syntax_error(<<byte::utf8, _::bits>>, _state, token) do
-    {:error, %ParseError{reason: {:syntax, token}, next_byte: <<byte::utf8>>}}
+  def syntax_error(buffer, pos, _state, token) do
+    {:error, %ParseError{reason: {:syntax, token}, next_byte: binary_part(buffer, pos, 1)}}
   end
 
   @compile {:inline, [compute_char_len: 1]}
