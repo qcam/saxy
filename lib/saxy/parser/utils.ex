@@ -3,7 +3,7 @@ defmodule Saxy.Parser.Utils do
 
   alias Saxy.{
     HandlerError,
-    ParseError,
+    ParseError
   }
 
   @compile {:inline, [syntax_error: 3]}
@@ -36,7 +36,8 @@ defmodule Saxy.Parser.Utils do
   @compile {:inline, [valid_pi_name?: 1]}
 
   def valid_pi_name?(<<l::integer, m::integer, x::integer>>)
-       when x in [?X, ?x] or m in [?M, ?m] or l in [?L, ?l], do: false
+      when x in [?X, ?x] or m in [?M, ?m] or l in [?L, ?l],
+      do: false
 
   def valid_pi_name?(<<_::bits>>), do: true
 
@@ -46,13 +47,5 @@ defmodule Saxy.Parser.Utils do
 
   def valid_encoding?(encoding) do
     String.upcase(encoding) == "UTF-8"
-  end
-
-  @compile {:inline, [maybe_commit: 2]}
-
-  def maybe_commit(buffer, pos) do
-    buffer_size = byte_size(buffer)
-
-    binary_part(buffer, pos, buffer_size - pos)
   end
 end

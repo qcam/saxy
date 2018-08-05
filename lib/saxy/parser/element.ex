@@ -80,12 +80,8 @@ defmodule Saxy.Parser.Element do
           parse_element_misc(rest, cont, original, pos + 2, state)
 
         _ ->
-          if cont != :done do
-            original = Utils.maybe_commit(original, pos)
-            parse_element_content(rest, cont, original, 2, state)
-          else
-            parse_element_content(rest, cont, original, pos + 2, state)
-          end
+          {original, pos} = maybe_trim(cont, original, pos)
+          parse_element_content(rest, cont, original, pos + 2, state)
       end
     else
       {:stop, state} ->
@@ -648,12 +644,8 @@ defmodule Saxy.Parser.Element do
               parse_element_misc(rest, cont, original, pos + len + 1, state)
 
             [_parent | _stack] ->
-              if cont != :done do
-                original = Utils.maybe_commit(original, pos)
-                parse_element_content(rest, cont, original, len + 1, state)
-              else
-                parse_element_content(rest, cont, original, pos + len + 1, state)
-              end
+              {original, pos} = maybe_trim(cont, original, pos)
+              parse_element_content(rest, cont, original, pos + len + 1, state)
           end
 
         {:stop, state} ->
@@ -801,5 +793,17 @@ defmodule Saxy.Parser.Element do
 
   def parse_element_misc_pi_content(<<buffer::bits>>, _cont, _original, _pos, state, _len) do
     Utils.syntax_error(buffer, state, {:token, :processing_instruction})
+  end
+
+  @compile {:inline, [maybe_trim: 3]}
+
+  defp maybe_trim(:streaming, binary, pos) do
+    binary_size = byte_size(binary)
+
+    {binary_part(binary, pos, binary_size - pos), 0}
+  end
+
+  defp maybe_trim(_cont, binary, pos) do
+    {binary, pos}
   end
 end
