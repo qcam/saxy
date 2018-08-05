@@ -14,20 +14,18 @@ defmodule Saxy.Buffering do
 
     context_fun =
       case arity do
-        5 -> quote(do: &unquote(fun_name)(&1, &2, &3, pos, state))
-        6 -> quote(do: &unquote(fun_name)(&1, &2, &3, pos, state, acc1))
-        7 -> quote(do: &unquote(fun_name)(&1, &2, &3, pos, state, acc1, acc2))
-        8 -> quote(do: &unquote(fun_name)(&1, &2, &3, pos, state, acc1, acc2, acc3))
-        9 -> quote(do: &unquote(fun_name)(&1, &2, &3, pos, state, acc1, acc2, acc3, acc4))
-        10 -> quote(do: &unquote(fun_name)(&1, &2, &3, pos, state, acc1, acc2, acc3, acc4, acc5))
+        5 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state))
+        6 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1))
+        7 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1, acc2))
+        8 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1, acc2, acc3))
+        9 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1, acc2, acc3, acc4))
+        10 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1, acc2, acc3, acc4, acc5))
       end
 
     quote do
       def unquote(fun_name)(unquote(token), true, unquote_splicing(params_splice)) do
         {
           :halted,
-          unquote(token),
-          original,
           unquote(context_fun)
         }
       end

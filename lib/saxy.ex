@@ -251,8 +251,8 @@ defmodule Saxy do
     stream
     |> Enum.reduce_while(init, &stream_reducer/2)
     |> case do
-      {:halted, rest, original, context_fun} ->
-        case context_fun.(rest, false, original) do
+      {:halted, context_fun} ->
+        case context_fun.(<<>>, false) do
           {:ok, state} -> {:ok, state.user_state}
           {:error, reason} -> {:error, reason}
         end
@@ -262,11 +262,8 @@ defmodule Saxy do
     end
   end
 
-  defp stream_reducer(next_bytes, {:halted, rest, original, context_fun}) do
-    rest = rest <> next_bytes
-    original = original <> next_bytes
-
-    {:cont, context_fun.(rest, true, original)}
+  defp stream_reducer(next_bytes, {:halted, context_fun}) do
+    {:cont, context_fun.(next_bytes, true)}
   end
 
   defp stream_reducer(_next_bytes, {:error, _reason} = error) do
