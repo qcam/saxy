@@ -5,12 +5,26 @@ defmodule Saxy.Parser.Utils do
 
   @compile {:inline, [parse_error: 4]}
 
-  def parse_error(buffer, pos, _state, reason) when byte_size(buffer) == pos do
-    {:error, %ParseError{reason: reason, next_byte: :eof}}
+  def parse_error(buffer, position, _state, reason) do
+    {
+      :error,
+      %ParseError{
+        reason: reason,
+        binary: buffer,
+        position: position
+      }
+    }
   end
 
-  def parse_error(buffer, pos, _state, reason) do
-    {:error, %ParseError{reason: reason, next_byte: binary_part(buffer, pos, 1)}}
+  @compile {:inline, [bad_return_error: 1]}
+
+  def bad_return_error(return) do
+    {
+      :error,
+      %ParseError{
+        reason: {:bad_return, return}
+      }
+    }
   end
 
   @compile {:inline, [compute_char_len: 1]}
@@ -22,12 +36,6 @@ defmodule Saxy.Parser.Utils do
       char <= 0xFFFF -> 3
       true -> 4
     end
-  end
-
-  @compile {:inline, [bad_return_error: 1]}
-
-  def bad_return_error(return) do
-    {:error, %ParseError{reason: {:bad_return, return}}}
   end
 
   @compile {:inline, [valid_pi_name?: 1]}
