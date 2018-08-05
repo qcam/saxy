@@ -161,6 +161,16 @@ defmodule SaxyTest do
     ]
   end
 
+  test "parse_stream/3 supports fast return" do
+    codepoints =
+      String.codepoints("""
+      <?xml version='1.0' encoding="UTF-8" ?>
+      <item></item>
+      """)
+
+    assert Saxy.parse_stream(codepoints, FastReturnHandler, []) == {:ok, :fast_return}
+  end
+
   test "parse_stream/3 handles error when parsing" do
     stream =
       """

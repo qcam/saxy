@@ -257,8 +257,11 @@ defmodule Saxy do
           {:error, reason} -> {:error, reason}
         end
 
-      other ->
-        other
+      {:ok, state} ->
+        {:ok, state.user_state}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -268,6 +271,10 @@ defmodule Saxy do
 
   defp stream_reducer(_next_bytes, {:error, _reason} = error) do
     {:halt, error}
+  end
+
+  defp stream_reducer(_next_bytes, {:ok, state}) do
+    {:halt, {:ok, state}}
   end
 
   @doc """
