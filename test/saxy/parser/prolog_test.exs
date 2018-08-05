@@ -206,39 +206,6 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"!\", expected token: :processing_instruction"
   end
 
-  test "parses prolog with a stream" do
-    buffer = ""
-    stream = Stream.map(["<?xml version", "='1.0' ?>", "<foo/>"], &(&1))
-    state = make_state() |> Map.put(:cont, stream)
-
-    assert {:ok, %{prolog: prolog}} = parse_prolog(buffer, stream, buffer, 0, state)
-    assert prolog == [version: "1.0"]
-
-    buffer = "<?xml"
-    stream = Stream.map(["  version", "='1.0' ?><foo/>"], &(&1))
-    state = make_state() |> Map.put(:cont, stream)
-
-    assert {:ok, %{prolog: prolog}} = parse_prolog(buffer, stream, buffer, 0, state)
-    assert prolog == [version: "1.0"]
-
-    stream =
-      """
-      <?xml version='1.0' encoding=\"utf-8\" standalone='yes' ?>
-      <!--Ignore me I am just a comment-->
-      <?foo Hmm? Then probably ignore me too ?>
-      <foo/>
-      """
-      |> String.codepoints()
-      |> Stream.map(&(&1))
-
-    state = make_state()
-    assert {:ok, %{prolog: prolog}} = parse_prolog("", stream, "", 0, state)
-
-    assert Keyword.get(prolog, :version) == "1.0"
-    assert Keyword.get(prolog, :encoding) == "utf-8"
-    assert Keyword.get(prolog, :standalone) == true
-  end
-
   defp make_state(state \\ []) do
     %Saxy.State{
       prolog: nil,

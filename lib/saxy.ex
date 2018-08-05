@@ -153,7 +153,8 @@ defmodule Saxy do
           initial_state :: term(),
           options :: Keyword.t()
         ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
-  def parse_string(data, handler, initial_state, options \\ []) when is_binary(data) and is_atom(handler) do
+  def parse_string(data, handler, initial_state, options \\ [])
+      when is_binary(data) and is_atom(handler) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
 
     state = %State{
@@ -163,7 +164,13 @@ defmodule Saxy do
       expand_entity: expand_entity
     }
 
-    Parser.parse_document(data, :done, state)
+    case Parser.Prolog.parse_prolog(data, :done, data, 0, state) do
+      {:ok, state} ->
+        {:ok, state.user_state}
+
+      {:error, _reason} = error ->
+        error
+    end
   end
 
   @doc ~S"""
@@ -223,13 +230,13 @@ defmodule Saxy do
   """
 
   @spec parse_stream(
-          stream :: File.Stream.t() | Stream.t(),
+          stream :: Enumerable.t(),
           handler :: module() | function(),
           initial_state :: term(),
           options :: Keyword.t()
         ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
 
-  def parse_stream(%module{} = stream, handler, initial_state, options \\ []) when module in [File.Stream, Stream] do
+  def parse_stream(stream, handler, initial_state, options \\ []) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
 
     state = %State{
@@ -239,7 +246,31 @@ defmodule Saxy do
       expand_entity: expand_entity
     }
 
-    Parser.parse_document(<<>>, stream, state)
+    init = Parser.Prolog.parse_prolog(<<>>, :buffering, <<>>, 0, state)
+
+    stream
+    |> Enum.reduce_while(init, &stream_reducer/2)
+    |> case do
+      {:halted, rest, original, context_fun} ->
+        case context_fun.(rest, :done, original) do
+          {:ok, state} -> {:ok, state.user_state}
+          {:error, reason} -> {:error, reason}
+        end
+
+      other ->
+        other
+    end
+  end
+
+  defp stream_reducer(next_bytes, {:halted, rest, original, context_fun}) do
+    rest = rest <> next_bytes
+    original = original <> next_bytes
+
+    {:cont, context_fun.(rest, :buffering, original)}
+  end
+
+  defp stream_reducer(_next_bytes, {:error, _reason} = error) do
+    {:halt, error}
   end
 
   @doc """
@@ -285,7 +316,8 @@ defmodule Saxy do
       ]
 
   """
-  @spec encode_to_iodata!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t()) :: iodata()
+  @spec encode_to_iodata!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t()) ::
+          iodata()
 
   def encode_to_iodata!(root, prolog \\ []) do
     Encoder.encode_to_iodata(root, prolog)

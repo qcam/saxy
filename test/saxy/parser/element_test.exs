@@ -270,56 +270,6 @@ defmodule Saxy.Parser.ElementTest do
     assert find_event(state, :end_element, "foo")
   end
 
-  test "streaming parsing" do
-    stream =
-      """
-      <item name="[日本語] Tom &amp; Jerry" category='movie'>
-        <author name='William Hanna &#x26; Joseph Barbera' />
-        <!--Ignore me please I am just a comment-->
-        <?foo Hmm? Then probably ignore me too?>
-        <description><![CDATA[<strong>"Tom & Jerry" is a cool movie!</strong>]]></description>
-        <actors>
-          <actor>Tom</actor>
-          <actor>Jerry</actor>
-        </actors>
-      </item>
-      <!--a very bottom comment-->
-      <?foo what a instruction ?>
-      """
-      |> String.codepoints()
-      |> Stream.map(&(&1))
-
-    state = make_state()
-
-    assert {:ok, state} = parse_element("", stream, "", 0, state)
-    events = Enum.reverse(state.user_state)
-
-    item_attributes = [{"category", "movie"}, {"name", "[日本語] Tom & Jerry"}]
-    assert [{:start_element, {"item", ^item_attributes}} | events] = events
-
-    author_attributes = [{"name", "William Hanna & Joseph Barbera"}]
-    assert [{:start_element, {"author", ^author_attributes}} | events] = events
-    assert [{:end_element, "author"} | events] = events
-
-    assert [{:start_element, {"description", []}} | events] = events
-    assert [{:characters, "<strong>\"Tom & Jerry\" is a cool movie!</strong>"} | events] = events
-    assert [{:end_element, "description"} | events] = events
-
-    assert [{:start_element, {"actors", []}} | events] = events
-    assert [{:start_element, {"actor", []}} | events] = events
-    assert [{:characters, "Tom"} | events] = events
-    assert [{:end_element, "actor"} | events] = events
-    assert [{:start_element, {"actor", []}} | events] = events
-    assert [{:characters, "Jerry"} | events] = events
-    assert [{:end_element, "actor"} | events] = events
-    assert [{:end_element, "actors"} | events] = events
-
-    assert [{:end_element, "item"} | events] = events
-    assert [{:end_document, {}} | events] = events
-
-    assert events == []
-  end
-
   @tag :property
 
   property "element name" do
