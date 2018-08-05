@@ -215,5 +215,5 @@ defmodule Saxy.Parser.PrologTest do
     }
   end
 
-  defp make_cont(), do: :done
+  defp make_cont(), do: false
 end

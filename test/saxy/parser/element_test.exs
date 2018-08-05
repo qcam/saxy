@@ -351,7 +351,7 @@ defmodule Saxy.Parser.ElementTest do
   end
 
   defp make_cont() do
-    :done
+    false
   end
 
   defp find_events(state, event_type) do

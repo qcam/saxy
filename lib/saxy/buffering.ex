@@ -23,7 +23,7 @@ defmodule Saxy.Buffering do
       end
 
     quote do
-      def unquote(fun_name)(unquote(token), :buffering, unquote_splicing(params_splice)) do
+      def unquote(fun_name)(unquote(token), true, unquote_splicing(params_splice)) do
         {
           :halted,
           unquote(token),

@@ -164,7 +164,7 @@ defmodule Saxy do
       expand_entity: expand_entity
     }
 
-    case Parser.Prolog.parse_prolog(data, :done, data, 0, state) do
+    case Parser.Prolog.parse_prolog(data, false, data, 0, state) do
       {:ok, state} ->
         {:ok, state.user_state}
 
@@ -246,13 +246,13 @@ defmodule Saxy do
       expand_entity: expand_entity
     }
 
-    init = Parser.Prolog.parse_prolog(<<>>, :buffering, <<>>, 0, state)
+    init = Parser.Prolog.parse_prolog(<<>>, true, <<>>, 0, state)
 
     stream
     |> Enum.reduce_while(init, &stream_reducer/2)
     |> case do
       {:halted, rest, original, context_fun} ->
-        case context_fun.(rest, :done, original) do
+        case context_fun.(rest, false, original) do
           {:ok, state} -> {:ok, state.user_state}
           {:error, reason} -> {:error, reason}
         end
@@ -266,7 +266,7 @@ defmodule Saxy do
     rest = rest <> next_bytes
     original = original <> next_bytes
 
-    {:cont, context_fun.(rest, :buffering, original)}
+    {:cont, context_fun.(rest, true, original)}
   end
 
   defp stream_reducer(_next_bytes, {:error, _reason} = error) do
