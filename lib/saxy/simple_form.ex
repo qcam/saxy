@@ -77,7 +77,7 @@ defmodule Saxy.SimpleForm do
 
   @spec parse_string(data :: binary, options :: Keyword.t()) ::
           {:ok, Saxy.SimpleForm.t()} ::
-          {:error, exception :: Saxy.ParseError.t() | Saxy.HandlerError.t()}
+          {:error, exception :: Saxy.ParseError.t()}
 
   def parse_string(data, options \\ []) when is_binary(data) do
     case Saxy.parse_string(data, __MODULE__.Handler, {[], options}, options) do
