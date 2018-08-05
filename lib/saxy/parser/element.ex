@@ -63,8 +63,8 @@ defmodule Saxy.Parser.Element do
       {:ok, state} ->
         parse_element_content(rest, more?, original, pos + 1, state)
 
-      {:error, other} ->
-        Utils.bad_return_error(other)
+      {:error, reason} ->
+        Utils.bad_return_error(reason)
     end
   end
 

@@ -28,4 +28,8 @@ defmodule Saxy.ParseError do
   defp format_message({:invalid_encoding, encoding}, _next_byte) do
     "unexpected encoding declaration #{inspect(encoding)}, only UTF-8 is supported"
   end
+
+  defp format_message({:bad_return, {event, return}}, _next_byte) do
+    "unexpected return #{inspect(return)} in #{inspect(event)} event handler"
+  end
 end

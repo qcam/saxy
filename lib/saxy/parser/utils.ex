@@ -1,10 +1,7 @@
 defmodule Saxy.Parser.Utils do
   @moduledoc false
 
-  alias Saxy.{
-    HandlerError,
-    ParseError
-  }
+  alias Saxy.ParseError
 
   @compile {:inline, [parse_error: 4]}
 
@@ -29,8 +26,8 @@ defmodule Saxy.Parser.Utils do
 
   @compile {:inline, [bad_return_error: 1]}
 
-  def bad_return_error(reason) do
-    {:error, %HandlerError{reason: {:bad_return, reason}}}
+  def bad_return_error(return) do
+    {:error, %ParseError{reason: {:bad_return, return}}}
   end
 
   @compile {:inline, [valid_pi_name?: 1]}
