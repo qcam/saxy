@@ -1,8 +1,6 @@
 defmodule Saxy.Buffering do
   @moduledoc false
 
-  defmacro buffering_parse_fun(fun_name, arity, token \\ "")
-
   defmacro buffering_parse_fun(fun_name, arity, token) do
     params_splice =
       case arity do
@@ -80,13 +78,5 @@ defmodule Saxy.Buffering do
         end
       end
     end
-  end
-
-  @compile {:inline, [maybe_commit: 2]}
-
-  def maybe_commit(buffer, pos) do
-    buffer_size = byte_size(buffer)
-
-    binary_part(buffer, pos, buffer_size - pos)
   end
 end

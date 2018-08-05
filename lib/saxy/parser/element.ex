@@ -3,7 +3,7 @@ defmodule Saxy.Parser.Element do
 
   import Saxy.Guards
 
-  import Saxy.Buffering, only: [buffering_parse_fun: 3, maybe_commit: 2]
+  import Saxy.Buffering, only: [buffering_parse_fun: 3]
 
   alias Saxy.Emitter
 
@@ -81,7 +81,7 @@ defmodule Saxy.Parser.Element do
 
         _ ->
           if cont != :done do
-            original = maybe_commit(original, pos)
+            original = Utils.maybe_commit(original, pos)
             parse_element_content(rest, cont, original, 2, state)
           else
             parse_element_content(rest, cont, original, pos + 2, state)
@@ -649,7 +649,7 @@ defmodule Saxy.Parser.Element do
 
             [_parent | _stack] ->
               if cont != :done do
-                original = maybe_commit(original, pos)
+                original = Utils.maybe_commit(original, pos)
                 parse_element_content(rest, cont, original, len + 1, state)
               else
                 parse_element_content(rest, cont, original, pos + len + 1, state)

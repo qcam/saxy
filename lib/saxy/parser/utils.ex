@@ -47,4 +47,12 @@ defmodule Saxy.Parser.Utils do
   def valid_encoding?(encoding) do
     String.upcase(encoding) == "UTF-8"
   end
+
+  @compile {:inline, [maybe_commit: 2]}
+
+  def maybe_commit(buffer, pos) do
+    buffer_size = byte_size(buffer)
+
+    binary_part(buffer, pos, buffer_size - pos)
+  end
 end
