@@ -3,7 +3,7 @@ defmodule Saxy.Parser.Element do
 
   import Saxy.Guards
 
-  import Saxy.Buffering, only: [buffering_parse_fun: 3]
+  import Saxy.Buffering, only: [defhalt: 3, utf8_binaries: 0]
 
   alias Saxy.Emitter
 
@@ -13,7 +13,7 @@ defmodule Saxy.Parser.Element do
     parse_open_tag(rest, cont, original, pos + 1, state)
   end
 
-  buffering_parse_fun(:parse_element, 5, "")
+  defhalt(:parse_element, 5, "")
 
   def parse_element(<<buffer::bits>>, _cont, _original, _pos, state) do
     Utils.syntax_error(buffer, state, {:token, :lt})
@@ -29,7 +29,7 @@ defmodule Saxy.Parser.Element do
     parse_open_tag_name(rest, cont, original, pos, state, Utils.compute_char_len(charcode))
   end
 
-  buffering_parse_fun(:parse_open_tag, 5, "")
+  defhalt(:parse_open_tag, 5, "")
 
   def parse_open_tag(<<buffer::bits>>, _cont, _original, _pos, state) do
     Utils.syntax_error(buffer, state, {:token, :name_start_char})
@@ -45,7 +45,7 @@ defmodule Saxy.Parser.Element do
     parse_open_tag_name(rest, cont, original, pos, state, len + Utils.compute_char_len(charcode))
   end
 
-  buffering_parse_fun(:parse_open_tag_name, 6, "")
+  defhalt(:parse_open_tag_name, 6, "")
 
   def parse_open_tag_name(<<buffer::bits>>, cont, original, pos, state, len) do
     name = binary_part(original, pos, len)
@@ -111,8 +111,8 @@ defmodule Saxy.Parser.Element do
     parse_sattribute(rest, cont, original, pos + 1, state, attributes)
   end
 
-  buffering_parse_fun(:parse_sattribute, 6, "")
-  buffering_parse_fun(:parse_sattribute, 6, "/")
+  defhalt(:parse_sattribute, 6, "")
+  defhalt(:parse_sattribute, 6, "/")
 
   def parse_sattribute(<<buffer::bits>>, _cont, _original, _pos, state, _attributes) do
     Utils.syntax_error(buffer, state, {:token, :name_start_char})
@@ -128,7 +128,7 @@ defmodule Saxy.Parser.Element do
     parse_attribute_name(rest, cont, original, pos, state, attributes, len + Utils.compute_char_len(charcode))
   end
 
-  buffering_parse_fun(:parse_attribute_name, 7, "")
+  defhalt(:parse_attribute_name, 7, "")
 
   def parse_attribute_name(<<rest::bits>>, cont, original, pos, state, attributes, len) do
     att_name = binary_part(original, pos, len)
@@ -144,7 +144,7 @@ defmodule Saxy.Parser.Element do
     parse_attribute_quote(rest, cont, original, pos + 1, state, attributes, att_name)
   end
 
-  buffering_parse_fun(:parse_attribute_eq, 7, "")
+  defhalt(:parse_attribute_eq, 7, "")
 
   def parse_attribute_eq(<<rest::bits>>, _cont, _original, _pos, state, _attributes, _att_name) do
     Utils.syntax_error(rest, state, {:token, :eq})
@@ -160,7 +160,7 @@ defmodule Saxy.Parser.Element do
     parse_att_value(rest, cont, original, pos + 1, state, attributes, quote, att_name, "", 0)
   end
 
-  buffering_parse_fun(:parse_attribute_quote, 7, "")
+  defhalt(:parse_attribute_quote, 7, "")
 
   def parse_attribute_quote(<<rest::bits>>, _cont, _original, _pos, state, _attributes, _att_name) do
     Utils.syntax_error(rest, state, {:token, :quote})
@@ -174,9 +174,9 @@ defmodule Saxy.Parser.Element do
     parse_sattribute(rest, cont, original, pos + len + 1, state, attributes)
   end
 
-  buffering_parse_fun(:parse_att_value, 10, "")
-  buffering_parse_fun(:parse_att_value, 10, "&")
-  buffering_parse_fun(:parse_att_value, 10, "&#")
+  defhalt(:parse_att_value, 10, "")
+  defhalt(:parse_att_value, 10, "&")
+  defhalt(:parse_att_value, 10, "&#")
 
   def parse_att_value(<<"&#x", rest::bits>>, cont, original, pos, state, attributes, q, att_name, acc, len) do
     att_value = binary_part(original, pos, len)
@@ -201,7 +201,7 @@ defmodule Saxy.Parser.Element do
     parse_att_value(rest, cont, original, pos, state, attributes, q, att_name, acc, len + 1)
   end
 
-  buffering_parse_fun(:parse_att_value, 10, :utf8)
+  Enum.each(utf8_binaries(), &defhalt(:parse_att_value, 10, unquote(&1)))
 
   def parse_att_value(<<charcode::utf8, rest::bits>>, cont, original, pos, state, attributes, q, att_name, acc, len) do
     parse_att_value(rest, cont, original, pos, state, attributes, q, att_name, acc, len + Utils.compute_char_len(charcode))
@@ -243,7 +243,7 @@ defmodule Saxy.Parser.Element do
     parse_att_value(rest, cont, original, pos + len + 1, state, attributes, q, att_name, acc, 0)
   end
 
-  buffering_parse_fun(:parse_att_value_entity_ref, 10, "")
+  defhalt(:parse_att_value_entity_ref, 10, "")
 
   def parse_att_value_entity_ref(<<rest::bits>>, _cont, _original, _pos, state, _attributes, _q, _att_name, _acc, _len) do
     Utils.syntax_error(rest, state, {:token, :entity_ref})
@@ -260,7 +260,7 @@ defmodule Saxy.Parser.Element do
     parse_att_value(rest, cont, original, pos + len + 1, state, attributes, q, att_name, [acc | <<char::utf8>>], 0)
   end
 
-  buffering_parse_fun(:parse_att_value_char_dec_ref, 10, "")
+  defhalt(:parse_att_value_char_dec_ref, 10, "")
 
   def parse_att_value_char_dec_ref(<<rest::bits>>, _cont, _original, _pos, state, _attributes, _q, _att_name, _acc, _len) do
     Utils.syntax_error(rest, state, {:token, :char_ref})
@@ -277,7 +277,7 @@ defmodule Saxy.Parser.Element do
     parse_att_value(rest, cont, original, pos + len + 1, state, attributes, q, att_name, [acc | <<char::utf8>>], 0)
   end
 
-  buffering_parse_fun(:parse_att_value_char_hex_ref, 10, "")
+  defhalt(:parse_att_value_char_hex_ref, 10, "")
 
   def parse_att_value_char_hex_ref(<<rest::bits>>, _cont, _original, _pos, state, _attributes, _q, _att_name, _acc, _len) do
     Utils.syntax_error(rest, state, {:token, :char_ref})
@@ -296,14 +296,14 @@ defmodule Saxy.Parser.Element do
     parse_chardata_whitespace(rest, cont, original, pos, state, 1)
   end
 
-  buffering_parse_fun(:parse_element_content, 5, "")
+  defhalt(:parse_element_content, 5, "")
 
   def parse_element_content(<<charcode, rest::bits>>, cont, original, pos, state)
       when is_ascii(charcode) do
     parse_chardata(rest, cont, original, pos, state, "", 1)
   end
 
-  buffering_parse_fun(:parse_element_content, 5, :utf8)
+  Enum.each(utf8_binaries(), &defhalt(:parse_element_content, 5, unquote(&1)))
 
   def parse_element_content(<<charcode::utf8, rest::bits>>, cont, original, pos, state) do
     parse_chardata(rest, cont, original, pos, state, "", Utils.compute_char_len(charcode))
@@ -339,15 +339,15 @@ defmodule Saxy.Parser.Element do
     parse_element_processing_instruction(buffer, cont, original, pos + 1, state, 0)
   end
 
-  buffering_parse_fun(:parse_element_content_rest, 5, "")
-  buffering_parse_fun(:parse_element_content_rest, 5, "!")
-  buffering_parse_fun(:parse_element_content_rest, 5, "!-")
-  buffering_parse_fun(:parse_element_content_rest, 5, "![")
-  buffering_parse_fun(:parse_element_content_rest, 5, "![C")
-  buffering_parse_fun(:parse_element_content_rest, 5, "![CD")
-  buffering_parse_fun(:parse_element_content_rest, 5, "![CDA")
-  buffering_parse_fun(:parse_element_content_rest, 5, "![CDAT")
-  buffering_parse_fun(:parse_element_content_rest, 5, "![CDATA")
+  defhalt(:parse_element_content_rest, 5, "")
+  defhalt(:parse_element_content_rest, 5, "!")
+  defhalt(:parse_element_content_rest, 5, "!-")
+  defhalt(:parse_element_content_rest, 5, "![")
+  defhalt(:parse_element_content_rest, 5, "![C")
+  defhalt(:parse_element_content_rest, 5, "![CD")
+  defhalt(:parse_element_content_rest, 5, "![CDA")
+  defhalt(:parse_element_content_rest, 5, "![CDAT")
+  defhalt(:parse_element_content_rest, 5, "![CDATA")
 
   def parse_element_content_rest(<<rest::bits>>, _cont, _original, _pos, state) do
     Utils.syntax_error(rest, state, {:token, :lt})
@@ -367,9 +367,9 @@ defmodule Saxy.Parser.Element do
     end
   end
 
-  buffering_parse_fun(:parse_element_cdata, 6, "")
-  buffering_parse_fun(:parse_element_cdata, 6, "]")
-  buffering_parse_fun(:parse_element_cdata, 6, "]]")
+  defhalt(:parse_element_cdata, 6, "")
+  defhalt(:parse_element_cdata, 6, "]")
+  defhalt(:parse_element_cdata, 6, "]]")
 
   def parse_element_cdata(<<charcode, rest::bits>>, cont, original, pos, state, len)
       when is_ascii(charcode) do
@@ -403,13 +403,13 @@ defmodule Saxy.Parser.Element do
     parse_chardata(rest, cont, original, pos, state, "", len + 1)
   end
 
-  buffering_parse_fun(:parse_chardata_whitespace, 6, :utf8)
+  Enum.each(utf8_binaries(), &defhalt(:parse_chardata_whitespace, 6, unquote(&1)))
 
   def parse_chardata_whitespace(<<charcode::utf8, rest::bits>>, cont, original, pos, state, len) do
     parse_chardata(rest, cont, original, pos, state, "", len + Utils.compute_char_len(charcode))
   end
 
-  buffering_parse_fun(:parse_chardata_whitespace, 6, "")
+  defhalt(:parse_chardata_whitespace, 6, "")
 
   def parse_chardata_whitespace(<<buffer::bits>>, _cont, _original, _pos, state, _len) do
     Utils.syntax_error(buffer, state, {:token, :chardata})
@@ -440,20 +440,20 @@ defmodule Saxy.Parser.Element do
     parse_chardata(rest, cont, original, pos, state, acc, len + 1)
   end
 
-  buffering_parse_fun(:parse_chardata, 7, :utf8)
+  Enum.each(utf8_binaries(), &defhalt(:parse_chardata, 7, unquote(&1)))
 
   def parse_chardata(<<charcode::utf8, rest::bits>>, cont, original, pos, state, acc, len) do
     parse_chardata(rest, cont, original, pos, state, acc, len + Utils.compute_char_len(charcode))
   end
 
-  buffering_parse_fun(:parse_chardata, 7, "")
+  defhalt(:parse_chardata, 7, "")
 
   def parse_chardata(<<buffer::bits>>, _cont, _original, _pos, state, _acc, _len) do
     Utils.syntax_error(buffer, state, {:token, :chardata})
   end
 
-  buffering_parse_fun(:parse_element_content_reference, 6, "")
-  buffering_parse_fun(:parse_element_content_reference, 6, "#")
+  defhalt(:parse_element_content_reference, 6, "")
+  defhalt(:parse_element_content_reference, 6, "#")
 
   def parse_element_content_reference(<<charcode, rest::bits>>, cont, original, pos, state, acc)
        when is_name_start_char(charcode) do
@@ -493,7 +493,7 @@ defmodule Saxy.Parser.Element do
     parse_chardata(rest, cont, original, pos + len + 1, state, [acc | char], 0)
   end
 
-  buffering_parse_fun(:parse_element_entity_ref, 7, "")
+  defhalt(:parse_element_entity_ref, 7, "")
 
   def parse_element_entity_ref(<<rest::bits>>, _cont, _original, _pos, state, _acc, _len) do
     Utils.syntax_error(rest, state, {:token, :entity_ref})
@@ -514,7 +514,7 @@ defmodule Saxy.Parser.Element do
     parse_element_char_dec_ref(rest, cont, original, pos, state, acc, len + 1)
   end
 
-  buffering_parse_fun(:parse_element_char_dec_ref, 7, "")
+  defhalt(:parse_element_char_dec_ref, 7, "")
 
   def parse_element_char_dec_ref(<<rest::bits>>, _cont, _original, _pos, state, _acc, _len) do
     Utils.syntax_error(rest, state, {:token, :char_ref})
@@ -535,7 +535,7 @@ defmodule Saxy.Parser.Element do
     parse_element_char_hex_ref(rest, cont, original, pos, state, acc, len + 1)
   end
 
-  buffering_parse_fun(:parse_element_char_hex_ref, 7, "")
+  defhalt(:parse_element_char_hex_ref, 7, "")
 
   def parse_element_char_hex_ref(<<rest::bits>>, _cont, _original, _pos, state, _acc, _len) do
     Utils.syntax_error(rest, state, {:token, :char_ref})
@@ -551,7 +551,7 @@ defmodule Saxy.Parser.Element do
     parse_element_processing_instruction(rest, cont, original, pos, state, Utils.compute_char_len(charcode))
   end
 
-  buffering_parse_fun(:parse_element_processing_instruction, 6, "")
+  defhalt(:parse_element_processing_instruction, 6, "")
 
   def parse_element_processing_instruction(<<rest::bits>>, _cont, _original, _pos, state, 0) do
     Utils.syntax_error(rest, state, {:token, :processing_instruction})
@@ -581,8 +581,8 @@ defmodule Saxy.Parser.Element do
     parse_element_content(rest, cont, original, pos + len + 2, state)
   end
 
-  buffering_parse_fun(:parse_element_processing_instruction_content, 7, "")
-  buffering_parse_fun(:parse_element_processing_instruction_content, 7, "?")
+  defhalt(:parse_element_processing_instruction_content, 7, "")
+  defhalt(:parse_element_processing_instruction_content, 7, "?")
 
   def parse_element_processing_instruction_content(<<charcode, rest::bits>>, cont, original, pos, state, name, len)
       when is_ascii(charcode) do
@@ -601,10 +601,10 @@ defmodule Saxy.Parser.Element do
     parse_element_content(rest, cont, original, pos + len + 3, state)
   end
 
-  buffering_parse_fun(:parse_element_content_comment, 6, "")
-  buffering_parse_fun(:parse_element_content_comment, 6, "-")
-  buffering_parse_fun(:parse_element_content_comment, 6, "--")
-  buffering_parse_fun(:parse_element_content_comment, 6, "---")
+  defhalt(:parse_element_content_comment, 6, "")
+  defhalt(:parse_element_content_comment, 6, "-")
+  defhalt(:parse_element_content_comment, 6, "--")
+  defhalt(:parse_element_content_comment, 6, "---")
 
   def parse_element_content_comment(<<"--->", _rest::bits>>, _cont, _original, _pos, state, _len) do
     Utils.syntax_error("--->", state, {:token, :comment})
@@ -628,7 +628,7 @@ defmodule Saxy.Parser.Element do
     parse_close_tag_name(rest, cont, original, pos, state, Utils.compute_char_len(charcode))
   end
 
-  buffering_parse_fun(:parse_close_tag_name, 6, "")
+  defhalt(:parse_close_tag_name, 6, "")
 
   def parse_close_tag_name(<<rest::bits>>, _cont, _original, _pos, state, 0) do
     Utils.syntax_error(rest, state, {:token, :end_tag})
@@ -681,7 +681,7 @@ defmodule Saxy.Parser.Element do
     Utils.syntax_error(buffer, state, {:token, :end_tag})
   end
 
-  buffering_parse_fun(:parse_element_misc, 5, "")
+  defhalt(:parse_element_misc, 5, "")
 
   def parse_element_misc(<<>>, _cont, _original, _pos, state) do
     case Emitter.emit(:end_document, {}, state) do
@@ -700,7 +700,7 @@ defmodule Saxy.Parser.Element do
     parse_element_misc_rest(rest, cont, original, pos + 1, state)
   end
 
-  buffering_parse_fun(:parse_element_misc_rest, 5, "")
+  defhalt(:parse_element_misc_rest, 5, "")
 
   def parse_element_misc_rest(<<?!, rest::bits>>, cont, original, pos, state) do
     parse_element_misc_comment(rest, cont, original, pos + 1, state)
@@ -710,8 +710,8 @@ defmodule Saxy.Parser.Element do
     parse_element_misc_pi(rest, cont, original, pos + 1, state)
   end
 
-  buffering_parse_fun(:parse_element_misc_comment, 5, "")
-  buffering_parse_fun(:parse_element_misc_comment, 5, "-")
+  defhalt(:parse_element_misc_comment, 5, "")
+  defhalt(:parse_element_misc_comment, 5, "-")
 
   def parse_element_misc_comment(<<"--", rest::bits>>, cont, original, pos, state) do
     parse_element_misc_comment_char(rest, cont, original, pos + 2, state, 0)
@@ -721,10 +721,10 @@ defmodule Saxy.Parser.Element do
     Utils.syntax_error(buffer, state, {:token, :--})
   end
 
-  buffering_parse_fun(:parse_element_misc_comment_char, 6, "")
-  buffering_parse_fun(:parse_element_misc_comment_char, 6, "-")
-  buffering_parse_fun(:parse_element_misc_comment_char, 6, "--")
-  buffering_parse_fun(:parse_element_misc_comment_char, 6, "---")
+  defhalt(:parse_element_misc_comment_char, 6, "")
+  defhalt(:parse_element_misc_comment_char, 6, "-")
+  defhalt(:parse_element_misc_comment_char, 6, "--")
+  defhalt(:parse_element_misc_comment_char, 6, "---")
 
   def parse_element_misc_comment_char(<<"--->", _rest::bits>>, _cont, _original, _pos, state, _len) do
     Utils.syntax_error("--->", state, {:token, :comment})
@@ -747,7 +747,7 @@ defmodule Saxy.Parser.Element do
     Utils.syntax_error(buffer, state, {:token, :"-->"})
   end
 
-  buffering_parse_fun(:parse_element_misc_pi, 5, "")
+  defhalt(:parse_element_misc_pi, 5, "")
 
   def parse_element_misc_pi(<<char, rest::bits>>, cont, original, pos, state)
       when is_name_start_char(char) do
@@ -783,8 +783,8 @@ defmodule Saxy.Parser.Element do
     end
   end
 
-  buffering_parse_fun(:parse_element_misc_pi_content, 6, "")
-  buffering_parse_fun(:parse_element_misc_pi_content, 6, "?")
+  defhalt(:parse_element_misc_pi_content, 6, "")
+  defhalt(:parse_element_misc_pi_content, 6, "?")
 
   def parse_element_misc_pi_content(<<"?>", rest::bits>>, cont, original, pos, state, len) do
     parse_element_misc(rest, cont, original, pos + len + 2, state)

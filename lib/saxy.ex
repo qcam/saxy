@@ -153,7 +153,8 @@ defmodule Saxy do
           initial_state :: term(),
           options :: Keyword.t()
         ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
-  def parse_string(data, handler, initial_state, options \\ []) when is_binary(data) and is_atom(handler) do
+  def parse_string(data, handler, initial_state, options \\ [])
+      when is_binary(data) and is_atom(handler) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
 
     state = %State{
@@ -229,13 +230,14 @@ defmodule Saxy do
   """
 
   @spec parse_stream(
-          stream :: File.Stream.t() | Stream.t(),
+          stream :: Enumerable.t(),
           handler :: module() | function(),
           initial_state :: term(),
           options :: Keyword.t()
         ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
 
-  def parse_stream(%module{} = stream, handler, initial_state, options \\ []) when module in [File.Stream, Stream] do
+  def parse_stream(%module{} = stream, handler, initial_state, options \\ [])
+      when module in [File.Stream, Stream] do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
 
     state = %State{
@@ -256,7 +258,8 @@ defmodule Saxy do
           {:error, reason} -> {:error, reason}
         end
 
-      other -> other
+      other ->
+        other
     end
   end
 
@@ -314,7 +317,8 @@ defmodule Saxy do
       ]
 
   """
-  @spec encode_to_iodata!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t()) :: iodata()
+  @spec encode_to_iodata!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t()) ::
+          iodata()
 
   def encode_to_iodata!(root, prolog \\ []) do
     Encoder.encode_to_iodata(root, prolog)
