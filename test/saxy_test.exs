@@ -144,6 +144,23 @@ defmodule SaxyTest do
     ]
   end
 
+  test "parse_stream/3 supports parsing with enum" do
+    codepoints =
+      String.codepoints("""
+      <?xml version='1.0' encoding="UTF-8" ?>
+      <item></item>
+      """)
+
+    assert {:ok, state} = Saxy.parse_stream(codepoints, StackHandler, [])
+
+    assert Enum.reverse(state) == [
+      {:start_document, [encoding: "UTF-8", version: "1.0"]},
+      {:start_element, {"item", []}},
+      {:end_element, "item"},
+      {:end_document, {}}
+    ]
+  end
+
   test "parse_stream/3 handles error when parsing" do
     stream =
       """

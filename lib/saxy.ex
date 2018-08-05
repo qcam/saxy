@@ -236,8 +236,7 @@ defmodule Saxy do
           options :: Keyword.t()
         ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
 
-  def parse_stream(%module{} = stream, handler, initial_state, options \\ [])
-      when module in [File.Stream, Stream] do
+  def parse_stream(stream, handler, initial_state, options \\ []) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
 
     state = %State{
