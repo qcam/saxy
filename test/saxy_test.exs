@@ -144,6 +144,19 @@ defmodule SaxyTest do
     ]
   end
 
+  test "parse_stream/3 handles error when parsing" do
+    stream =
+      """
+      <?xml version='1.0' encoding="UTF-8" ?>
+      <item></hello>
+      """
+      |> String.codepoints()
+      |> Stream.map(&(&1))
+
+    assert {:error, exception} = Saxy.parse_stream(stream, StackHandler, [])
+    assert ParseError.message(exception) == "unexpected ending tag \"hello\", expected tag: \"item\""
+  end
+
   test "returns parsing errors" do
     data = "<?xml ?><foo/>"
 
