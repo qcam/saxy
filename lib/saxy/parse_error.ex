@@ -1,7 +1,18 @@
 defmodule Saxy.ParseError do
   @moduledoc """
-  Returned when parser encounters malformed token during parsing.
+  Returned when parser encounters errors during parsing.
   """
+
+  @type reason() ::
+          {:token, token :: String.t()}
+          | {:wrong_closing_tag, open_tag :: String.t(), close_tag :: String.t()}
+          | {:invalid_pi, pi_name :: String.t()}
+          | {:invalid_encoding, encoding :: String.t()}
+          | {:bad_return, {event :: atom(), return :: term()}}
+
+  @type t() :: %__MODULE__{
+          reason: reason()
+        }
 
   defexception [
     :reason,
