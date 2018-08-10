@@ -43,7 +43,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_xml_decl, 5, "versio")
 
   def parse_xml_decl(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.syntax_error(original, pos, state, {:token, :version})
+    Utils.parse_error(original, pos, state, {:token, :version})
   end
 
   def parse_xml_ver_eq(<<charcode::integer, rest::bits>>, more?, original, pos, state) when is_whitespace(charcode) do
@@ -68,7 +68,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_xml_ver_quote, 5, "")
 
   def parse_xml_ver_quote(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.syntax_error(original, pos, state, {:token, :quote})
+    Utils.parse_error(original, pos, state, {:token, :quote})
   end
 
   def parse_xml_ver_one_dot(<<"1.", rest::bits>>, more?, original, pos, state, quote) do
@@ -79,7 +79,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_xml_ver_one_dot, 6, "1")
 
   def parse_xml_ver_one_dot(<<_buffer::bits>>, _more?, original, pos, state, _quote) do
-    Utils.syntax_error(original, pos, state, {:token, :"1."})
+    Utils.parse_error(original, pos, state, {:token, :"1."})
   end
 
   def parse_xml_ver_num(<<quote, rest::bits>>, more?, original, pos, state, open_quote, len)
@@ -98,7 +98,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_xml_ver_num, 7, "")
 
   def parse_xml_ver_num(<<_buffer::bits>>, _more?, original, pos, state, _open_quote, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :version_num})
+    Utils.parse_error(original, pos + len, state, {:token, :version_num})
   end
 
   def parse_encoding_decl(<<whitespace::integer, rest::bits>>, more?, original, pos, state, prolog)
@@ -135,7 +135,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_encoding_decl_eq, 6, "")
 
   def parse_encoding_decl_eq(<<_buffer::bits>>, _more?, original, pos, state, _prolog) do
-    Utils.syntax_error(original, pos, state, {:token, :eq})
+    Utils.parse_error(original, pos, state, {:token, :eq})
   end
 
   def parse_encoding_decl_eq_quote(<<charcode::integer, rest::bits>>, more?, original, pos, state, prolog)
@@ -154,7 +154,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_encoding_decl_eq_quote, 6, "")
 
   def parse_encoding_decl_eq_quote(<<_buffer::bits>>, _more?, original, pos, state, _prolog) do
-    Utils.syntax_error(original, pos, state, {:token, :quote})
+    Utils.parse_error(original, pos, state, {:token, :quote})
   end
 
   def parse_encoding_decl_enc_name(<<charcode, rest::bits>>, more?, original, pos, state, prolog, open_quote, len)
@@ -164,7 +164,7 @@ defmodule Saxy.Parser.Prolog do
     if Utils.valid_encoding?(encoding) do
       parse_standalone(rest, more?, original, pos + len + 1, state, [{:encoding, encoding} | prolog])
     else
-      Utils.syntax_error(original, pos, state, {:invalid_encoding, encoding})
+      Utils.parse_error(original, pos, state, {:invalid_encoding, encoding})
     end
   end
 
@@ -177,7 +177,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_encoding_decl_enc_name, 8, "")
 
   def parse_encoding_decl_enc_name(<<_buffer::bits>>, _more?, original, pos, state, _prolog, _open_quote, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :encoding_name})
+    Utils.parse_error(original, pos + len, state, {:token, :encoding_name})
   end
 
   def parse_standalone(<<whitespace::integer, rest::bits>>, more?, original, pos, state, prolog)
@@ -216,7 +216,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_standalone_eq, 6, "")
 
   def parse_standalone_eq(<<_buffer::bits>>, _more?, original, pos, state, _prolog) do
-    Utils.syntax_error(original, pos, state, {:token, :standalone})
+    Utils.parse_error(original, pos, state, {:token, :standalone})
   end
 
   def parse_standalone_eq_quote(<<quote, rest::bits>>, more?, original, pos, state, prolog)
@@ -227,7 +227,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_standalone_eq_quote, 6, "")
 
   def parse_standalone_eq_quote(<<_buffer::bits>>, _more?, original, pos, state, _prolog) do
-    Utils.syntax_error(original, pos, state, {:token, :quote})
+    Utils.parse_error(original, pos, state, {:token, :quote})
   end
 
   def parse_standalone_bool(<<"yes", rest::bits>>, more?, original, pos, state, prolog, open_quote) do
@@ -244,7 +244,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_standalone_bool, 7, "ye")
 
   def parse_standalone_bool(<<_buffer::bits>>, _more?, original, pos, state, _prolog, _open_quote) do
-    Utils.syntax_error(original, pos, state, {:token, :yes_or_no})
+    Utils.parse_error(original, pos, state, {:token, :yes_or_no})
   end
 
   def parse_standalone_end_quote(<<quote, rest::bits>>, more?, original, pos, state, prolog, open_quote)
@@ -255,7 +255,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_standalone_end_quote, 7, "")
 
   def parse_standalone_end_quote(<<_buffer::bits>>, _more?, original, pos, state, _prolog, _open_quote) do
-    Utils.syntax_error(original, pos, state, {:token, :quote})
+    Utils.parse_error(original, pos, state, {:token, :quote})
   end
 
   def parse_xml_decl_close(<<whitespace::integer, rest::bits>>, more?, original, pos, state, prolog)
@@ -271,7 +271,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_xml_decl_close, 6, "?")
 
   def parse_xml_decl_close(<<_buffer::bits>>, _more?, original, pos, state, _prolog) do
-    Utils.syntax_error(original, pos, state, {:token, :xml_decl_close})
+    Utils.parse_error(original, pos, state, {:token, :xml_decl_close})
   end
 
   def parse_prolog_misc(<<whitespace::integer, rest::bits>>, more?, original, pos, state, prolog)
@@ -308,7 +308,7 @@ defmodule Saxy.Parser.Prolog do
   end
 
   def parse_prolog_misc_comment(<<"--->", _rest::bits>>, _more?, original, pos, state, _prolog, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :comment})
+    Utils.parse_error(original, pos + len, state, {:token, :comment})
   end
 
   def parse_prolog_misc_comment(<<"-->", rest::bits>>, more?, original, pos, state, prolog, len) do
@@ -341,7 +341,7 @@ defmodule Saxy.Parser.Prolog do
   defhalt(:parse_prolog_processing_instruction, 6, "")
 
   def parse_prolog_processing_instruction(<<_buffer::bits>>, _more?, original, pos, state, _prolog) do
-    Utils.syntax_error(original, pos, state, {:token, :processing_instruction})
+    Utils.parse_error(original, pos, state, {:token, :processing_instruction})
   end
 
   def parse_prolog_pi_name(<<charcode, rest::bits>>, more?, original, pos, state, prolog, len)
@@ -362,7 +362,7 @@ defmodule Saxy.Parser.Prolog do
     if Utils.valid_pi_name?(pi_name) do
       parse_prolog_pi_content(rest, more?, original, pos + len, state, prolog, 0)
     else
-      Utils.syntax_error(original, pos, state, {:invalid_pi, pi_name})
+      Utils.parse_error(original, pos, state, {:invalid_pi, pi_name})
     end
   end
 

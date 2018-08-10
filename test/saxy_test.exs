@@ -1,10 +1,7 @@
 defmodule SaxyTest do
   use ExUnit.Case
 
-  alias Saxy.{
-    ParseError,
-    HandlerError
-  }
+  alias Saxy.ParseError
 
   alias Saxy.TestHandlers.{
     FastReturnHandler,
@@ -214,7 +211,7 @@ defmodule SaxyTest do
     data = "<?xml version=\"1.0\" ?><foo/>"
 
     assert {:error, error} = Saxy.parse_string(data, WrongHandler, [])
-    assert HandlerError.message(error) == "unexpected return :something_wrong in :start_document event handler"
+    assert ParseError.message(error) == "unexpected return :something_wrong in :start_document event handler"
   end
 
   describe "encode!/2" do

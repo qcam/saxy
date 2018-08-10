@@ -16,7 +16,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element, 5, "")
 
   def parse_element(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.syntax_error(original, pos, state, {:token, :lt})
+    Utils.parse_error(original, pos, state, {:token, :lt})
   end
 
   def parse_open_tag(<<charcode, rest::bits>>, more?, original, pos, state)
@@ -32,7 +32,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_open_tag, 5, "")
 
   def parse_open_tag(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.syntax_error(original, pos, state, {:token, :name_start_char})
+    Utils.parse_error(original, pos, state, {:token, :name_start_char})
   end
 
   def parse_open_tag_name(<<charcode, rest::bits>>, more?, original, pos, state, len)
@@ -63,8 +63,8 @@ defmodule Saxy.Parser.Element do
       {:ok, state} ->
         parse_element_content(rest, more?, original, pos + 1, state)
 
-      {:error, other} ->
-        Utils.bad_return_error(other)
+      {:error, reason} ->
+        Utils.bad_return_error(reason)
     end
   end
 
@@ -111,7 +111,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_sattribute, 6, "/")
 
   def parse_sattribute(<<_buffer::bits>>, _more?, original, pos, state, _attributes) do
-    Utils.syntax_error(original, pos, state, {:token, :name_start_char})
+    Utils.parse_error(original, pos, state, {:token, :name_start_char})
   end
 
   def parse_attribute_name(<<charcode, rest::bits>>, more?, original, pos, state, attributes, len)
@@ -143,7 +143,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_attribute_eq, 7, "")
 
   def parse_attribute_eq(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _att_name) do
-    Utils.syntax_error(original, pos, state, {:token, :eq})
+    Utils.parse_error(original, pos, state, {:token, :eq})
   end
 
   def parse_attribute_quote(<<whitespace::integer, rest::bits>>, more?, original, pos, state, attributes, att_name)
@@ -159,7 +159,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_attribute_quote, 7, "")
 
   def parse_attribute_quote(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _att_name) do
-    Utils.syntax_error(original, pos, state, {:token, :quote})
+    Utils.parse_error(original, pos, state, {:token, :quote})
   end
 
   def parse_att_value(<<quote, rest::bits>>, more?, original, pos, state, attributes, open_quote, att_name, acc, len)
@@ -204,7 +204,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_att_value(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :att_value})
+    Utils.parse_error(original, pos + len, state, {:token, :att_value})
   end
 
   def parse_att_value_entity_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, 0)
@@ -228,7 +228,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_att_value_entity_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, 0) do
-    Utils.syntax_error(original, pos, state, {:token, :name_start_char})
+    Utils.parse_error(original, pos, state, {:token, :name_start_char})
   end
 
   def parse_att_value_entity_ref(<<?;, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len) do
@@ -242,7 +242,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_att_value_entity_ref, 10, "")
 
   def parse_att_value_entity_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :entity_ref})
+    Utils.parse_error(original, pos + len, state, {:token, :entity_ref})
   end
 
   def parse_att_value_char_dec_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
@@ -259,7 +259,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_att_value_char_dec_ref, 10, "")
 
   def parse_att_value_char_dec_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :char_ref})
+    Utils.parse_error(original, pos + len, state, {:token, :char_ref})
   end
 
   def parse_att_value_char_hex_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
@@ -276,7 +276,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_att_value_char_hex_ref, 10, "")
 
   def parse_att_value_char_hex_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :char_ref})
+    Utils.parse_error(original, pos + len, state, {:token, :char_ref})
   end
 
   def parse_element_content(<<?<, rest::bits>>, more?, original, pos, state) do
@@ -306,7 +306,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_content(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.syntax_error(original, pos, state, {:token, :content})
+    Utils.parse_error(original, pos, state, {:token, :content})
   end
 
   def parse_element_content_rest(<<charcode, rest::bits>>, more?, original, pos, state)
@@ -346,7 +346,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element_content_rest, 5, "![CDATA")
 
   def parse_element_content_rest(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.syntax_error(original, pos, state, {:token, :lt})
+    Utils.parse_error(original, pos, state, {:token, :lt})
   end
 
   def parse_element_cdata(<<"]]>", rest::bits>>, more?, original, pos, state, len) do
@@ -377,7 +377,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_cdata(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :"]]"})
+    Utils.parse_error(original, pos + len, state, {:token, :"]]"})
   end
 
   def parse_chardata_whitespace(<<whitespace::integer, rest::bits>>, more?, original, pos, state, len)
@@ -408,7 +408,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_chardata_whitespace, 6, "")
 
   def parse_chardata_whitespace(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :chardata})
+    Utils.parse_error(original, pos + len, state, {:token, :chardata})
   end
 
   def parse_chardata(<<?<, rest::bits>>, more?, original, pos, state, acc, len) do
@@ -445,7 +445,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_chardata, 7, "")
 
   def parse_chardata(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :chardata})
+    Utils.parse_error(original, pos + len, state, {:token, :chardata})
   end
 
   defhalt(:parse_element_content_reference, 6, "")
@@ -470,7 +470,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_content_reference(<<_buffer::bits>>, _more?, original, pos, state, _acc) do
-    Utils.syntax_error(original, pos, state, {:token, :reference})
+    Utils.parse_error(original, pos, state, {:token, :reference})
   end
 
   def parse_element_entity_ref(<<charcode, rest::bits>>, more?, original, pos, state, acc, len)
@@ -492,11 +492,11 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element_entity_ref, 7, "")
 
   def parse_element_entity_ref(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :entity_ref})
+    Utils.parse_error(original, pos + len, state, {:token, :entity_ref})
   end
 
   def parse_element_char_dec_ref(<<?;, _rest::bits>>, _more?, original, pos, state, _acc, 0) do
-    Utils.syntax_error(original, pos, state, {:token, :char_ref})
+    Utils.parse_error(original, pos, state, {:token, :char_ref})
   end
 
   def parse_element_char_dec_ref(<<?;, rest::bits>>, more?, original, pos, state, acc, len) do
@@ -513,11 +513,11 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element_char_dec_ref, 7, "")
 
   def parse_element_char_dec_ref(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :char_ref})
+    Utils.parse_error(original, pos + len, state, {:token, :char_ref})
   end
 
   def parse_element_char_hex_ref(<<?;, _rest::bits>>, _more?, original, pos, state, _acc, 0) do
-    Utils.syntax_error(original, pos, state, [])
+    Utils.parse_error(original, pos, state, [])
   end
 
   def parse_element_char_hex_ref(<<?;, rest::bits>>, more?, original, pos, state, acc, len) do
@@ -534,7 +534,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element_char_hex_ref, 7, "")
 
   def parse_element_char_hex_ref(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :char_ref})
+    Utils.parse_error(original, pos + len, state, {:token, :char_ref})
   end
 
   def parse_element_processing_instruction(<<charcode, rest::bits>>, more?, original, pos, state, 0)
@@ -550,7 +550,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element_processing_instruction, 6, "")
 
   def parse_element_processing_instruction(<<_buffer::bits>>, _more?, original, pos, state, 0) do
-    Utils.syntax_error(original, pos, state, {:token, :processing_instruction})
+    Utils.parse_error(original, pos, state, {:token, :processing_instruction})
   end
 
   def parse_element_processing_instruction(<<charcode, rest::bits>>, more?, original, pos, state, len)
@@ -569,7 +569,7 @@ defmodule Saxy.Parser.Element do
     if Utils.valid_pi_name?(pi_name) do
       parse_element_processing_instruction_content(buffer, more?, original, pos + len, state, pi_name, 0)
     else
-      Utils.syntax_error(original, pos, state, {:invalid_pi, pi_name})
+      Utils.parse_error(original, pos, state, {:invalid_pi, pi_name})
     end
   end
 
@@ -590,7 +590,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_processing_instruction_content(<<_buffer::bits>>, _more?, original, pos, state, _name, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :processing_instruction})
+    Utils.parse_error(original, pos + len, state, {:token, :processing_instruction})
   end
 
   def parse_element_content_comment(<<"-->", rest::bits>>, more?, original, pos, state, len) do
@@ -603,7 +603,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element_content_comment, 6, "---")
 
   def parse_element_content_comment(<<"--->", _rest::bits>>, _more?, original, pos, state, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :comment})
+    Utils.parse_error(original, pos + len, state, {:token, :comment})
   end
 
   def parse_element_content_comment(<<charcode, rest::bits>>, more?, original, pos, state, len) when is_ascii(charcode) do
@@ -627,7 +627,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_close_tag_name, 6, "")
 
   def parse_close_tag_name(<<_buffer::bits>>, _more?, original, pos, state, 0) do
-    Utils.syntax_error(original, pos, state, {:token, :end_tag})
+    Utils.parse_error(original, pos, state, {:token, :end_tag})
   end
 
   def parse_close_tag_name(<<?>, rest::bits>>, more?, original, pos, state, len) do
@@ -655,7 +655,7 @@ defmodule Saxy.Parser.Element do
           Utils.bad_return_error(other)
       end
     else
-      Utils.syntax_error(original, pos, state, {:wrong_closing_tag, open_tag, ending_tag})
+      Utils.parse_error(original, pos, state, {:wrong_closing_tag, open_tag, ending_tag})
     end
   end
 
@@ -670,7 +670,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_close_tag_name(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :end_tag})
+    Utils.parse_error(original, pos + len, state, {:token, :end_tag})
   end
 
   defhalt(:parse_element_misc, 5, "")
@@ -710,7 +710,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_misc_comment(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.syntax_error(original, pos, state, {:token, :--})
+    Utils.parse_error(original, pos, state, {:token, :--})
   end
 
   defhalt(:parse_element_misc_comment_char, 6, "")
@@ -719,7 +719,7 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element_misc_comment_char, 6, "---")
 
   def parse_element_misc_comment_char(<<"--->", _rest::bits>>, _more?, original, pos, state, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :comment})
+    Utils.parse_error(original, pos + len, state, {:token, :comment})
   end
 
   def parse_element_misc_comment_char(<<"-->", rest::bits>>, more?, original, pos, state, len) do
@@ -736,7 +736,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_misc_comment_char(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :"-->"})
+    Utils.parse_error(original, pos + len, state, {:token, :"-->"})
   end
 
   defhalt(:parse_element_misc_pi, 5, "")
@@ -752,7 +752,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_misc_pi(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.syntax_error(original, pos, state, {:token, :processing_instruction})
+    Utils.parse_error(original, pos, state, {:token, :processing_instruction})
   end
 
   def parse_element_misc_pi_name(<<charcode, rest::bits>>, more?, original, pos, state, len)
@@ -771,7 +771,7 @@ defmodule Saxy.Parser.Element do
     if Utils.valid_pi_name?(name) do
       parse_element_misc_pi_content(rest, more?, original, pos + len, state, 0)
     else
-      Utils.syntax_error(original, pos, state, {:invalid_pi, name})
+      Utils.parse_error(original, pos, state, {:invalid_pi, name})
     end
   end
 
@@ -792,7 +792,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_misc_pi_content(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.syntax_error(original, pos + len, state, {:token, :processing_instruction})
+    Utils.parse_error(original, pos + len, state, {:token, :processing_instruction})
   end
 
   @compile {:inline, [maybe_trim: 3]}
