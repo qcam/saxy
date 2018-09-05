@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.8.0
+
+* Improve streaming parsing [#23](https://github.com/qcam/saxy/pull/23).
+* Improve parser performance [#24](https://github.com/qcam/saxy/pull/24).
+* Improve parser error handling [#25](https://github.com/qcam/saxy/pull/25).
+
 ## v0.7.0
 
 * Introduce XML encoder [#17](https://github.com/qcam/saxy/pull/17).
