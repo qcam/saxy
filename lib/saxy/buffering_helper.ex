@@ -1,4 +1,4 @@
-defmodule Saxy.Buffering do
+defmodule Saxy.BufferingHelper do
   @moduledoc false
 
   @doc """

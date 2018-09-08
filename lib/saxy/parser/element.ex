@@ -3,7 +3,7 @@ defmodule Saxy.Parser.Element do
 
   import Saxy.Guards
 
-  import Saxy.Buffering, only: [defhalt: 3, utf8_binaries: 0]
+  import Saxy.BufferingHelper, only: [defhalt: 3, utf8_binaries: 0]
 
   alias Saxy.Emitter
 

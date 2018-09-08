@@ -3,7 +3,7 @@ defmodule Saxy.Parser.Prolog do
 
   import Saxy.Guards
 
-  import Saxy.Buffering, only: [defhalt: 3]
+  import Saxy.BufferingHelper, only: [defhalt: 3]
 
   import Saxy.Parser.Element, only: [parse_element: 5]
 
