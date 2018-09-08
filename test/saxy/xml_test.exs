@@ -59,6 +59,7 @@ defmodule Saxy.XMLTest do
     test "generates refence in simple form" do
       assert processing_instruction("foo", "bar") == {:processing_instruction, "foo", "bar"}
       assert processing_instruction(:foo, "bar") == {:processing_instruction, "foo", "bar"}
+
       assert_raise FunctionClauseError, fn ->
         processing_instruction(nil, "bar")
       end

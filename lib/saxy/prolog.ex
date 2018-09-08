@@ -6,10 +6,10 @@ defmodule Saxy.Prolog do
   ]
 
   @type t() :: %__MODULE__{
-    version: String.t(),
-    encoding: atom() | String.t(),
-    standalone: boolean()
-  }
+          version: String.t(),
+          encoding: atom() | String.t(),
+          standalone: boolean()
+        }
 
   def from_keyword(prolog) do
     version = Keyword.get(prolog, :version, "1.0")

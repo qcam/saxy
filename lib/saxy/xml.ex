@@ -19,8 +19,7 @@ defmodule Saxy.XML do
 
   @type dec_ref() :: {:reference, {:decimal, Integer.t()}}
 
-  @type processing_instruction() ::
-          {:processing_instruction, name :: String.t(), instruction :: String.t()}
+  @type processing_instruction() :: {:processing_instruction, name :: String.t(), instruction :: String.t()}
 
   @type element() :: {
           name :: String.t(),
