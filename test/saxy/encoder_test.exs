@@ -18,22 +18,19 @@ defmodule Saxy.EncoderTest do
 
     document = {
       "person",
-      [{"first_name", "John"},
-       {"last_name", "Doe"}],
+      [{"first_name", "John"}, {"last_name", "Doe"}],
       content
     }
 
     xml = encode(document)
 
-    assert xml ==
-             ~s(<?xml version="1.0"?><person first_name="John" last_name="Doe">Hello my name is John Doe</person>)
+    assert xml == ~s(<?xml version="1.0"?><person first_name="John" last_name="Doe">Hello my name is John Doe</person>)
   end
 
   test "encodes attributes with escapable characters" do
     xml = encode({"person", [{"first_name", "&'\"<>"}], []})
 
-    assert xml ==
-             ~s(<?xml version="1.0"?><person first_name="&amp;&apos;&quot;&lt;&gt;"></person>)
+    assert xml == ~s(<?xml version="1.0"?><person first_name="&amp;&apos;&quot;&lt;&gt;"></person>)
   end
 
   test "encodes CDATA" do
@@ -78,8 +75,7 @@ defmodule Saxy.EncoderTest do
     document = {"movie", [], content}
     xml = encode(document)
 
-    assert xml ==
-             ~s(<?xml version="1.0"?><movie><!--This is obviously a comment--><!--A+, A, A- --></movie>)
+    assert xml == ~s(<?xml version="1.0"?><movie><!--This is obviously a comment--><!--A+, A, A- --></movie>)
   end
 
   test "encodes processing instruction" do
@@ -90,8 +86,7 @@ defmodule Saxy.EncoderTest do
     document = {"movie", [], content}
     xml = encode(document)
 
-    assert xml ==
-             ~s(<?xml version="1.0"?><movie><?xml-stylesheet type="text/xsl" href="style.xsl"?></movie>)
+    assert xml == ~s(<?xml version="1.0"?><movie><?xml-stylesheet type="text/xsl" href="style.xsl"?></movie>)
   end
 
   test "encodes nested element" do

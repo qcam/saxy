@@ -193,8 +193,9 @@ defmodule Saxy.Parser.PrologTest do
     """
 
     assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+
     assert ParseError.message(error) ==
-      "unexpected target name \"xMl\" at the start of processing instruction, the target names \"XML\", \"xml\", and so on are reserved for standardization"
+             "unexpected target name \"xMl\" at the start of processing instruction, the target names \"XML\", \"xml\", and so on are reserved for standardization"
 
     buffer = """
     <?xml version="1.0" ?>

@@ -25,8 +25,7 @@ defmodule Saxy.BufferingHelper do
   end
 
   defp build_context_fun(fun_name, token, arity) do
-    default_params =
-      quote(do: [unquote(token) <> cont_buffer, more?, original <> cont_buffer, pos, state])
+    default_params = quote(do: [unquote(token) <> cont_buffer, more?, original <> cont_buffer, pos, state])
 
     params = append_acc_variables(default_params, arity)
 

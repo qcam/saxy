@@ -169,8 +169,7 @@ defmodule Saxy.Parser.Prolog do
   end
 
   def parse_encoding_decl_enc_name(<<charcode::integer, rest::bits>>, more?, original, pos, state, prolog, open_quote, len)
-       when charcode in ?A..?Z or charcode in ?a..?z or
-            charcode in ?0..?9 or charcode in [?-, ?., ?_] do
+      when charcode in ?A..?Z or charcode in ?a..?z or charcode in ?0..?9 or charcode in [?-, ?., ?_] do
     parse_encoding_decl_enc_name(rest, more?, original, pos, state, prolog, open_quote, len + 1)
   end
 
@@ -329,12 +328,12 @@ defmodule Saxy.Parser.Prolog do
   end
 
   def parse_prolog_processing_instruction(<<charcode, rest::bits>>, more?, original, pos, state, prolog)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_prolog_pi_name(rest, more?, original, pos, state, prolog, 1)
   end
 
   def parse_prolog_processing_instruction(<<charcode::utf8, rest::bits>>, more?, original, pos, state, prolog)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_prolog_pi_name(rest, more?, original, pos, state, prolog, Utils.compute_char_len(charcode))
   end
 
@@ -345,12 +344,12 @@ defmodule Saxy.Parser.Prolog do
   end
 
   def parse_prolog_pi_name(<<charcode, rest::bits>>, more?, original, pos, state, prolog, len)
-       when is_name_char(charcode) do
+      when is_name_char(charcode) do
     parse_prolog_pi_name(rest, more?, original, pos, state, prolog, len + 1)
   end
 
   def parse_prolog_pi_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, prolog, len)
-       when is_name_char(charcode) do
+      when is_name_char(charcode) do
     parse_prolog_pi_name(rest, more?, original, pos, state, prolog, len + Utils.compute_char_len(charcode))
   end
 

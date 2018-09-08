@@ -51,9 +51,7 @@ end
 defmodule Person do
   @derive {
     Saxy.Builder,
-    name: "person",
-    attributes: [:gender],
-    children: [:name]
+    name: "person", attributes: [:gender], children: [:name]
   }
 
   defstruct [:name, :gender]

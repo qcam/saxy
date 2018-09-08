@@ -30,32 +30,32 @@ defmodule SaxyTest do
     assert {:ok, state} = Saxy.parse_string(data, StackHandler, [], expand_entity: :keep)
 
     assert state == [
-      {:end_document, {}},
-      {:end_element, "foo"},
-      {:characters, "Something &unknown;"},
-      {:start_element, {"foo", []}},
-      {:start_document, [version: "1.0"]}
-    ]
+             {:end_document, {}},
+             {:end_element, "foo"},
+             {:characters, "Something &unknown;"},
+             {:start_element, {"foo", []}},
+             {:start_document, [version: "1.0"]}
+           ]
 
     assert {:ok, state} = Saxy.parse_string(data, StackHandler, [], expand_entity: :skip)
 
     assert state == [
-      {:end_document, {}},
-      {:end_element, "foo"},
-      {:characters, "Something "},
-      {:start_element, {"foo", []}},
-      {:start_document, [version: "1.0"]}
-    ]
+             {:end_document, {}},
+             {:end_element, "foo"},
+             {:characters, "Something "},
+             {:start_element, {"foo", []}},
+             {:start_document, [version: "1.0"]}
+           ]
 
     assert {:ok, state} = Saxy.parse_string(data, StackHandler, [], expand_entity: {__MODULE__, :convert_entity, []})
 
     assert state == [
-      {:end_document, {}},
-      {:end_element, "foo"},
-      {:characters, "Something known"},
-      {:start_element, {"foo", []}},
-      {:start_document, [version: "1.0"]}
-    ]
+             {:end_document, {}},
+             {:end_element, "foo"},
+             {:characters, "Something known"},
+             {:start_element, {"foo", []}},
+             {:start_document, [version: "1.0"]}
+           ]
   end
 
   test "parse_stream/3 parses file stream" do
@@ -91,7 +91,7 @@ defmodule SaxyTest do
       <?foo what a instruction ?>
       """
       |> String.codepoints()
-      |> Stream.map(&(&1))
+      |> Stream.map(& &1)
 
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
     events = Enum.reverse(state)
@@ -127,18 +127,19 @@ defmodule SaxyTest do
   test "parse_stream/3 handles trailing unicode codepoints when buffering" do
     stream = File.stream!("./test/support/fixture/unicode.xml", [], 1)
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
+
     assert state == [
-      {:end_document, {}},
-      {:end_element, "songs"},
-      {:end_element, "song"},
-      {:characters, "Eva Braun 𠜎 𠜱 𠝹𠱓"},
-      {:start_element, {"song", [{"singer", "Die Ärtze"}]}},
-      {:end_element, "song"},
-      {:characters, "Über den Wolken"},
-      {:start_element, {"song", [{"singer", "Reinhard Mey"}]}},
-      {:start_element, {"songs", []}},
-      {:start_document, [version: "1.0"]}
-    ]
+             {:end_document, {}},
+             {:end_element, "songs"},
+             {:end_element, "song"},
+             {:characters, "Eva Braun 𠜎 𠜱 𠝹𠱓"},
+             {:start_element, {"song", [{"singer", "Die Ärtze"}]}},
+             {:end_element, "song"},
+             {:characters, "Über den Wolken"},
+             {:start_element, {"song", [{"singer", "Reinhard Mey"}]}},
+             {:start_element, {"songs", []}},
+             {:start_document, [version: "1.0"]}
+           ]
   end
 
   test "parse_stream/3 supports parsing with enum" do
@@ -151,11 +152,11 @@ defmodule SaxyTest do
     assert {:ok, state} = Saxy.parse_stream(codepoints, StackHandler, [])
 
     assert Enum.reverse(state) == [
-      {:start_document, [encoding: "UTF-8", version: "1.0"]},
-      {:start_element, {"item", []}},
-      {:end_element, "item"},
-      {:end_document, {}}
-    ]
+             {:start_document, [encoding: "UTF-8", version: "1.0"]},
+             {:start_element, {"item", []}},
+             {:end_element, "item"},
+             {:end_document, {}}
+           ]
   end
 
   test "parse_stream/3 supports fast return" do
@@ -175,7 +176,7 @@ defmodule SaxyTest do
       <item></hello>
       """
       |> String.codepoints()
-      |> Stream.map(&(&1))
+      |> Stream.map(& &1)
 
     assert {:error, exception} = Saxy.parse_stream(stream, StackHandler, [])
     assert ParseError.message(exception) == "unexpected ending tag \"hello\", expected tag: \"item\""
@@ -191,8 +192,7 @@ defmodule SaxyTest do
 
     assert {:error, exception} = Saxy.parse_string(data, StackHandler, [])
 
-    assert ParseError.message(exception) ==
-             "unexpected end of input, expected token: :version"
+    assert ParseError.message(exception) == "unexpected end of input, expected token: :version"
 
     data = "<foo><bar></bee></foo>"
 

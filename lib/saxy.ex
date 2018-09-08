@@ -320,8 +320,7 @@ defmodule Saxy do
       ]
 
   """
-  @spec encode_to_iodata!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t()) ::
-          iodata()
+  @spec encode_to_iodata!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t()) :: iodata()
 
   def encode_to_iodata!(root, prolog \\ []) do
     Encoder.encode_to_iodata(root, prolog)

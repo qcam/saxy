@@ -218,13 +218,14 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_att_value_entity_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when is_ascii(charcode) and is_name_char(charcode) do
+      when is_ascii(charcode) and is_name_char(charcode) do
     parse_att_value_entity_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len + 1)
   end
 
   def parse_att_value_entity_ref(<<charcode::utf8, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when is_name_char(charcode) do
-    parse_att_value_entity_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len + Utils.compute_char_len(charcode))
+      when is_name_char(charcode) do
+    len = len + Utils.compute_char_len(charcode)
+    parse_att_value_entity_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len)
   end
 
   def parse_att_value_entity_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, 0) do
@@ -246,7 +247,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_att_value_char_dec_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when charcode in ?0..?9 do
+      when charcode in ?0..?9 do
     parse_att_value_char_dec_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len + 1)
   end
 
@@ -263,7 +264,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_att_value_char_hex_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when charcode in ?0..?9 or charcode in ?A..?F or charcode in ?a..?f do
+      when charcode in ?0..?9 or charcode in ?A..?F or charcode in ?a..?f do
     parse_att_value_char_hex_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len + 1)
   end
 
@@ -310,12 +311,12 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_content_rest(<<charcode, rest::bits>>, more?, original, pos, state)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_open_tag_name(rest, more?, original, pos, state, 1)
   end
 
   def parse_element_content_rest(<<charcode::utf8, rest::bits>>, more?, original, pos, state)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_open_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
   end
 
@@ -351,6 +352,7 @@ defmodule Saxy.Parser.Element do
 
   def parse_element_cdata(<<"]]>", rest::bits>>, more?, original, pos, state, len) do
     cdata = binary_part(original, pos, len)
+
     case Emitter.emit(:characters, cdata, state) do
       {:ok, state} ->
         parse_element_content(rest, more?, original, pos + len + 3, state)
@@ -413,6 +415,7 @@ defmodule Saxy.Parser.Element do
 
   def parse_chardata(<<?<, rest::bits>>, more?, original, pos, state, acc, len) do
     chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+
     case Emitter.emit(:characters, chars, state) do
       {:ok, state} ->
         parse_element_content_rest(rest, more?, original, pos + len + 1, state)
@@ -452,12 +455,12 @@ defmodule Saxy.Parser.Element do
   defhalt(:parse_element_content_reference, 6, "#")
 
   def parse_element_content_reference(<<charcode, rest::bits>>, more?, original, pos, state, acc)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_element_entity_ref(rest, more?, original, pos, state, acc, 1)
   end
 
   def parse_element_content_reference(<<charcode::utf8, rest::bits>>, more?, original, pos, state, acc)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_element_entity_ref(rest, more?, original, pos, state, acc, Utils.compute_char_len(charcode))
   end
 
@@ -474,12 +477,12 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_entity_ref(<<charcode, rest::bits>>, more?, original, pos, state, acc, len)
-       when is_name_char(charcode) do
+      when is_name_char(charcode) do
     parse_element_entity_ref(rest, more?, original, pos, state, acc, len + 1)
   end
 
   def parse_element_entity_ref(<<charcode::utf8, rest::bits>>, more?, original, pos, state, acc, len)
-       when is_name_char(charcode) do
+      when is_name_char(charcode) do
     parse_element_entity_ref(rest, more?, original, pos, state, acc, len + Utils.compute_char_len(charcode))
   end
 
@@ -506,7 +509,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_char_dec_ref(<<charcode::integer, rest::bits>>, more?, original, pos, state, acc, len)
-       when charcode in ?0..?9 do
+      when charcode in ?0..?9 do
     parse_element_char_dec_ref(rest, more?, original, pos, state, acc, len + 1)
   end
 
@@ -527,7 +530,7 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_char_hex_ref(<<charcode::integer, rest::bits>>, more?, original, pos, state, acc, len)
-       when charcode in ?0..?9 or charcode in ?A..?F or charcode in ?a..?f do
+      when charcode in ?0..?9 or charcode in ?A..?F or charcode in ?a..?f do
     parse_element_char_hex_ref(rest, more?, original, pos, state, acc, len + 1)
   end
 
@@ -538,12 +541,12 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_processing_instruction(<<charcode, rest::bits>>, more?, original, pos, state, 0)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_element_processing_instruction(rest, more?, original, pos, state, 1)
   end
 
   def parse_element_processing_instruction(<<charcode::utf8, rest::bits>>, more?, original, pos, state, 0)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_element_processing_instruction(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
   end
 
@@ -554,12 +557,12 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_element_processing_instruction(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
+      when is_name_char(charcode) do
     parse_element_processing_instruction(rest, more?, original, pos, state, len + 1)
   end
 
   def parse_element_processing_instruction(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
+      when is_name_char(charcode) do
     parse_element_processing_instruction(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
   end
 
@@ -615,12 +618,12 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_close_tag_name(<<charcode, rest::bits>>, more?, original, pos, state, 0)
-       when is_ascii(charcode) and is_name_start_char(charcode) do
+      when is_ascii(charcode) and is_name_start_char(charcode) do
     parse_close_tag_name(rest, more?, original, pos, state, 1)
   end
 
   def parse_close_tag_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, 0)
-       when is_name_start_char(charcode) do
+      when is_name_start_char(charcode) do
     parse_close_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
   end
 
@@ -660,12 +663,12 @@ defmodule Saxy.Parser.Element do
   end
 
   def parse_close_tag_name(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_ascii(charcode) and is_name_char(charcode) do
+      when is_ascii(charcode) and is_name_char(charcode) do
     parse_close_tag_name(rest, more?, original, pos, state, len + 1)
   end
 
   def parse_close_tag_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
+      when is_name_char(charcode) do
     parse_close_tag_name(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
   end
 
