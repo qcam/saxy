@@ -1,42 +1,51 @@
 defmodule Saxy.Buffering do
   @moduledoc false
 
-  defmacro defhalt(fun_name, arity, token) do
-    params_splice =
-      case arity do
-        5 -> quote(do: [original, pos, state])
-        6 -> quote(do: [original, pos, state, acc1])
-        7 -> quote(do: [original, pos, state, acc1, acc2])
-        8 -> quote(do: [original, pos, state, acc1, acc2, acc3])
-        9 -> quote(do: [original, pos, state, acc1, acc2, acc3, acc4])
-        10 -> quote(do: [original, pos, state, acc1, acc2, acc3, acc4, acc5])
-      end
+  @doc """
+  Define a named function that matches a token and returns the parsing context.
+  """
 
-    context_fun =
-      case arity do
-        5 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state))
-        6 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1))
-        7 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1, acc2))
-        8 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1, acc2, acc3))
-        9 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1, acc2, acc3, acc4))
-        10 -> quote(do: &unquote(fun_name)(unquote(token) <> &1, &2, original <> &1, pos, state, acc1, acc2, acc3, acc4, acc5))
-      end
+  defmacro defhalt(fun_name, arity, token) do
+    params_splice = build_params_splice(token, arity)
+    context_fun = build_context_fun(fun_name, token, arity)
 
     quote do
-      def unquote(fun_name)(unquote(token), true, unquote_splicing(params_splice)) do
-        {
-          :halted,
-          unquote(context_fun)
-        }
+      def unquote(fun_name)(unquote_splicing(params_splice)) do
+        {:halted, unquote(context_fun)}
       end
     end
   end
 
   def utf8_binaries() do
     [
-      quote(do: <<1::size(1), rest::size(7)>>),
-      quote(do: <<1::size(1), 1::size(1), rest::size(6), next_char::1-bytes>>),
-      quote(do: <<1::size(1), 1::size(1), 1::size(1), rest::size(5), next_chars::2-bytes>>)
+      quote(do: <<1::1, _rest::7>>),
+      quote(do: <<1::1, 1::1, _rest::6, _next_char::1-bytes>>),
+      quote(do: <<1::1, 1::1, 1::1, _rest::5, _next_two_chars::2-bytes>>)
     ]
+  end
+
+  defp build_context_fun(fun_name, token, arity) do
+    default_params =
+      quote(do: [unquote(token) <> cont_buffer, more?, original <> cont_buffer, pos, state])
+
+    params = append_acc_variables(default_params, arity)
+
+    quote do
+      fn cont_buffer, more? ->
+        unquote(fun_name)(unquote_splicing(params))
+      end
+    end
+  end
+
+  defp build_params_splice(token, arity) do
+    default_params = quote(do: [unquote(token), true, original, pos, state])
+
+    append_acc_variables(default_params, arity)
+  end
+
+  defp append_acc_variables(vars, arity) do
+    acc_count = arity - length(vars)
+
+    for(i <- 0..acc_count, i > 0, into: vars, do: Macro.var(:"acc#{i}", __MODULE__))
   end
 end
