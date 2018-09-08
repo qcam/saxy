@@ -16,6 +16,8 @@ matrix:
       script: mix test --trace
     - otp_release: 21.0
       elixir: 1.7.3
-      script: mix test --trace
+      script:
+        - mix format --check-formatted
+        - mix test --trace
 
 sudo: false
