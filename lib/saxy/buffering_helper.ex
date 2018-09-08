@@ -18,9 +18,9 @@ defmodule Saxy.BufferingHelper do
 
   def utf8_binaries() do
     [
-      quote(do: <<1::1, _rest::7>>),
-      quote(do: <<1::1, 1::1, _rest::6, _next_char::1-bytes>>),
-      quote(do: <<1::1, 1::1, 1::1, _rest::5, _next_two_chars::2-bytes>>)
+      quote(do: <<1::1, rest_of_first_byte::7>>),
+      quote(do: <<1::1, 1::1, rest_of_first_byte::6, next_char::1-bytes>>),
+      quote(do: <<1::1, 1::1, 1::1, rest_of_first_byte::5, next_two_chars::2-bytes>>)
     ]
   end
 
