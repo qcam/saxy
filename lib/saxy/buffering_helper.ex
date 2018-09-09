@@ -10,7 +10,7 @@ defmodule Saxy.BufferingHelper do
     context_fun = build_context_fun(fun_name, token, arity)
 
     quote do
-      def unquote(fun_name)(unquote_splicing(params_splice)) do
+      defp unquote(fun_name)(unquote_splicing(params_splice)) do
         {:halted, unquote(context_fun)}
       end
     end
