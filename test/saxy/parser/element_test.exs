@@ -320,7 +320,7 @@ defmodule Saxy.Parser.ElementTest do
         "&" <> name <> ";"
       end
 
-    check all attribute_value_chars <- string(:printable),
+    check all attribute_value_chars <- string(:alphanumeric),
               reference <- reference_generator do
       attribute_value =
         [attribute_value_chars, reference]
