@@ -1,7 +1,7 @@
 defmodule Saxy.Parser.PrologTest do
   use ExUnit.Case, async: true
 
-  import Saxy.Parser.Prolog, only: [parse_prolog: 5]
+  import Saxy.Parser.Prolog, only: [parse: 5]
 
   alias Saxy.ParseError
 
@@ -12,7 +12,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0" encoding="utf-8" standalone='yes' ?> <foo></foo>
     """
 
-    assert {:ok, %{prolog: prolog}} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:ok, %{prolog: prolog}} = parse(buffer, false, buffer, 0, make_state())
     assert Keyword.get(prolog, :version) == "1.0"
     assert Keyword.get(prolog, :encoding) == "utf-8"
     assert Keyword.get(prolog, :standalone) == true
@@ -23,7 +23,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0" standalone='yes' ?> <foo></foo>
     """
 
-    assert {:ok, %{prolog: prolog}} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:ok, %{prolog: prolog}} = parse(buffer, false, buffer, 0, make_state())
     assert Keyword.get(prolog, :version) == "1.0"
     assert Keyword.get(prolog, :encoding) == nil
     assert Keyword.get(prolog, :standalone) == true
@@ -34,7 +34,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0" encoding="UTF-8" ?> <foo></foo>
     """
 
-    assert {:ok, %{prolog: prolog}} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:ok, %{prolog: prolog}} = parse(buffer, false, buffer, 0, make_state())
     assert Keyword.get(prolog, :version) == "1.0"
     assert Keyword.get(prolog, :encoding) == "UTF-8"
   end
@@ -44,7 +44,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version = "1.0" ?> <foo></foo>
     """
 
-    assert {:ok, %{prolog: prolog}} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:ok, %{prolog: prolog}} = parse(buffer, false, buffer, 0, make_state())
     assert Keyword.get(prolog, :version) == "1.0"
     assert Keyword.get(prolog, :encoding) == nil
   end
@@ -54,7 +54,7 @@ defmodule Saxy.Parser.PrologTest do
     <foo></foo>
     """
 
-    assert {:ok, %{prolog: prolog}} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:ok, %{prolog: prolog}} = parse(buffer, false, buffer, 0, make_state())
     assert prolog == []
   end
 
@@ -63,7 +63,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml encoding="utf-8" ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"e\", expected token: :version"
   end
 
@@ -73,7 +73,7 @@ defmodule Saxy.Parser.PrologTest do
     <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"e\", expected token: :xml_decl_close"
   end
 
@@ -82,7 +82,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version= "2.0" ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"2\", expected token: :\"1.\""
   end
 
@@ -91,7 +91,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.2e" ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"e\", expected token: :version_num"
   end
 
@@ -100,7 +100,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0' ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"'\", expected token: :version_num"
   end
 
@@ -109,14 +109,14 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0" encoding='UTF-8" ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"\\\"\", expected token: :encoding_name"
 
     buffer = """
     <?xml version="1.0" encoding="UTF-8' ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"'\", expected token: :encoding_name"
   end
 
@@ -125,21 +125,21 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0" encoding='<hello>' ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"<\", expected token: :encoding_name"
 
     buffer = """
     <?xml version="1.0" encoding="a<" ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"<\", expected token: :encoding_name"
 
     buffer = """
     <?xml version="1.0" encoding="abc" ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected encoding declaration \"abc\", only UTF-8 is supported"
   end
 
@@ -148,14 +148,14 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0" standalone="yes' ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"'\", expected token: :quote"
 
     buffer = """
     <?xml version="1.0" standalone='yes" ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"\\\"\", expected token: :quote"
   end
 
@@ -164,7 +164,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0" standalone="foo" ?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"f\", expected token: :yes_or_no"
   end
 
@@ -173,7 +173,7 @@ defmodule Saxy.Parser.PrologTest do
     <?xml version="1.0" x?> <foo></foo>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"x\", expected token: :xml_decl_close"
   end
 
@@ -183,7 +183,7 @@ defmodule Saxy.Parser.PrologTest do
     <?foo hello world ?><foo/>
     """
 
-    assert {:ok, %{prolog: prolog}} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:ok, %{prolog: prolog}} = parse(buffer, false, buffer, 0, make_state())
     assert prolog == [version: "1.0"]
 
     buffer = """
@@ -192,7 +192,7 @@ defmodule Saxy.Parser.PrologTest do
     <foo/>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
 
     assert ParseError.message(error) ==
              "unexpected target name \"xMl\" at the start of processing instruction, the target names \"XML\", \"xml\", and so on are reserved for standardization"
@@ -203,7 +203,7 @@ defmodule Saxy.Parser.PrologTest do
     <foo/>
     """
 
-    assert {:error, error} = parse_prolog(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
     assert ParseError.message(error) == "unexpected byte \"!\", expected token: :processing_instruction"
   end
 
