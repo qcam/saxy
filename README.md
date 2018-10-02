@@ -37,27 +37,27 @@ defmodule MyEventHandler do
 
   def handle_event(:start_document, prolog, state) do
     IO.inspect("Start parsing document")
-    [{:start_document, prolog} | state]
+    {:ok, [{:start_document, prolog} | state]}
   end
 
   def handle_event(:end_document, _data, state) do
     IO.inspect("Finish parsing document")
-    [{:end_document} | state]
+    {:ok, [{:end_document} | state]}
   end
 
   def handle_event(:start_element, {name, attributes}, state) do
     IO.inspect("Start parsing element #{name} with attributes #{inspect(attributes)}")
-    [{:start_element, name, attributes} | state]
+    {:ok, [{:start_element, name, attributes} | state]}
   end
 
   def handle_event(:end_element, name, state) do
     IO.inspect("Finish parsing element #{name}")
-    [{:end_element, name} | state]
+    {:ok, [{:end_element, name} | state]}
   end
 
   def handle_event(:characters, chars, state) do
     IO.inspect("Receive characters #{chars}")
-    [{:chacters, chars} | state]
+    {:ok, [{:chacters, chars} | state]}
   end
 end
 ```
@@ -65,9 +65,13 @@ end
 Then start parsing XML documents with:
 
 ```elixir
-initial_state = []
-
-Saxy.parse_string(data, MyEventHandler, initial_state)
+iex> xml = "<?xml version='1.0' ?><foo bar='value'></foo>"
+iex> Saxy.parse_string(xml, MyEventHandler, [])
+{:ok,
+ [{:end_document},
+  {:end_element, "foo"},
+  {:start_element, "foo", [{"bar", "value"}]},
+  {:start_document, [version: "1.0"]}]}
 ```
 
 ### Streaming parsing
