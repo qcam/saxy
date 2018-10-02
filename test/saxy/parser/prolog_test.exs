@@ -207,6 +207,57 @@ defmodule Saxy.Parser.PrologTest do
     assert ParseError.message(error) == "unexpected byte \"!\", expected token: :processing_instruction"
   end
 
+  describe "document type definition" do
+    test "skips parsing DTD" do
+      buffer = """
+      <?xml version="1.0" ?>
+      <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+      <foo/>
+      """
+
+      assert {:ok, _state} = parse(buffer, false, buffer, 0, make_state())
+    end
+
+    test "skips parsing DTD with declaration" do
+      buffer = """
+      <?xml version="1.0" ?>
+      <!DOCTYPE note [
+        <!ELEMENT note (to,from,heading,body)>
+        <!ELEMENT to (#PCDATA)>
+        <!ELEMENT from (#PCDATA)>
+        <!ELEMENT heading (#PCDATA)>
+        <!ELEMENT body (#PCDATA)>
+      ]>
+      <foo/>
+      """
+
+      assert {:ok, _state} = parse(buffer, false, buffer, 0, make_state())
+    end
+
+    test "raises when DTD is incomplete" do
+      buffer = """
+      <?xml version="1.0" ?>
+      <!DOCTYPE note
+      <foo/>
+      """
+
+      assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+      assert ParseError.message(error) == "unexpected byte \" \", expected token: :dtd_content"
+    end
+
+    test "parses Misc afters DTD" do
+      buffer = """
+      <?xml version="1.0" ?>
+      <!DOCTYPE html>
+      <!--This is comment-->
+      <?foo foo?>
+      <foo/>
+      """
+
+      assert {:ok, _state} = parse(buffer, false, buffer, 0, make_state())
+    end
+  end
+
   defp make_state(state \\ []) do
     %Saxy.State{
       prolog: nil,

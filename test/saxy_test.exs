@@ -19,6 +19,10 @@ defmodule SaxyTest do
     data = File.read!("./test/support/fixture/complex.xml")
     assert {:ok, state} = Saxy.parse_string(data, StackHandler, [])
     assert length(state) == 79
+
+    data = File.read!("./test/support/fixture/illustrator.svg")
+    assert {:ok, state} = Saxy.parse_string(data, StackHandler, [])
+    assert length(state) == 12
   end
 
   test "parse_string/4 parses XML binary with multiple \":expand_entity\" strategy" do
@@ -64,19 +68,28 @@ defmodule SaxyTest do
 
     stream = File.stream!("./test/support/fixture/food.xml", [], 200)
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
-
     assert length(state) == 74
 
     stream = File.stream!("./test/support/fixture/complex.xml", [], 200)
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
-
     assert length(state) == 79
+
+    stream = File.stream!("./test/support/fixture/illustrator.svg", [], 5)
+    assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
+    assert length(state) == 12
   end
 
   test "parse_stream/3 parses normal stream" do
     stream =
       """
       <?xml version='1.0' encoding="UTF-8" ?>
+      <!DOCTYPE note [
+        <!ELEMENT note (to,from,heading,body)>
+        <!ELEMENT to (#PCDATA)>
+        <!ELEMENT from (#PCDATA)>
+        <!ELEMENT heading (#PCDATA)>
+        <!ELEMENT body (#PCDATA)>
+      ]>
       <item name="[日本語] Tom &amp; Jerry" category='movie'>
         <author name='William Hanna &#x26; Joseph Barbera' />
         <!--Ignore me please I am just a comment-->
