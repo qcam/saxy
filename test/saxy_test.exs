@@ -77,6 +77,13 @@ defmodule SaxyTest do
     stream =
       """
       <?xml version='1.0' encoding="UTF-8" ?>
+      <!DOCTYPE note [
+        <!ELEMENT note (to,from,heading,body)>
+        <!ELEMENT to (#PCDATA)>
+        <!ELEMENT from (#PCDATA)>
+        <!ELEMENT heading (#PCDATA)>
+        <!ELEMENT body (#PCDATA)>
+      ]>
       <item name="[日本語] Tom &amp; Jerry" category='movie'>
         <author name='William Hanna &#x26; Joseph Barbera' />
         <!--Ignore me please I am just a comment-->

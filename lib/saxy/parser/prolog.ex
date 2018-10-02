@@ -301,7 +301,7 @@ defmodule Saxy.Parser.Prolog do
 
     case Emitter.emit(:start_document, prolog, state) do
       {:ok, state} ->
-        Element.parse(rest, more?, original, pos, state)
+        dtd(rest, more?, original, pos, state)
 
       {:stop, state} ->
         {:ok, state}
@@ -384,5 +384,147 @@ defmodule Saxy.Parser.Prolog do
 
   defp prolog_pi_content(<<charcode::utf8, rest::bits>>, more?, original, pos, state, prolog, len) do
     prolog_pi_content(rest, more?, original, pos, state, prolog, len + Utils.compute_char_len(charcode))
+  end
+
+  defp dtd(<<"<!DOCTYPE", rest::bits>>, more?, original, pos, state) do
+    dtd_content(rest, more?, original, pos + 9, state, 0, 1)
+  end
+
+  defhalt(:dtd, 5, "")
+  defhalt(:dtd, 5, "<")
+  defhalt(:dtd, 5, "<!")
+  defhalt(:dtd, 5, "<!D")
+  defhalt(:dtd, 5, "<!DO")
+  defhalt(:dtd, 5, "<!DOC")
+  defhalt(:dtd, 5, "<!DOCT")
+  defhalt(:dtd, 5, "<!DOCTY")
+  defhalt(:dtd, 5, "<!DOCTYP")
+
+  defp dtd(<<rest::bits>>, more?, original, pos, state) do
+    Element.parse(rest, more?, original, pos, state)
+  end
+
+  defp dtd_content(<<?>, rest::bits>>, more?, original, pos, state, len, 1) do
+    dtd_misc(rest, more?, original, pos + len + 1, state)
+  end
+
+  defp dtd_content(<<?>, rest::bits>>, more?, original, pos, state, len, count) do
+    dtd_content(rest, more?, original, pos, state, len + 1, count - 1)
+  end
+
+  defp dtd_content(<<?<, rest::bits>>, more?, original, pos, state, len, count) do
+    dtd_content(rest, more?, original, pos, state, len + 1, count + 1)
+  end
+
+  defp dtd_content(<<charcode, rest::bits>>, more?, original, pos, state, len, count)
+       when is_ascii(charcode) do
+    dtd_content(rest, more?, original, pos, state, len + 1, count)
+  end
+
+  defp dtd_content(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len, count) do
+    dtd_content(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode), count)
+  end
+
+  defhalt(:dtd_content, 7, "")
+
+  defp dtd_content(<<_::bits>>, _more?, original, pos, state, _len, _count) do
+    Utils.parse_error(original, pos, state, {:token, :dtd_content})
+  end
+
+  defp dtd_misc(<<whitespace::integer, rest::bits>>, more?, original, pos, state)
+       when is_whitespace(whitespace) do
+    dtd_misc(rest, more?, original, pos + 1, state)
+  end
+
+  defp dtd_misc(<<"<!--", rest::bits>>, more?, original, pos, state) do
+    dtd_misc_comment(rest, more?, original, pos + 4, state, 0)
+  end
+
+  defp dtd_misc(<<"<?", rest::bits>>, more?, original, pos, state) do
+    dtd_processing_instruction(rest, more?, original, pos + 2, state)
+  end
+
+  defhalt(:dtd_misc, 5, "")
+  defhalt(:dtd_misc, 5, "<")
+  defhalt(:dtd_misc, 5, "<!")
+  defhalt(:dtd_misc, 5, "<!-")
+
+  defp dtd_misc(<<rest::bits>>, more?, original, pos, state) do
+    Element.parse(rest, more?, original, pos, state)
+  end
+
+  defp dtd_misc_comment(<<"--->", _rest::bits>>, _more?, original, pos, state, len) do
+    Utils.parse_error(original, pos + len, state, {:token, :comment})
+  end
+
+  defp dtd_misc_comment(<<"-->", rest::bits>>, more?, original, pos, state, len) do
+    dtd_misc(rest, more?, original, pos + len + 3, state)
+  end
+
+  defhalt(:dtd_misc_comment, 6, "")
+  defhalt(:dtd_misc_comment, 6, "-")
+  defhalt(:dtd_misc_comment, 6, "--")
+
+  defp dtd_misc_comment(<<charcode, rest::bits>>, more?, original, pos, state, len)
+       when is_ascii(charcode) do
+    dtd_misc_comment(rest, more?, original, pos, state, len + 1)
+  end
+
+  defp dtd_misc_comment(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len) do
+    dtd_misc_comment(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
+  end
+
+  defp dtd_processing_instruction(<<charcode, rest::bits>>, more?, original, pos, state)
+       when is_name_start_char(charcode) do
+    dtd_pi_name(rest, more?, original, pos, state, 1)
+  end
+
+  defp dtd_processing_instruction(<<charcode::utf8, rest::bits>>, more?, original, pos, state)
+       when is_name_start_char(charcode) do
+    dtd_pi_name(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
+  end
+
+  defhalt(:dtd_processing_instruction, 5, "")
+
+  defp dtd_processing_instruction(<<_buffer::bits>>, _more?, original, pos, state) do
+    Utils.parse_error(original, pos, state, {:token, :processing_instruction})
+  end
+
+  defp dtd_pi_name(<<charcode, rest::bits>>, more?, original, pos, state, len)
+       when is_name_char(charcode) do
+    dtd_pi_name(rest, more?, original, pos, state, len + 1)
+  end
+
+  defp dtd_pi_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len)
+       when is_name_char(charcode) do
+    dtd_pi_name(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
+  end
+
+  defhalt(:prolog_pi_name, 6, "")
+
+  defp dtd_pi_name(<<rest::bits>>, more?, original, pos, state, len) do
+    pi_name = binary_part(original, pos, len)
+
+    if Utils.valid_pi_name?(pi_name) do
+      dtd_pi_content(rest, more?, original, pos + len, state, 0)
+    else
+      Utils.parse_error(original, pos, state, {:invalid_pi, pi_name})
+    end
+  end
+
+  defp dtd_pi_content(<<"?>", rest::bits>>, more?, original, pos, state, len) do
+    dtd_misc(rest, more?, original, pos + len + 2, state)
+  end
+
+  defhalt(:dtd_pi_content, 6, "")
+  defhalt(:dtd_pi_content, 6, "?")
+
+  defp dtd_pi_content(<<charcode, rest::bits>>, more?, original, pos, state, len)
+       when is_ascii(charcode) do
+    dtd_pi_content(rest, more?, original, pos, state, len + 1)
+  end
+
+  defp dtd_pi_content(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len) do
+    dtd_pi_content(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
   end
 end
