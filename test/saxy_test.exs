@@ -19,6 +19,10 @@ defmodule SaxyTest do
     data = File.read!("./test/support/fixture/complex.xml")
     assert {:ok, state} = Saxy.parse_string(data, StackHandler, [])
     assert length(state) == 79
+
+    data = File.read!("./test/support/fixture/illustrator.svg")
+    assert {:ok, state} = Saxy.parse_string(data, StackHandler, [])
+    assert length(state) == 12
   end
 
   test "parse_string/4 parses XML binary with multiple \":expand_entity\" strategy" do
@@ -64,13 +68,15 @@ defmodule SaxyTest do
 
     stream = File.stream!("./test/support/fixture/food.xml", [], 200)
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
-
     assert length(state) == 74
 
     stream = File.stream!("./test/support/fixture/complex.xml", [], 200)
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
-
     assert length(state) == 79
+
+    stream = File.stream!("./test/support/fixture/illustrator.svg", [], 5)
+    assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
+    assert length(state) == 12
   end
 
   test "parse_stream/3 parses normal stream" do
