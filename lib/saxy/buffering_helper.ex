@@ -53,6 +53,6 @@ defmodule Saxy.BufferingHelper do
   defp append_acc_variables(vars, arity) do
     acc_count = arity - length(vars)
 
-    vars ++ Macro.generate_arguments(acc_count, __MODULE__)
+    for(i <- 0..acc_count, i > 0, into: vars, do: Macro.var(:"acc#{i}", __MODULE__))
   end
 end
