@@ -117,6 +117,33 @@ Saxy.SimpleForm.parse_string(data)
  ]}
 ```
 
+### xmerl format exporting
+
+Saxy supports exporting to xmerl format, which you could then use for xmerl_xpath
+or SweetXML.
+
+Note that xmerl format requires tag and attribute names to be atoms. By default Saxy
+uses `String.to_existing_atom/1` to avoid runtime atom creation. You could override
+this behaviour by specifying `:atom_fun` option to `String.to_atom/1`.
+
+```elixir
+iex> string = File.read!("/path/to/my.xml")
+iex> Saxy.Xmerl.parse_string(string, atom_fun: &String.to_atom/1)
+{:ok,
+ {:xmlElement,
+  :foo,
+  :foo,
+  [],
+  {:xmlNamespace, [], []},
+  [],
+  1,
+  [{:xmlAttribute, :bar, :bar, [], [], [], 1, [], 'value', :undefined}],
+  [],
+  [],
+  [],
+  :undeclared}}
+```
+
 ### XML builder
 
 Saxy offers two APIs to build simple form and encode XML document.

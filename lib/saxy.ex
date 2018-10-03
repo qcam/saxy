@@ -31,6 +31,11 @@ defmodule Saxy do
 
   Saxy supports parsing XML documents into a simple format. See `Saxy.SimpleForm` for more details.
 
+  ### xmerl mode
+
+  Saxy supports parsing XML documents into xmerl format, so you could use the result with `xmerl_xpath`
+  or [SweetXml](https://hex.pm/packages/sweet_xml). See `Saxy.Xmerl` for more details.
+
   ### Encoding
 
   Saxy **only** supports UTF-8 encoding. It also respects the encoding set in XML document prolog, which means
