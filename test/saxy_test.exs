@@ -111,7 +111,7 @@ defmodule SaxyTest do
 
     assert [{:start_document, [encoding: "UTF-8", version: "1.0"]} | events] = events
 
-    item_attributes = [{"category", "movie"}, {"name", "[日本語] Tom & Jerry"}]
+    item_attributes = [{"name", "[日本語] Tom & Jerry"}, {"category", "movie"}]
     assert [{:start_element, {"item", ^item_attributes}} | events] = events
 
     author_attributes = [{"name", "William Hanna & Joseph Barbera"}]

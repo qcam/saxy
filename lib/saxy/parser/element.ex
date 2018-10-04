@@ -59,6 +59,7 @@ defmodule Saxy.Parser.Element do
 
   defp sattribute(<<?>, rest::bits>>, more?, original, pos, state, attributes) do
     [tag_name | _] = state.stack
+    attributes = Enum.reverse(attributes)
 
     case Emitter.emit(:start_element, {tag_name, attributes}, state) do
       {:stop, state} ->
@@ -76,6 +77,7 @@ defmodule Saxy.Parser.Element do
     [tag_name | stack] = state.stack
 
     state = %{state | stack: stack}
+    attributes = Enum.reverse(attributes)
 
     with {:ok, state} <- Emitter.emit(:start_element, {tag_name, attributes}, state),
          {:ok, state} <- Emitter.emit(:end_element, tag_name, state) do

@@ -51,7 +51,7 @@ defmodule Saxy.Parser.ElementTest do
     assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
     events = Enum.reverse(state.user_state)
 
-    item_attributes = [{"category", "movie"}, {"name", "[日本語] Tom & Jerry"}]
+    item_attributes = [{"name", "[日本語] Tom & Jerry"}, {"category", "movie"}]
     assert [{:start_element, {"item", ^item_attributes}} | events] = events
 
     author_attributes = [{"name", "William Hanna & Joseph Barbera"}]
@@ -94,7 +94,7 @@ defmodule Saxy.Parser.ElementTest do
     assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
     events = Enum.reverse(state.user_state)
 
-    element = {"foo", [{"bar", "BAR"}, {"foo", "FOO"}]}
+    element = {"foo", [{"foo", "FOO"}, {"bar", "BAR"}]}
     assert [{:start_element, ^element} | events] = events
     assert [{:end_element, "foo"} | events] = events
     assert [{:end_document, {}} | events] = events
@@ -106,7 +106,7 @@ defmodule Saxy.Parser.ElementTest do
     assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
     events = Enum.reverse(state.user_state)
 
-    element = {"foo", [{"bar", "bar"}, {"foo", "Tom & Jerry"}]}
+    element = {"foo", [{"foo", "Tom & Jerry"}, {"bar", "bar"}]}
     assert [{:start_element, ^element} | events] = events
     assert [{:end_element, "foo"} | events] = events
     assert [{:end_document, {}} | events] = events
@@ -230,7 +230,7 @@ defmodule Saxy.Parser.ElementTest do
     buffer = "<foo abc='123' def=\"456\" g:hi='789' />"
 
     assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
-    tag = {"foo", [{"g:hi", "789"}, {"def", "456"}, {"abc", "123"}]}
+    tag = {"foo", [{"abc", "123"}, {"def", "456"}, {"g:hi", "789"}]}
     assert find_event(state, :start_element, tag)
     assert find_event(state, :end_element, "foo")
 

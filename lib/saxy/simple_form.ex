@@ -50,14 +50,14 @@ defmodule Saxy.SimpleForm do
         [
           {"movie",
            [
-             {"id", "tt0120338"},
-             {"url", "https://www.imdb.com/title/tt0120338/"}
+             {"url", "https://www.imdb.com/title/tt0120338/"},
+             {"id", "tt0120338"}
            ],
            [{"name", [], ["Titanic"]}, {"characters", [], ["Jack & Rose"]}]},
           {"movie",
            [
-             {"id", "tt0109830"},
-             {"url", "https://www.imdb.com/title/tt0109830/"}
+             {"url", "https://www.imdb.com/title/tt0109830/"},
+             {"id", "tt0109830"}
            ],
            [
              {"name", [], ["Forest Gump"]},

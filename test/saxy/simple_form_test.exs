@@ -23,11 +23,11 @@ defmodule Saxy.SimpleFormTest do
     assert {"menu", [], elements} = simple_form
 
     assert [first_element | elements] = elements
-    assert {"movie", [{"id", "tt0120338"}, {"url", "https://www.imdb.com/title/tt0120338/"}], first_children} = first_element
+    assert {"movie", [{"url", "https://www.imdb.com/title/tt0120338/"}, {"id", "tt0120338"}], first_children} = first_element
     assert first_children == [{"name", [], ["Titanic"]}, {"characters", [], ["Jack & Rose"]}]
 
     assert [second_element] = elements
-    assert {"movie", [{"id", "tt0109830"}, {"url", "https://www.imdb.com/title/tt0109830/"}], second_children} = second_element
+    assert {"movie", [{"url", "https://www.imdb.com/title/tt0109830/"}, {"id", "tt0109830"}], second_children} = second_element
     assert second_children == [{"name", [], ["Forest Gump"]}, {"characters", [], ["Forest & Jenny"]}]
   end
 
@@ -60,11 +60,11 @@ defmodule Saxy.SimpleFormTest do
     assert {"menu", [], elements} = simple_form
 
     assert [first_element | elements] = elements
-    assert {"movie", [{"id", "tt0120338"}, {"url", "https://www.imdb.com/title/tt0120338/"}], first_children} = first_element
+    assert {"movie", [{"url", "https://www.imdb.com/title/tt0120338/"}, {"id", "tt0120338"}], first_children} = first_element
     assert first_children == [{"name", [], ["Titanic"]}, {"characters", [], ["Jack & Rose ®"]}]
 
     assert [second_element] = elements
-    assert {"movie", [{"id", "tt0109830"}, {"url", "https://www.imdb.com/title/tt0109830/"}], second_children} = second_element
+    assert {"movie", [{"url", "https://www.imdb.com/title/tt0109830/"}, {"id", "tt0109830"}], second_children} = second_element
     assert second_children == [{"name", [], ["Forest Gump"]}, {"characters", [], ["Forest & Jenny"]}]
   end
 
