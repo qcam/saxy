@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.0
+
+* Allow turning off streaming feature in config [#30](https://github.com/qcam/saxy/pull/30).
+* Skip DTD instead of crashing [#33](https://github.com/qcam/saxy/pull/33).
+* Minor bug fix on element attributes order [09b90a9b50ea3ffa17ba2736c29ff791ff9859d0](https://github.com/qcam/saxy/commit/09b90a9b50ea3ffa17ba2736c29ff791ff9859d0).
+
 ## v0.8.0
 
 * Improve streaming parsing [#23](https://github.com/qcam/saxy/pull/23).
