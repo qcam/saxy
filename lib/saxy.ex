@@ -51,7 +51,20 @@ defmodule Saxy do
 
   ### DTD and XSD
 
-  Saxy does not support DTD (Doctype Definition) and XSD schemas.
+  Saxy does not support parsing DTD (Doctype Definition) and XSD schemas. When encountering DTD, the parser simply
+  skips that.
+
+  ### Configuration
+
+  Saxy allows streaming feature to be configured off in compile time. This could give some performance gain when
+  you use Saxy to parse documents those are fully loaded in the memory.
+
+  Note that this will make streaming feature not working. It's turned on by default.
+
+  ```
+  # config/config.exs
+  config :saxy, :parser, streaming: false
+  ```
 
   ### Shared options
 
