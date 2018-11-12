@@ -1,5 +1,9 @@
 # Changelog
 
+## Unrelease
+
+* Add export into xmerl format [#35](https://github.com/qcam/saxy/pull/35).
+
 ## v0.9.0
 
 * Allow turning off streaming feature in config [#30](https://github.com/qcam/saxy/pull/30).
