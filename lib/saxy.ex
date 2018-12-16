@@ -215,7 +215,7 @@ defmodule Saxy do
           {:ok, [{:start_element, name, attributes} | state]}
         end
 
-        def handle_event(:end_element, {name}, state) do
+        def handle_event(:end_element, name, state) do
           {:ok, [{:end_element, name} | state]}
         end
 
