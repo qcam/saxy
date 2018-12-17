@@ -7,13 +7,13 @@ defmodule Saxy.BufferingHelper do
 
   @parser_config Application.get_env(:saxy, :parser, [])
 
-  defmacro defhalt(fun_name, arity, token) do
+  defmacro defhalt(call) do
     if streaming_enabled?(@parser_config) do
-      params_splice = build_params_splice(token, arity)
-      context_fun = build_context_fun(fun_name, token, arity)
+      {fun_name, args} = Macro.decompose_call(call)
+      context_fun = build_context_fun(fun_name, args)
 
       quote do
-        defp unquote(fun_name)(unquote_splicing(params_splice)) do
+        defp unquote(fun_name)(unquote_splicing(args)) do
           {:halted, unquote(context_fun)}
         end
       end
@@ -32,27 +32,16 @@ defmodule Saxy.BufferingHelper do
     Keyword.get(config, :streaming, true)
   end
 
-  defp build_context_fun(fun_name, token, arity) do
-    default_params = quote(do: [unquote(token) <> cont_buffer, more?, original <> cont_buffer, pos, state])
-
-    params = append_acc_variables(default_params, arity)
-
+  defp build_context_fun(fun_name, [token, _more?, original | args]) do
     quote do
       fn cont_buffer, more? ->
-        unquote(fun_name)(unquote_splicing(params))
+        unquote(fun_name)(
+          unquote(token) <> cont_buffer,
+          more?,
+          unquote(original) <> cont_buffer,
+          unquote_splicing(args)
+        )
       end
     end
-  end
-
-  defp build_params_splice(token, arity) do
-    default_params = quote(do: [unquote(token), true, original, pos, state])
-
-    append_acc_variables(default_params, arity)
-  end
-
-  defp append_acc_variables(vars, arity) do
-    acc_count = arity - length(vars)
-
-    for(i <- 0..acc_count, i > 0, into: vars, do: Macro.var(:"acc#{i}", __MODULE__))
   end
 end
