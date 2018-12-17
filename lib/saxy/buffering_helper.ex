@@ -9,13 +9,18 @@ defmodule Saxy.BufferingHelper do
 
   defmacro defhalt(call) do
     if streaming_enabled?(@parser_config) do
-      {fun_name, args} = Macro.decompose_call(call)
-      context_fun = build_context_fun(fun_name, args)
+      case Macro.decompose_call(call) do
+        {name, args} ->
+          context_fun = build_context_fun(name, args)
 
-      quote do
-        defp unquote(fun_name)(unquote_splicing(args)) do
-          {:halted, unquote(context_fun)}
-        end
+          quote do
+            defp unquote(name)(unquote_splicing(args)) do
+              {:halted, unquote(context_fun)}
+            end
+          end
+
+        _invalid ->
+          raise ArgumentError, "invalid syntax in defhalt #{Macro.to_string(call)}"
       end
     end
   end
