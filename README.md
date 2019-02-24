@@ -1,3 +1,5 @@
+[![Hex pm](http://img.shields.io/hexpm/v/saxy.svg?style=flat)](https://hex.pm/packages/saxy)
+
 Saxy
 ===
 
