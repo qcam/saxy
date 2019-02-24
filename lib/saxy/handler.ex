@@ -21,28 +21,14 @@ defmodule Saxy.Handler do
 
   There are a couple of events that need to be handled in the handler.
 
-  ### `:start_document`
+  * `:start_document`.
+  * `:start_element`.
+  * `:characters`–the binary that matches [`CharData*`](https://www.w3.org/TR/xml/#d0e1106) and [Reference](https://www.w3.org/TR/xml/#NT-Reference).
+    Note that it is **not trimmed** and includes **ALL** whitespace characters that match `CharData`.
+  * `:end_document`.
+  * `:end_element`.
 
-  The event data will be the XML prolog, which is a keyword list of `:version`, `:encoding` and `:standalone`
-  respectively.
-
-  ### `:start_element`
-
-  The event data is the element, which is a two-element tuple, respectively tag name, attributes.
-
-  ### `:characters`
-
-  The event data is the binary that matches [`CharData*`](https://www.w3.org/TR/xml/#d0e1106) and [Reference](https://www.w3.org/TR/xml/#NT-Reference).
-
-  Note that it is not trimmed and includes all the whitespace characters that match `CharData`.
-
-  ### `:end_document`
-
-  The event data is an empty tuple.
-
-  ### `:end_element`
-
-  The event data is the tag name of the closing element.
+  Check out `event_data()` type for more information of what are emitted for each event type.
 
   ## Examples
 
@@ -71,6 +57,16 @@ defmodule Saxy.Handler do
       end
   """
 
-  @callback handle_event(event_type :: atom, data :: any, user_state :: any) ::
-              {:ok, user_state :: any} | {:stop, returning :: any}
+  @type event_name() :: :start_document | :end_document | :start_element | :characters | :end_element
+
+  @type start_document_data() :: Keyword.t()
+  @type end_document_data() :: any()
+  @type start_element_data() :: {name :: String.t(), attributes :: [{name :: String.t(), value :: String.t()}]}
+  @type end_element_data() :: name :: String.t()
+  @type characters_data() :: String.t()
+
+  @type event_data() :: start_element_data() | end_document_data() | start_element_data() | end_element_data() | characters_data()
+
+  @callback handle_event(event_type :: event_name(), data :: event_data(), user_state :: any()) ::
+              {:ok, user_state :: any()} | {:stop, returning :: any()}
 end
