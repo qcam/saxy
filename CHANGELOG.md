@@ -2,7 +2,9 @@
 
 ## Unrelease
 
-* Add export into xmerl format [#35](https://github.com/qcam/saxy/pull/35).
+## v0.9.1
+
+* Fix type spec warnings in `Saxy.SimpleForm`.
 
 ## v0.9.0
 
