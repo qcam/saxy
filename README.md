@@ -94,6 +94,25 @@ stream = File.stream!("/path/to/file") |> Stream.filter(&(&1 != "\n"))
 Saxy.parse_stream(stream, MyEventHandler, initial_state)
 ```
 
+### Partial parsing
+
+Saxy can parse part of an XML document, and parse more of it later.
+
+```elixir
+xml = """
+<?xml version=1.0' ?>
+<foo bar=value'>
+</foo>
+"""
+split_xml = String.split(xml, "\n")
+
+{:ok, context} = Saxy.parse_partial_init(MyEventHandler, initial_state)
+{:ok, context} = Saxy.parse_partial(Enum.at(split_xml, 0), context)
+{:ok, context} = Saxy.parse_partial(Enum.at(split_xml, 1), context)
+{:ok, context} = Saxy.parse_partial(Enum.at(split_xml, 2), context)
+{:ok, state} = Saxy.parse_partial_done(context)
+```
+
 ### Simple DOM format exporting
 
 Sometimes it will be convenient to just export the XML document into simple DOM
