@@ -1,5 +1,9 @@
 language: elixir
 
+branches:
+  only:
+    - master
+
 matrix:
   include:
     - otp_release: 20.2
