@@ -48,9 +48,7 @@ defmodule Saxy.Parser.Utils do
 
   @compile {:inline, [valid_encoding?: 1]}
 
-  # TODO: Use String.upcase/2 with :ascii when support Elixir 1.6+.
-
   def valid_encoding?(encoding) do
-    String.upcase(encoding) == "UTF-8"
+    String.upcase(encoding, :ascii) == "UTF-8"
   end
 end

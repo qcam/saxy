@@ -1,42 +1,26 @@
 defmodule Saxy.Guards do
   @moduledoc false
 
-  # TODO: Use defguard when supporting Elixir 1.6+.
+  defguard is_ascii(codepoint) when codepoint <= 0x7F
 
-  defmacro is_ascii(charcode) do
-    quote do
-      unquote(charcode) <= 0x7F
-    end
-  end
+  defguard is_whitespace(codepoint) when codepoint in [0xA, 0x9, 0xD, 0x20]
 
-  defmacro is_whitespace(charcode) do
-    quote do
-      unquote(charcode) in [0xA, 0x9, 0xD, 0x20]
-    end
-  end
+  defguard is_name_start_char(codepoint)
+           when codepoint == ?: or (codepoint >= ?A and codepoint <= ?Z) or codepoint == ?_ or
+                  (codepoint >= ?a and codepoint <= ?z) or (codepoint >= 0xC0 and codepoint <= 0xD6) or
+                  (codepoint >= 0xD8 and codepoint <= 0xF6) or (codepoint >= 0xF8 and codepoint <= 0x2FF) or
+                  (codepoint >= 0x370 and codepoint <= 0x37D) or
+                  (codepoint >= 0x37F and codepoint <= 0x1FFF) or
+                  (codepoint >= 0x200C and codepoint <= 0x200D) or
+                  (codepoint >= 0x2070 and codepoint <= 0x218F) or
+                  (codepoint >= 0x2C00 and codepoint <= 0x2FEF) or
+                  (codepoint >= 0x3001 and codepoint <= 0xD7FF) or
+                  (codepoint >= 0xF900 and codepoint <= 0xFDCF) or
+                  (codepoint >= 0xFDF0 and codepoint <= 0xFFFD) or
+                  (codepoint >= 0x10000 and codepoint <= 0xEFFFF)
 
-  defmacro is_name_start_char(charcode) do
-    quote do
-      unquote(charcode) == ?: or (unquote(charcode) >= ?A and unquote(charcode) <= ?Z) or unquote(charcode) == ?_ or
-        (unquote(charcode) >= ?a and unquote(charcode) <= ?z) or (unquote(charcode) >= 0xC0 and unquote(charcode) <= 0xD6) or
-        (unquote(charcode) >= 0xD8 and unquote(charcode) <= 0xF6) or (unquote(charcode) >= 0xF8 and unquote(charcode) <= 0x2FF) or
-        (unquote(charcode) >= 0x370 and unquote(charcode) <= 0x37D) or
-        (unquote(charcode) >= 0x37F and unquote(charcode) <= 0x1FFF) or
-        (unquote(charcode) >= 0x200C and unquote(charcode) <= 0x200D) or
-        (unquote(charcode) >= 0x2070 and unquote(charcode) <= 0x218F) or
-        (unquote(charcode) >= 0x2C00 and unquote(charcode) <= 0x2FEF) or
-        (unquote(charcode) >= 0x3001 and unquote(charcode) <= 0xD7FF) or
-        (unquote(charcode) >= 0xF900 and unquote(charcode) <= 0xFDCF) or
-        (unquote(charcode) >= 0xFDF0 and unquote(charcode) <= 0xFFFD) or
-        (unquote(charcode) >= 0x10000 and unquote(charcode) <= 0xEFFFF)
-    end
-  end
-
-  defmacro is_name_char(charcode) do
-    quote do
-      (unquote(charcode) >= ?0 and unquote(charcode) <= ?9) or unquote(charcode) in [?-, ?., 0xB7] or
-        is_name_start_char(unquote(charcode)) or (unquote(charcode) >= 0x0300 and unquote(charcode) <= 0x036F) or
-        (unquote(charcode) >= 0x203F and unquote(charcode) <= 0x2040)
-    end
-  end
+  defguard is_name_char(codepoint)
+           when (codepoint >= ?0 and codepoint <= ?9) or codepoint in [?-, ?., 0xB7] or
+                  is_name_start_char(codepoint) or (codepoint >= 0x0300 and codepoint <= 0x036F) or
+                  (codepoint >= 0x203F and codepoint <= 0x2040)
 end
