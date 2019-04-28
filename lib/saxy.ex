@@ -185,50 +185,6 @@ defmodule Saxy do
         error
     end
   end
-
-  @spec parse_partial_init(
-          handler :: module() | function(),
-          initial_state :: term(),
-          options :: Keyword.t()
-        ) :: {:ok, fun :: function()}, {:error, exception :: Saxy.ParseError.t()}
-  def parse_partial_init(handler, initial_state, options \\ [])
-      when is_atom(handler) do
-    expand_entity = Keyword.get(options, :expand_entity, :keep)
-
-    state = %State{
-      prolog: nil,
-      handler: handler,
-      user_state: initial_state,
-      expand_entity: expand_entity
-    }
-
-    case Parser.Prolog.parse(<<>>, true, <<>>, 0, state) do
-      {:halted, fun} -> {:ok, fun}
-      {:error, _reason} = error -> error
-    end
-  end
-
-  @spec parse_partial(
-          data :: binary,
-          context_fun :: function()
-        ) :: {:ok, fun :: function()}, {:error, exception :: Saxy.ParseError.t()}
-  def parse_partial(data, context_fun) when is_binary(data) do
-    case context_fun.(data, true) do
-      {:halted, fun} -> {:ok, fun}
-      {:error, _reason} = error -> error
-     end
-  end
-
-  @spec parse_partial_done(
-          context_fun :: function()
-        ) :: {:ok, state :: term()}, {:error, exception :: Saxy.ParseError.t()}
-  def parse_partial_done(context_fun) do
-    case context_fun.(<<>>, false) do
-      {:ok, state} -> {:ok, state.user_state}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
       
   @doc ~S"""
   Parses XML stream data.

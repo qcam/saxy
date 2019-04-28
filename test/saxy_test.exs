@@ -25,19 +25,6 @@ defmodule SaxyTest do
     assert length(state) == 12
   end
 
-  test "parse_partial parses an XML document binary, line by line" do
-    data =
-      File.read!("./test/support/fixture/food.xml")
-      |> String.split("\n")
-
-    assert {:ok, state_fun} = Saxy.parse_partial_init(StackHandler, [])
-    fun = Enum.reduce(data,
-      state_fun,
-      fn(data, fun) -> elem(Saxy.parse_partial(data, fun), 1) end)
-    assert {:ok, state} = Saxy.parse_partial_done(fun)
-    assert length(state) == 74
-  end
-
   test "parse_string/4 parses XML binary with multiple \":expand_entity\" strategy" do
     data = """
     <?xml version="1.0" ?>
