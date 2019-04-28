@@ -11,9 +11,14 @@ defmodule Saxy.Parser.PartialTest do
       |> String.split("\n")
 
     assert {:ok, state_fun} = Partial.init(StackHandler, [])
-    fun = Enum.reduce(data,
-      state_fun,
-      fn(data, fun) -> elem(Partial.parse(data, fun), 1) end)
+
+    fun =
+      Enum.reduce(
+        data,
+        state_fun,
+        fn data, fun -> elem(Partial.parse(data, fun), 1) end
+      )
+
     assert {:ok, state} = Partial.finish(fun)
     assert length(state) == 74
   end

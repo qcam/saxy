@@ -185,6 +185,7 @@ defmodule Saxy do
         error
     end
   end
+
   @doc ~S"""
   Parses XML stream data.
 
