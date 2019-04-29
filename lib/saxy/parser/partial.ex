@@ -2,18 +2,14 @@ defmodule Saxy.Parser.Partial do
   alias Saxy.Parser
 
   @moduledoc ~S"""
-  The Partial module allows partially parsing an XML document, then continuing parsing where 
-  it left off using the context returned from the previous call.
+  Support parsing an XML document partially.
   """
 
-  @spec(
-    init(
-      handler :: module() | function(),
-      initial_state :: term(),
-      options :: Keyword.t()
-    ) :: {:ok, fun :: function()},
-    {:error, exception :: Saxy.ParseError.t()}
-  )
+  @spec init(
+          handler :: module() | function(),
+          initial_state :: term(),
+          options :: Keyword.t()
+        ) :: {:ok, fun :: function()} | {:error, exception :: Saxy.ParseError.t()}
   def init(handler, initial_state, options \\ [])
       when is_atom(handler) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
@@ -31,13 +27,10 @@ defmodule Saxy.Parser.Partial do
     end
   end
 
-  @spec(
-    parse(
-      data :: binary,
-      context_fun :: function()
-    ) :: {:ok, fun :: function()},
-    {:error, exception :: Saxy.ParseError.t()}
-  )
+  @spec parse(
+          data :: binary,
+          context_fun :: function()
+        ) :: {:ok, fun :: function()} | {:error, exception :: Saxy.ParseError.t()}
   def parse(data, context_fun) when is_binary(data) do
     case context_fun.(data, true) do
       {:halted, fun} -> {:ok, fun}
@@ -45,7 +38,7 @@ defmodule Saxy.Parser.Partial do
     end
   end
 
-  @spec(finish(context_fun :: function()) :: {:ok, state :: term()}, {:error, exception :: Saxy.ParseError.t()})
+  @spec finish(context_fun :: function()) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
   def finish(context_fun) do
     case context_fun.(<<>>, false) do
       {:ok, state} -> {:ok, state.user_state}
