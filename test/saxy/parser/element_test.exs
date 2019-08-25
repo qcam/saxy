@@ -273,7 +273,7 @@ defmodule Saxy.Parser.ElementTest do
   @tag :property
 
   property "element name" do
-    check all name <- name() do
+    check all(name <- name()) do
       buffer = "<#{name}></#{name}>"
       assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
 
@@ -285,7 +285,7 @@ defmodule Saxy.Parser.ElementTest do
       assert events == []
     end
 
-    check all name <- name() do
+    check all(name <- name()) do
       buffer = "<#{name}/>"
       assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
 
@@ -299,7 +299,7 @@ defmodule Saxy.Parser.ElementTest do
   end
 
   property "attribute name" do
-    check all attribute_name <- name() do
+    check all(attribute_name <- name()) do
       buffer = "<foo #{attribute_name}='bar'></foo>"
 
       assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
@@ -316,12 +316,14 @@ defmodule Saxy.Parser.ElementTest do
 
   property "attribute value" do
     reference_generator =
-      gen all name <- name() do
+      gen all(name <- name()) do
         "&" <> name <> ";"
       end
 
-    check all attribute_value_chars <- string(:alphanumeric),
-              reference <- reference_generator do
+    check all(
+            attribute_value_chars <- string(:alphanumeric),
+            reference <- reference_generator
+          ) do
       attribute_value =
         [attribute_value_chars, reference]
         |> Enum.shuffle()
@@ -389,8 +391,10 @@ defmodule Saxy.Parser.ElementTest do
           0x203F..0x2040
         ]
 
-    gen all start_char <- string(name_start_char_ranges, min_length: 1, max_length: 4),
-            chars <- string(name_char_ranges) do
+    gen all(
+          start_char <- string(name_start_char_ranges, min_length: 1, max_length: 4),
+          chars <- string(name_char_ranges)
+        ) do
       start_char <> chars
     end
   end
