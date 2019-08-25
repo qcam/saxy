@@ -67,17 +67,17 @@ defmodule Saxy.BuilderTest do
   @tag :property
 
   property "number" do
-    check all integer <- integer() do
+    check all(integer <- integer()) do
       assert build(integer) == {:characters, Integer.to_string(integer)}
     end
 
-    check all float <- float() do
+    check all(float <- float()) do
       assert build(float) == {:characters, Float.to_string(float)}
     end
   end
 
   property "bitstring" do
-    check all string <- string(:printable) do
+    check all(string <- string(:printable)) do
       assert build(string) == {:characters, string}
     end
   end
@@ -85,7 +85,7 @@ defmodule Saxy.BuilderTest do
   property "atom" do
     assert build(nil) == {:characters, ""}
 
-    check all atom <- atom(:alphanumeric) do
+    check all(atom <- atom(:alphanumeric)) do
       assert build(atom) == {:characters, Atom.to_string(atom)}
     end
   end
