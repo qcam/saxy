@@ -2,6 +2,10 @@
 
 ## Unrelease
 
+## v0.10.0
+
+* Add support of partial parsing [#42](https://github.com/qcam/saxy/pull/42).
+
 ## v0.9.1
 
 * Fix type spec warnings in `Saxy.SimpleForm`.
