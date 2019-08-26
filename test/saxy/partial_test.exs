@@ -50,4 +50,10 @@ defmodule Saxy.PartialTest do
     assert {:ok, partial} = Partial.new(FastReturnHandler, [])
     assert Partial.parse(partial, "<xml>") == {:halt, :fast_return}
   end
+
+  test "handles parsing errors" do
+    assert {:ok, partial} = Partial.new(StackHandler, [])
+    assert {:error, _reason} = Partial.parse(partial, "<foo<")
+    assert {:error, _reason} = Partial.parse(partial, "<foo></bar>")
+  end
 end
