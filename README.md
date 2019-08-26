@@ -96,23 +96,15 @@ Saxy.parse_stream(stream, MyEventHandler, initial_state)
 
 ### Partial parsing
 
-Saxy can parse part of an XML document, and parse more of it later.
+Saxy can parse an XML document partially. This feature is useful when the
+document cannot be turned into a stream e.g receiving over socket.
 
 ```elixir
-alias Saxy.Parser.Partial
-
-xml = """
-<?xml version=1.0' ?>
-<foo bar=value'>
-</foo>
-"""
-split_xml = String.split(xml, "\n")
-
-{:ok, context} = Partial.init(MyEventHandler, initial_state)
-{:ok, context} = Partial.parse(Enum.at(split_xml, 0), context)
-{:ok, context} = Partial.parse(Enum.at(split_xml, 1), context)
-{:ok, context} = Partial.parse(Enum.at(split_xml, 2), context)
-{:ok, state} = Partial.finish(context)
+{:ok, partial} = Partial.new(MyEventHandler, initial_state)
+{:cont, partial} = Partial.parse(partial, "<foo>")
+{:cont, partial} = Partial.parse(partial, "<bar></bar>")
+{:cont, partial} = Partial.parse(partial, "</foo>")
+{:ok, state} = Partial.terminate(partial)
 ```
 
 ### Simple DOM format exporting

@@ -8,6 +8,8 @@ defmodule Saxy.PartialTest do
     StackHandler
   }
 
+  doctest Saxy.Partial
+
   test "parses XML document partially line by line" do
     data_chunks =
       "./test/support/fixture/food.xml"
@@ -18,11 +20,11 @@ defmodule Saxy.PartialTest do
 
     partial =
       Enum.reduce(data_chunks, partial, fn data, acc ->
-        assert {:cont, partial} = Partial.parse(data, acc)
+        assert {:cont, partial} = Partial.parse(acc, data)
         partial
       end)
 
-    assert {:ok, state} = Partial.finish(partial)
+    assert {:ok, state} = Partial.terminate(partial)
     assert length(state) == 74
   end
 
@@ -36,16 +38,16 @@ defmodule Saxy.PartialTest do
 
     partial =
       Enum.reduce(data_chunks, partial, fn data, acc ->
-        assert {:cont, partial} = Partial.parse(data, acc)
+        assert {:cont, partial} = Partial.parse(acc, data)
         partial
       end)
 
-    assert {:ok, state} = Partial.finish(partial)
+    assert {:ok, state} = Partial.terminate(partial)
     assert length(state) == 74
   end
 
   test "works with fast return" do
     assert {:ok, partial} = Partial.new(FastReturnHandler, [])
-    assert Partial.parse("<xml>", partial) == {:ok, :fast_return}
+    assert Partial.parse(partial, "<xml>") == {:halt, :fast_return}
   end
 end
