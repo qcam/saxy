@@ -162,7 +162,7 @@ defmodule Saxy do
 
   @spec parse_string(
           data :: binary,
-          handler :: module() | function(),
+          handler :: module(),
           initial_state :: term(),
           options :: Keyword.t()
         ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
@@ -244,7 +244,7 @@ defmodule Saxy do
 
   @spec parse_stream(
           stream :: Enumerable.t(),
-          handler :: module() | function(),
+          handler :: module(),
           initial_state :: term(),
           options :: Keyword.t()
         ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
