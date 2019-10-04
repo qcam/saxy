@@ -8,10 +8,14 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        elixir_version: [1.6, 1.7, 1.8, 1.9]
+
     runs-on: ubuntu-latest
 
     container:
-      image: elixir:1.9.1-slim
+      image: elixir:${{ matrix.elixir_version }}-alpine
 
     steps:
     - uses: actions/checkout@v1
@@ -20,5 +24,5 @@ jobs:
         mix local.rebar --force
         mix local.hex --force
         mix deps.get
-    - name: Run Tests
+    - name: Run Tests ${{ matrix.elixir_version }}
       run: mix test
