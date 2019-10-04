@@ -27,7 +27,7 @@ jobs:
         mix local.hex --force
         mix deps.get
     - name: Check format
-      if: matrix.elixir_version == "1.9"
+      if: matrix.elixir_version == '1.9'
       run: mix format --check-formatted
     - name: Run Tests
       run: mix test
