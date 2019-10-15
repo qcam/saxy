@@ -2,16 +2,16 @@ defmodule Saxy.Parser.ElementTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
-  import Saxy.Parser.Element, only: [parse: 5]
-
-  alias Saxy.ParseError
-
-  alias Saxy.TestHandlers.StackHandler
+  alias Saxy.{
+    ParseError,
+    Parser,
+    TestHandlers.StackHandler
+  }
 
   test "parses element having no attributes" do
     buffer = "<foo></foo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
 
     events = Enum.reverse(state.user_state)
 
@@ -22,7 +22,7 @@ defmodule Saxy.Parser.ElementTest do
 
     buffer = "<fóo></fóo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
 
     events = Enum.reverse(state.user_state)
 
@@ -48,7 +48,7 @@ defmodule Saxy.Parser.ElementTest do
     <?foo what a instruction ?>
     """
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     events = Enum.reverse(state.user_state)
 
     item_attributes = [{"name", "[日本語] Tom & Jerry"}, {"category", "movie"}]
@@ -80,7 +80,7 @@ defmodule Saxy.Parser.ElementTest do
   test "parses empty element" do
     buffer = "<foo />"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     events = Enum.reverse(state.user_state)
 
     assert [{:start_element, {"foo", []}} | events] = events
@@ -91,7 +91,7 @@ defmodule Saxy.Parser.ElementTest do
 
     buffer = "<foo foo='FOO' bar='BAR'/>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     events = Enum.reverse(state.user_state)
 
     element = {"foo", [{"foo", "FOO"}, {"bar", "BAR"}]}
@@ -103,7 +103,7 @@ defmodule Saxy.Parser.ElementTest do
 
     buffer = "<foo foo='Tom &amp; Jerry' bar='bar' />"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     events = Enum.reverse(state.user_state)
 
     element = {"foo", [{"foo", "Tom & Jerry"}, {"bar", "bar"}]}
@@ -117,7 +117,7 @@ defmodule Saxy.Parser.ElementTest do
   test "parses element content" do
     buffer = "<foo>Lorem Ipsum Lorem Ipsum</foo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     events = Enum.reverse(state.user_state)
 
     assert [{:start_element, {"foo", []}} | events] = events
@@ -133,7 +133,7 @@ defmodule Saxy.Parser.ElementTest do
     </foo>
     """
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     events = Enum.reverse(state.user_state)
 
     assert [{:start_element, {"foo", []}} | events] = events
@@ -147,7 +147,7 @@ defmodule Saxy.Parser.ElementTest do
   test "parses comments" do
     buffer = "<foo><!--IGNORE ME--></foo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     events = Enum.reverse(state.user_state)
 
     assert [{:start_element, {"foo", []}} | events] = events
@@ -160,112 +160,112 @@ defmodule Saxy.Parser.ElementTest do
   test "handles malformed comments" do
     buffer = "<foo><!--IGNORE ME---></foo>"
 
-    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer)
     assert ParseError.message(error) == "unexpected byte \"-\", expected token: :comment"
   end
 
   test "parses element references" do
     buffer = "<foo>Tom &#x26; Jerry</foo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     assert find_event(state, :characters, "Tom & Jerry")
 
     buffer = "<foo>Tom &#38; Jerry</foo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     assert find_event(state, :characters, "Tom & Jerry")
 
     buffer = "<foo>Tom &amp; Jerry</foo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     assert find_event(state, :characters, "Tom & Jerry")
   end
 
   test "handles malformed references in element" do
     buffer = "<foo>Tom &#xt5; Jerry</foo>"
 
-    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer)
     assert ParseError.message(error) == "unexpected byte \"t\", expected token: :char_ref"
 
     buffer = "<foo>Tom &#t5; Jerry</foo>"
 
-    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer)
     assert ParseError.message(error) == "unexpected byte \"t\", expected token: :char_ref"
 
     buffer = "<foo>Tom &t5 Jerry</foo>"
 
-    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer)
     assert ParseError.message(error) == "unexpected byte \" \", expected token: :entity_ref"
   end
 
   test "parses CDATA" do
     buffer = "<foo><![CDATA[John Cena <foo></foo> &amp;]]></foo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     assert find_events(state, :characters) == [{:characters, "John Cena <foo></foo> &amp;"}]
   end
 
   test "handles malformed CDATA" do
     buffer = "<foo><![CDATA[John Cena </foo>"
 
-    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer)
     assert ParseError.message(error) == "unexpected end of input, expected token: :\"]]\""
   end
 
   test "parses processing instruction" do
     buffer = "<foo><?hello the instruction?></foo>"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     assert length(state.user_state) == 3
   end
 
   test "handles malformed processing instruction" do
     buffer = "<foo><?hello the instruction"
 
-    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer)
     assert ParseError.message(error) == "unexpected end of input, expected token: :processing_instruction"
   end
 
   test "parses element attributes" do
     buffer = "<foo abc='123' def=\"456\" g:hi='789' />"
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     tag = {"foo", [{"abc", "123"}, {"def", "456"}, {"g:hi", "789"}]}
     assert find_event(state, :start_element, tag)
     assert find_event(state, :end_element, "foo")
 
     buffer = ~s(<foo abc = "ABC" />)
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     tag = {"foo", [{"abc", "ABC"}]}
     assert find_event(state, :start_element, tag)
     assert find_event(state, :end_element, "foo")
 
     buffer = ~s(<foo val="Tom &#x26; Jerry" />)
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     assert find_event(state, :start_element, {"foo", [{"val", "Tom & Jerry"}]})
     assert find_event(state, :end_element, "foo")
 
     buffer = ~s(<foo val="Tom &#x26 Jerry" />)
 
-    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer)
     assert ParseError.message(error) == "unexpected byte \" \", expected token: :char_ref"
 
     buffer = ~s(<foo val="Tom &#38; Jerry" />)
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     assert find_event(state, :start_element, {"foo", [{"val", "Tom & Jerry"}]})
     assert find_event(state, :end_element, "foo")
 
     buffer = ~s(<foo val="Tom &#38 Jerry" />)
 
-    assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+    assert {:error, error} = parse(buffer)
     assert ParseError.message(error) == "unexpected byte \" \", expected token: :char_ref"
 
     buffer = ~s(<foo val="Tom &amp; Jerry" />)
 
-    assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+    assert {:ok, state} = parse(buffer)
     assert find_event(state, :start_element, {"foo", [{"val", "Tom & Jerry"}]})
     assert find_event(state, :end_element, "foo")
   end
@@ -275,7 +275,7 @@ defmodule Saxy.Parser.ElementTest do
   property "element name" do
     check all(name <- name()) do
       buffer = "<#{name}></#{name}>"
-      assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+      assert {:ok, state} = parse(buffer)
 
       events = Enum.reverse(state.user_state)
 
@@ -287,7 +287,7 @@ defmodule Saxy.Parser.ElementTest do
 
     check all(name <- name()) do
       buffer = "<#{name}/>"
-      assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+      assert {:ok, state} = parse(buffer)
 
       events = Enum.reverse(state.user_state)
 
@@ -302,7 +302,7 @@ defmodule Saxy.Parser.ElementTest do
     check all(attribute_name <- name()) do
       buffer = "<foo #{attribute_name}='bar'></foo>"
 
-      assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+      assert {:ok, state} = parse(buffer)
       events = Enum.reverse(state.user_state)
 
       element = {"foo", [{attribute_name, "bar"}]}
@@ -331,7 +331,7 @@ defmodule Saxy.Parser.ElementTest do
 
       buffer = "<foo foo='#{attribute_value}'></foo>"
 
-      assert {:ok, state} = parse(buffer, false, buffer, 0, make_state())
+      assert {:ok, state} = parse(buffer)
       events = Enum.reverse(state.user_state)
 
       element = {"foo", [{"foo", attribute_value}]}
@@ -341,6 +341,10 @@ defmodule Saxy.Parser.ElementTest do
       assert [{:end_document, {}} | events] = events
       assert events == []
     end
+  end
+
+  defp parse(data) do
+    Parser.Element.parse(data, false, data, 0, make_state())
   end
 
   defp make_state(state \\ []) do
