@@ -1,6 +1,8 @@
 defmodule SaxyTest do
   use ExUnit.Case
 
+  import SaxyTest.Utils
+
   alias Saxy.ParseError
 
   alias Saxy.TestHandlers.{
@@ -13,15 +15,15 @@ defmodule SaxyTest do
 
   test "parse_string/3 parses a XML document binary" do
     data = File.read!("./test/support/fixture/food.xml")
-    assert {:ok, state} = Saxy.parse_string(data, StackHandler, [])
+    assert {:ok, state} = data |> remove_indents() |> Saxy.parse_string(StackHandler, [])
     assert length(state) == 74
 
     data = File.read!("./test/support/fixture/complex.xml")
-    assert {:ok, state} = Saxy.parse_string(data, StackHandler, [])
+    assert {:ok, state} = data |> remove_indents() |> Saxy.parse_string(StackHandler, [])
     assert length(state) == 79
 
     data = File.read!("./test/support/fixture/illustrator.svg")
-    assert {:ok, state} = Saxy.parse_string(data, StackHandler, [])
+    assert {:ok, state} = data |> remove_indents() |> Saxy.parse_string(StackHandler, [])
     assert length(state) == 12
   end
 
@@ -68,15 +70,15 @@ defmodule SaxyTest do
 
     stream = File.stream!("./test/support/fixture/food.xml", [], 200)
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
-    assert length(state) == 74
+    assert length(state) == 105
 
     stream = File.stream!("./test/support/fixture/complex.xml", [], 200)
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
-    assert length(state) == 79
+    assert length(state) == 120
 
     stream = File.stream!("./test/support/fixture/illustrator.svg", [], 5)
     assert {:ok, state} = Saxy.parse_stream(stream, StackHandler, [])
-    assert length(state) == 12
+    assert length(state) == 18
   end
 
   test "parse_stream/3 parses normal stream" do
@@ -103,6 +105,7 @@ defmodule SaxyTest do
       <!--a very bottom comment-->
       <?foo what a instruction ?>
       """
+      |> remove_indents()
       |> String.codepoints()
       |> Stream.map(& &1)
 
@@ -144,12 +147,15 @@ defmodule SaxyTest do
     assert state == [
              {:end_document, {}},
              {:end_element, "songs"},
+             {:characters, "\n"},
              {:end_element, "song"},
              {:characters, "Eva Braun 𠜎 𠜱 𠝹𠱓"},
              {:start_element, {"song", [{"singer", "Die Ärtze"}]}},
+             {:characters, "\n  "},
              {:end_element, "song"},
              {:characters, "Über den Wolken"},
              {:start_element, {"song", [{"singer", "Reinhard Mey"}]}},
+             {:characters, "\n  "},
              {:start_element, {"songs", []}},
              {:start_document, [version: "1.0"]}
            ]

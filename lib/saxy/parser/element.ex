@@ -398,7 +398,18 @@ defmodule Saxy.Parser.Element do
   end
 
   defp chardata_whitespace(<<?<, rest::bits>>, more?, original, pos, state, len) do
-    element_content_rest(rest, more?, original, pos + len + 1, state)
+    chars = binary_part(original, pos, len)
+
+    case Emitter.emit(:characters, chars, state) do
+      {:ok, state} ->
+        element_content_rest(rest, more?, original, pos + len + 1, state)
+
+      {:stop, state} ->
+        {:ok, state}
+
+      {:error, other} ->
+        Utils.bad_return_error(other)
+    end
   end
 
   defp chardata_whitespace(<<?&, rest::bits>>, more?, original, pos, state, len) do

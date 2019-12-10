@@ -2,6 +2,8 @@ defmodule Saxy.Parser.ElementTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
+  import SaxyTest.Utils
+
   alias Saxy.{
     ParseError,
     Parser,
@@ -33,20 +35,21 @@ defmodule Saxy.Parser.ElementTest do
   end
 
   test "parses element with nested children" do
-    buffer = """
-    <item name="[日本語] Tom &amp; Jerry" category='movie' >
-      <author name='William Hanna &#x26; Joseph Barbera' />
-      <!--Ignore me please I am just a comment-->
-      <?foo Hmm? Then probably ignore me too?>
-      <description><![CDATA[<strong>"Tom & Jerry" is a cool movie!</strong>]]></description>
-      <actors>
-        <actor>Tom</actor>
-        <actor>Jerry</actor>
-      </actors>
-    </item>
-    <!--a very bottom comment-->
-    <?foo what a instruction ?>
-    """
+    buffer =
+      remove_indents("""
+      <item name="[日本語] Tom &amp; Jerry" category='movie' >
+        <author name='William Hanna &#x26; Joseph Barbera' />
+        <!--Ignore me please I am just a comment-->
+        <?foo Hmm? Then probably ignore me too?>
+        <description><![CDATA[<strong>"Tom & Jerry" is a cool movie!</strong>]]></description>
+        <actors>
+          <actor>Tom</actor>
+          <actor>Jerry</actor>
+        </actors>
+      </item>
+      <!--a very bottom comment-->
+      <?foo what a instruction ?>
+      """)
 
     assert {:ok, state} = parse(buffer)
     events = Enum.reverse(state.user_state)
@@ -142,6 +145,16 @@ defmodule Saxy.Parser.ElementTest do
     assert [{:end_document, {}} | events] = events
 
     assert events == []
+
+    buffer = "<foo>  </foo>"
+    assert {:ok, state} = parse(buffer)
+
+    events = Enum.reverse(state.user_state)
+
+    assert [{:start_element, {"foo", []}} | events] = events
+    assert [{:characters, "  "} | events] = events
+    assert [{:end_element, "foo"} | events] = events
+    assert [{:end_document, {}} | events] = events
   end
 
   test "parses comments" do
@@ -348,12 +361,7 @@ defmodule Saxy.Parser.ElementTest do
   end
 
   defp make_state(state \\ []) do
-    %Saxy.State{
-      prolog: nil,
-      handler: StackHandler,
-      user_state: state,
-      expand_entity: :keep
-    }
+    %Saxy.State{prolog: nil, handler: StackHandler, user_state: state, expand_entity: :keep}
   end
 
   defp find_events(state, event_type) do

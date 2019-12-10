@@ -1,6 +1,8 @@
 defmodule Saxy.SimpleFormTest do
   use ExUnit.Case, async: true
 
+  import SaxyTest.Utils
+
   doctest Saxy.SimpleForm
 
   test "parses simple XML and default options" do
@@ -18,7 +20,7 @@ defmodule Saxy.SimpleFormTest do
     </menu>
     """
 
-    assert {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml)
+    assert {:ok, simple_form} = xml |> remove_indents() |> Saxy.SimpleForm.parse_string()
 
     assert {"menu", [], elements} = simple_form
 
@@ -37,7 +39,7 @@ defmodule Saxy.SimpleFormTest do
     assert {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml)
 
     assert {"breakfast_menu", [], children} = simple_form
-    assert length(children) == 5
+    assert length(children) == 11
   end
 
   test "parses XML document with customized entity handler" do
@@ -55,7 +57,10 @@ defmodule Saxy.SimpleFormTest do
     </menu>
     """
 
-    assert {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml, expand_entity: {__MODULE__, :handle_entity_reference, []})
+    assert {:ok, simple_form} =
+             xml
+             |> remove_indents()
+             |> Saxy.SimpleForm.parse_string(expand_entity: {__MODULE__, :handle_entity_reference, []})
 
     assert {"menu", [], elements} = simple_form
 

@@ -1,6 +1,8 @@
 defmodule Saxy.PartialTest do
   use ExUnit.Case, async: true
 
+  import SaxyTest.Utils
+
   alias Saxy.Partial
 
   alias Saxy.TestHandlers.{
@@ -14,6 +16,7 @@ defmodule Saxy.PartialTest do
     data_chunks =
       "./test/support/fixture/food.xml"
       |> File.read!()
+      |> remove_indents()
       |> String.split("\n")
 
     assert {:ok, partial} = Partial.new(StackHandler, [])
@@ -32,6 +35,7 @@ defmodule Saxy.PartialTest do
     data_chunks =
       "./test/support/fixture/food.xml"
       |> File.read!()
+      |> remove_indents()
       |> String.split("")
 
     assert {:ok, partial} = Partial.new(StackHandler, [])
