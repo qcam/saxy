@@ -48,21 +48,36 @@ defmodule Saxy.SimpleForm do
       {:ok,
        {"menu", [],
         [
-          {"movie",
-           [
-             {"url", "https://www.imdb.com/title/tt0120338/"},
-             {"id", "tt0120338"}
-           ],
-           [{"name", [], ["Titanic"]}, {"characters", [], ["Jack & Rose"]}]},
-          {"movie",
-           [
-             {"url", "https://www.imdb.com/title/tt0109830/"},
-             {"id", "tt0109830"}
-           ],
-           [
-             {"name", [], ["Forest Gump"]},
-             {"characters", [], ["Forest & Jenny"]}
-           ]}
+          "\\n  ",
+          {
+            "movie",
+            [
+              {"url", "https://www.imdb.com/title/tt0120338/"},
+              {"id", "tt0120338"}
+            ],
+            [
+              "\\n    ",
+              {"name", [], ["Titanic"]},
+              "\\n    ",
+              {"characters", [], ["Jack & Rose"]},
+              "\\n  "]
+          },
+          "\\n  ",
+          {
+            "movie",
+            [
+              {"url", "https://www.imdb.com/title/tt0109830/"},
+              {"id", "tt0109830"}
+            ],
+            [
+              "\\n    ",
+              {"name", [], ["Forest Gump"]},
+              "\\n    ",
+              {"characters", [], ["Forest & Jenny"]},
+              "\\n  "
+            ]
+          },
+          "\\n"
         ]}}
 
   """
