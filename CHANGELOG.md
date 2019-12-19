@@ -1,6 +1,9 @@
 # Changelog
 
-## Unrelease
+## v1.0.0
+
+* Support Elixir 1.6+.
+* Fix white spaces emitting bug in empty elements.
 
 ## v0.10.0
 
