@@ -241,6 +241,9 @@ defmodule Saxy do
 
   See the “Shared options” section at the module documentation.
 
+  * `:character_data_max_length` - tells the parser to emit the `:characters` event when its length exceeds the specified
+    amount. The option is useful when the tag being parsed containing a very large chunk of data. Defaults to `:infinity`.
+
   """
 
   @spec parse_stream(
