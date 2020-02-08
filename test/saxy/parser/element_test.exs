@@ -361,7 +361,7 @@ defmodule Saxy.Parser.ElementTest do
   end
 
   defp make_state(state \\ []) do
-    %Saxy.State{prolog: nil, handler: StackHandler, user_state: state, expand_entity: :keep}
+    %Saxy.State{prolog: nil, handler: StackHandler, user_state: state, expand_entity: :keep, character_data_max_length: :infinity}
   end
 
   defp find_events(state, event_type) do

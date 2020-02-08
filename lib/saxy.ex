@@ -174,7 +174,8 @@ defmodule Saxy do
       prolog: nil,
       handler: handler,
       user_state: initial_state,
-      expand_entity: expand_entity
+      expand_entity: expand_entity,
+      character_data_max_length: :infinity
     }
 
     case Parser.Prolog.parse(data, false, data, 0, state) do
@@ -251,12 +252,14 @@ defmodule Saxy do
 
   def parse_stream(stream, handler, initial_state, options \\ []) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
+    character_data_max_length = Keyword.get(options, :character_data_max_length, :infinity)
 
     state = %State{
       prolog: nil,
       handler: handler,
       user_state: initial_state,
-      expand_entity: expand_entity
+      expand_entity: expand_entity,
+      character_data_max_length: character_data_max_length
     }
 
     init = Parser.Prolog.parse(<<>>, true, <<>>, 0, state)
