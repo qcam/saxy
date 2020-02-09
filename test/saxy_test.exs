@@ -178,6 +178,40 @@ defmodule SaxyTest do
            ]
   end
 
+  test "parse_stream/3 emits \"characters\" event" do
+    character_data_max_length = 32
+    first_chunk = String.duplicate("x", character_data_max_length)
+    second_chunk = String.duplicate("y", character_data_max_length)
+
+    doc =
+      String.codepoints("""
+      <?xml version="1.0" encoding="UTF-8"?>
+      <foo>#{first_chunk}#{second_chunk}</foo>
+      """)
+
+    assert {:ok, state} = Saxy.parse_stream(doc, StackHandler, [], character_data_max_length: character_data_max_length)
+
+    assert state == [
+             end_document: {},
+             end_element: "foo",
+             characters: "",
+             characters: second_chunk,
+             characters: first_chunk,
+             start_element: {"foo", []},
+             start_document: [encoding: "UTF-8", version: "1.0"]
+           ]
+
+    assert {:ok, state} = Saxy.parse_stream(doc, StackHandler, [])
+
+    assert state == [
+             end_document: {},
+             end_element: "foo",
+             characters: first_chunk <> second_chunk,
+             start_element: {"foo", []},
+             start_document: [encoding: "UTF-8", version: "1.0"]
+           ]
+  end
+
   test "parse_stream/3 supports fast return" do
     codepoints =
       String.codepoints("""

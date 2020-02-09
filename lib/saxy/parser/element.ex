@@ -470,6 +470,23 @@ defmodule Saxy.Parser.Element do
     chardata(rest, more?, original, pos, state, acc, len + Utils.compute_char_len(charcode))
   end
 
+  defp chardata(<<>>, true, original, pos, %{character_data_max_length: max_length} = state, acc, len)
+       when max_length != :infinity and len >= max_length do
+    chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+
+    case Emitter.emit(:characters, chars, state) do
+      {:ok, state} ->
+        {original, pos} = maybe_trim(true, original, pos + len)
+        chardata(<<>>, true, original, pos, state, <<>>, 0)
+
+      {:stop, state} ->
+        {:ok, state}
+
+      {:error, other} ->
+        Utils.bad_return_error(other)
+    end
+  end
+
   defhalt chardata(<<>>, true, original, pos, state, acc, len)
 
   defp chardata(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
