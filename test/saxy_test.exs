@@ -178,7 +178,7 @@ defmodule SaxyTest do
            ]
   end
 
-  test "long element data" do
+  test "parse_stream/3 emits \"characters\" event" do
     character_data_max_length = 32
     first_chunk = String.duplicate("x", character_data_max_length)
     second_chunk = String.duplicate("y", character_data_max_length)
@@ -197,6 +197,16 @@ defmodule SaxyTest do
              characters: "",
              characters: second_chunk,
              characters: first_chunk,
+             start_element: {"foo", []},
+             start_document: [encoding: "UTF-8", version: "1.0"]
+           ]
+
+    assert {:ok, state} = Saxy.parse_stream(doc, StackHandler, [])
+
+    assert state == [
+             end_document: {},
+             end_element: "foo",
+             characters: first_chunk <> second_chunk,
              start_element: {"foo", []},
              start_document: [encoding: "UTF-8", version: "1.0"]
            ]
