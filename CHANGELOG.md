@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.0
+
+* Introduce `:character_data_max_length` option in stream and partial parsing.
+
 ## v1.0.0
 
 * Support Elixir 1.6+.
