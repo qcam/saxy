@@ -61,7 +61,7 @@ defmodule Saxy.EncoderTest do
     ]
 
     document = {"movie", [], content}
-    xml = encode(document, version: "1.0")
+    xml = encode(document, [])
 
     assert xml == ~s(<?xml version="1.0"?><movie>&foo;&x3C;&x60;</movie>)
   end
@@ -161,7 +161,7 @@ defmodule Saxy.EncoderTest do
     assert encode(document, version: "1.0") == xml
   end
 
-  defp encode(document, prolog \\ []) do
+  defp encode(document, prolog \\ nil) do
     document
     |> Saxy.Encoder.encode_to_iodata(prolog)
     |> IO.iodata_to_binary()
