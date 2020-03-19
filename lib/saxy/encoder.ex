@@ -12,6 +12,7 @@ defmodule Saxy.Encoder do
     [[[60, "foo", 32, "id", 61, 34, "10", 34], 47, 62]]
   """
   def encode_to_iodata(root, prolog \\ nil)
+
   def encode_to_iodata(root, nil) do
     [element(root)]
   end
