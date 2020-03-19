@@ -54,7 +54,7 @@ defmodule Saxy.XML do
     {
       to_string(name),
       attributes(attributes),
-      :empty
+      []
     }
   end
 

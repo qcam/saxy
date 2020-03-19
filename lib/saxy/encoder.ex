@@ -1,11 +1,43 @@
 defmodule Saxy.Encoder do
   @moduledoc false
 
+  @doc """
+  Encode data into a iodata list (merge between list and binary data).
+
+  Example:
+    iex> Saxy.Encoder.encode_to_iodata({"foo", [], []})
+    [[[60, "foo"], 47, 62]]
+
+    iex> Saxy.Encoder.encode_to_iodata({"foo", [{"id", "10"}], []})
+    [[[60, "foo", 32, "id", 61, 34, "10", 34], 47, 62]]
+  """
+  def encode_to_iodata(root, prolog \\ nil)
+
+  def encode_to_iodata(root, nil) do
+    [element(root)]
+  end
+
   def encode_to_iodata(root, prolog) do
     prolog = prolog(prolog)
     element = element(root)
 
     [prolog | element]
+  end
+
+  @doc """
+  Encode data into a XML string representation.
+
+  Example:
+    iex> Saxy.Encoder.encode_to_binary({"foo", [], []})
+    "<foo/>"
+
+    iex> Saxy.Encoder.encode_to_binary({"foo", [{"id", "10"}], []})
+    "<foo id=\\"10\\"/>"
+  """
+  def encode_to_binary(root, prolog \\ nil) do
+    root
+    |> encode_to_iodata(prolog)
+    |> IO.iodata_to_binary()
   end
 
   defp prolog(%Saxy.Prolog{} = prolog) do
@@ -34,7 +66,7 @@ defmodule Saxy.Encoder do
     [?\s, 'standalone', ?=, ?", "yes", ?"]
   end
 
-  defp element({tag_name, attributes, :empty}) do
+  defp element({tag_name, attributes, []}) do
     [start_tag(tag_name, attributes), ?/, ?>]
   end
 
