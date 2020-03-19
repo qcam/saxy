@@ -313,7 +313,7 @@ defmodule Saxy do
 
   @spec encode!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t()) :: String.t()
 
-  def encode!(root, prolog \\ []) do
+  def encode!(root, prolog \\ nil) do
     root
     |> Encoder.encode_to_iodata(prolog)
     |> IO.iodata_to_binary()
@@ -341,7 +341,7 @@ defmodule Saxy do
   """
   @spec encode_to_iodata!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t()) :: iodata()
 
-  def encode_to_iodata!(root, prolog \\ []) do
+  def encode_to_iodata!(root, prolog \\ nil) do
     Encoder.encode_to_iodata(root, prolog)
   end
 end

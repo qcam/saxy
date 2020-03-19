@@ -11,8 +11,6 @@ defmodule Saxy.Encoder do
     iex> Saxy.Encoder.encode_to_iodata({"foo", [{"id", "10"}], []})
     [[[60, "foo", 32, "id", 61, 34, "10", 34], 47, 62]]
   """
-  def encode_to_iodata(root, prolog \\ nil)
-
   def encode_to_iodata(root, nil) do
     [element(root)]
   end
