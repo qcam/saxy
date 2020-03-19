@@ -5,10 +5,10 @@ defmodule Saxy.EncoderTest do
     document = {
       "person",
       [{"first_name", "John"}, {"last_name", "Doe"}],
-      :empty
+      []
     }
 
-    xml = encode(document)
+    xml = encode(document, version: "1.0")
 
     assert xml == ~s(<?xml version="1.0"?><person first_name="John" last_name="Doe"/>)
   end
@@ -22,7 +22,7 @@ defmodule Saxy.EncoderTest do
       content
     }
 
-    xml = encode(document)
+    xml = encode(document, version: "1.0")
 
     assert xml == ~s(<?xml version="1.0"?><person first_name="John" last_name="Doe">Hello my name is John Doe</person>)
   end
@@ -30,14 +30,14 @@ defmodule Saxy.EncoderTest do
   test "encodes attributes with escapable characters" do
     xml = encode({"person", [{"first_name", "&'\"<>"}], []})
 
-    assert xml == ~s(<?xml version="1.0"?><person first_name="&amp;&apos;&quot;&lt;&gt;"></person>)
+    assert xml == ~s(<person first_name="&amp;&apos;&quot;&lt;&gt;"/>)
   end
 
   test "encodes CDATA" do
     children = [{:cdata, "Tom & Jerry"}]
 
     document = {"person", [], children}
-    xml = encode(document)
+    xml = encode(document, version: "1.0")
 
     assert xml == ~s(<?xml version="1.0"?><person><![CDATA[Tom & Jerry]]></person>)
   end
@@ -48,7 +48,7 @@ defmodule Saxy.EncoderTest do
     ]
 
     document = {"movie", [], content}
-    xml = encode(document)
+    xml = encode(document, version: "1.0")
 
     assert xml == ~s(<?xml version="1.0"?><movie>Tom &amp; Jerry</movie>)
   end
@@ -61,7 +61,7 @@ defmodule Saxy.EncoderTest do
     ]
 
     document = {"movie", [], content}
-    xml = encode(document)
+    xml = encode(document, version: "1.0")
 
     assert xml == ~s(<?xml version="1.0"?><movie>&foo;&x3C;&x60;</movie>)
   end
@@ -75,7 +75,7 @@ defmodule Saxy.EncoderTest do
     document = {"movie", [], content}
     xml = encode(document)
 
-    assert xml == ~s(<?xml version="1.0"?><movie><!--This is obviously a comment--><!--A+, A, A- --></movie>)
+    assert xml == ~s(<movie><!--This is obviously a comment--><!--A+, A, A- --></movie>)
   end
 
   test "encodes processing instruction" do
@@ -84,14 +84,14 @@ defmodule Saxy.EncoderTest do
     ]
 
     document = {"movie", [], content}
-    xml = encode(document)
+    xml = encode(document, version: "1.0")
 
     assert xml == ~s(<?xml version="1.0"?><movie><?xml-stylesheet type="text/xsl" href="style.xsl"?></movie>)
   end
 
   test "encodes nested element" do
     children = [
-      {"address", [{"street", "foo"}, {"city", "bar"}], :empty},
+      {"address", [{"street", "foo"}, {"city", "bar"}], []},
       {"gender", [], [{:characters, "male"}]}
     ]
 
@@ -99,7 +99,7 @@ defmodule Saxy.EncoderTest do
     xml = encode(document)
 
     assert xml ==
-             ~s(<?xml version="1.0"?><person first_name="John" last_name="Doe"><address street="foo" city="bar"/><gender>male</gender></person>)
+             ~s(<person first_name="John" last_name="Doe"><address street="foo" city="bar"/><gender>male</gender></person>)
   end
 
   test "integration with builder" do
@@ -120,7 +120,7 @@ defmodule Saxy.EncoderTest do
     xml =
       :rss
       |> element([version: "2.0"], items)
-      |> encode([])
+      |> encode(version: "1.0")
 
     expected = """
     <?xml version="1.0"?>
@@ -158,7 +158,7 @@ defmodule Saxy.EncoderTest do
 
     xml = "<?xml version=\"1.0\"?>" <> xml
 
-    assert encode(document) == xml
+    assert encode(document, version: "1.0") == xml
   end
 
   defp encode(document, prolog \\ []) do

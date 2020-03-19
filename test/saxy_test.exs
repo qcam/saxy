@@ -12,6 +12,7 @@ defmodule SaxyTest do
   }
 
   doctest Saxy
+  doctest Saxy.Encoder
 
   test "parse_string/3 parses a XML document binary" do
     data = File.read!("./test/support/fixture/food.xml")
@@ -272,7 +273,7 @@ defmodule SaxyTest do
 
     test "encodes XML document into string" do
       root = element("foo", [], "foo")
-      assert Saxy.encode!(root) == ~s(<?xml version="1.0"?><foo>foo</foo>)
+      assert Saxy.encode!(root, version: "1.0") == ~s(<?xml version="1.0"?><foo>foo</foo>)
     end
   end
 
@@ -281,7 +282,7 @@ defmodule SaxyTest do
 
     test "encodes XML document into IO data" do
       root = element("foo", [], "foo")
-      assert xml = Saxy.encode_to_iodata!(root)
+      assert xml = Saxy.encode_to_iodata!(root, version: "1.0")
       assert is_list(xml)
       assert IO.iodata_to_binary(xml) == ~s(<?xml version="1.0"?><foo>foo</foo>)
     end

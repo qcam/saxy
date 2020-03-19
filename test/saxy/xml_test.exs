@@ -15,11 +15,11 @@ defmodule Saxy.XMLTest do
 
   describe "empty_element/2" do
     test "generates empty element in simple form" do
-      assert empty_element("foo", []) == {"foo", [], :empty}
-      assert empty_element(:foo, []) == {"foo", [], :empty}
+      assert empty_element("foo", []) == {"foo", [], []}
+      assert empty_element(:foo, []) == {"foo", [], []}
 
-      assert empty_element("foo", a: 1) == {"foo", [{"a", "1"}], :empty}
-      assert empty_element("foo", %{"a" => 1}) == {"foo", [{"a", "1"}], :empty}
+      assert empty_element("foo", a: 1) == {"foo", [{"a", "1"}], []}
+      assert empty_element("foo", %{"a" => 1}) == {"foo", [{"a", "1"}], []}
     end
   end
 
