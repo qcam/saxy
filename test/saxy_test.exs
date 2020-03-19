@@ -12,7 +12,6 @@ defmodule SaxyTest do
   }
 
   doctest Saxy
-  doctest Saxy.Encoder
 
   test "parse_string/3 parses a XML document binary" do
     data = File.read!("./test/support/fixture/food.xml")
