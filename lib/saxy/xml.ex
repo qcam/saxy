@@ -15,9 +15,9 @@ defmodule Saxy.XML do
 
   @type entity_ref() :: {:reference, {:entity, String.t()}}
 
-  @type hex_ref() :: {:reference, {:hexadecimal, Integer.t()}}
+  @type hex_ref() :: {:reference, {:hexadecimal, integer()}}
 
-  @type dec_ref() :: {:reference, {:decimal, Integer.t()}}
+  @type dec_ref() :: {:reference, {:decimal, integer()}}
 
   @type processing_instruction() :: {:processing_instruction, name :: String.t(), instruction :: String.t()}
 
