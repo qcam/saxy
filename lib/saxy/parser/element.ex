@@ -747,6 +747,14 @@ defmodule Saxy.Parser.Element do
     element_misc_pi(rest, more?, original, pos + 1, state)
   end
 
+  defp element_misc_rest(extra, _more?, _original, _pos, state) when extra != "" do
+    case Emitter.emit(:end_document, {}, state) do
+      {:ok, state} -> {:ok, state, "<#{extra}"}
+      {:stop, state} -> {:stop, state, "<#{extra}"}
+      {:error, other} -> Utils.bad_return_error(other)
+    end
+  end
+
   defhalt element_misc_comment(<<>>, true, original, pos, state)
   defhalt element_misc_comment(<<?->>, true, original, pos, state)
 

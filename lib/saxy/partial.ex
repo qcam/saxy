@@ -19,6 +19,18 @@ defmodule Saxy.Partial do
          start_document: []
        ]}
 
+      iex> {:ok, partial} = Saxy.Partial.new(StackHandler, [])
+      iex> {:cont, partial} = Saxy.Partial.parse(partial, "<foo>")
+      iex> {:cont, partial} = Saxy.Partial.parse(partial, "</foo>")
+      iex> {:halt, _another, "<bar>"} = Saxy.Partial.parse(partial, "<bar>")
+      iex> Saxy.Partial.terminate(partial)
+      {:ok,
+       [
+         end_document: {},
+         end_element: "foo",
+         start_element: {"foo", []},
+         start_document: []
+       ]}
   """
 
   @enforce_keys [:context_fun]
@@ -80,6 +92,12 @@ defmodule Saxy.Partial do
     case context_fun.(data, true) do
       {:halted, context_fun} ->
         {:cont, %{partial | context_fun: context_fun}}
+
+      {:halt, context_fun} ->
+        {:cont, %{partial | context_fun: context_fun}}
+
+      {:ok, state, rest} ->
+        {:halt, state.user_state, rest}
 
       {:ok, state} ->
         {:halt, state.user_state}
