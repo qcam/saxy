@@ -1,6 +1,8 @@
 defmodule Saxy.EncoderTest do
   use ExUnit.Case, async: true
 
+  doctest Saxy.Encoder
+
   test "encodes empty element" do
     document = {
       "person",

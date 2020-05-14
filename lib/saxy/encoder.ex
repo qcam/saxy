@@ -5,10 +5,10 @@ defmodule Saxy.Encoder do
   Encode data into a iodata list (merge between list and binary data).
 
   Example:
-    iex> Saxy.Encoder.encode_to_iodata({"foo", [], []})
+    iex> Saxy.Encoder.encode_to_iodata({"foo", [], []}, nil)
     [[[60, "foo"], 47, 62]]
 
-    iex> Saxy.Encoder.encode_to_iodata({"foo", [{"id", "10"}], []})
+    iex> Saxy.Encoder.encode_to_iodata({"foo", [{"id", "10"}], []}, nil)
     [[[60, "foo", 32, "id", 61, 34, "10", 34], 47, 62]]
   """
   def encode_to_iodata(root, nil) do
