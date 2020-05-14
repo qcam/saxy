@@ -10,10 +10,10 @@ jobs:
   build:
     strategy:
       matrix:
-        elixir_version: [1.6, 1.7, 1.8, 1.9]
+        elixir_version: ["1.6", "1.7", "1.8", "1.9", "1.10"]
 
     runs-on: ubuntu-latest
-    
+
     name: mix test ${{ matrix.elixir_version }}
 
     container:
@@ -27,7 +27,11 @@ jobs:
         mix local.hex --force
         mix deps.get
     - name: Check format
-      if: matrix.elixir_version == '1.9'
+      if: matrix.elixir_version == '1.10'
       run: mix format --check-formatted
     - name: Run Tests
+      if: matrix.elixir_version != '1.10'
       run: mix test
+    - name: Run Tests with Coverage
+      if: matrix.elixir_version == '1.10'
+      run: MIX_ENV=test mix coveralls

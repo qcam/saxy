@@ -13,7 +13,8 @@ defmodule Saxy.MixProject do
       deps: deps(),
       package: package(),
       name: "Saxy",
-      docs: docs()
+      docs: docs(),
+      test_coverage: [tool: ExCoveralls]
     ]
   end
 
@@ -34,7 +35,10 @@ defmodule Saxy.MixProject do
   defp deps() do
     [
       {:ex_doc, "~> 0.16", only: :dev, runtime: false},
-      {:stream_data, "~> 0.4.2", only: :test}
+      {:stream_data, "~> 0.4.2", only: :test},
+      {:credo, "~>1.2", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.12.3", only: :test, runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
 
