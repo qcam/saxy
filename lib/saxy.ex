@@ -265,17 +265,11 @@ defmodule Saxy do
       character_data_max_length: character_data_max_length
     }
 
-    init = Parser.Prolog.parse(<<>>, true, <<>>, 0, state)
+    init = {&Parser.Prolog.parse(&1, &2, &1, 0, &3), state}
 
-    stream
-    |> Enum.reduce_while(init, &stream_reducer/2)
-    |> case do
-      {:halted, context_fun} ->
-        case context_fun.(<<>>, false) do
-          {:ok, state} -> {:ok, state.user_state}
-          {:error, reason} -> {:error, reason}
-        end
-
+    case stream
+         |> Stream.concat([:end_of_stream])
+         |> Enum.reduce_while(init, &reduce_stream/2) do
       {:ok, state} ->
         {:ok, state.user_state}
 
@@ -284,16 +278,16 @@ defmodule Saxy do
     end
   end
 
-  defp stream_reducer(next_bytes, {:halted, context_fun}) do
-    {:cont, context_fun.(next_bytes, true)}
+  defp reduce_stream(:end_of_stream, {cont_fun, state}) do
+    {:halt, cont_fun.(<<>>, false, state)}
   end
 
-  defp stream_reducer(_next_bytes, {:error, _reason} = error) do
-    {:halt, error}
-  end
-
-  defp stream_reducer(_next_bytes, {:ok, state}) do
-    {:halt, {:ok, state}}
+  defp reduce_stream(buffer, {cont_fun, state}) do
+    with {:halted, cont_fun, state} <- cont_fun.(buffer, true, state) do
+      {:cont, {cont_fun, state}}
+    else
+      other -> {:halt, other}
+    end
   end
 
   @doc """

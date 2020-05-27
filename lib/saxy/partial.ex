@@ -21,11 +21,12 @@ defmodule Saxy.Partial do
 
   """
 
-  @enforce_keys [:context_fun]
+  @enforce_keys [:context_fun, :state]
   defstruct @enforce_keys
 
   @opaque t() :: %__MODULE__{
-            context_fun: function()
+            context_fun: function(),
+            state: term()
           }
 
   @doc """
@@ -51,8 +52,8 @@ defmodule Saxy.Partial do
       character_data_max_length: character_data_max_length
     }
 
-    with {:halted, context_fun} <- Parser.Prolog.parse(<<>>, true, <<>>, 0, state) do
-      {:ok, %__MODULE__{context_fun: context_fun}}
+    with {:halted, context_fun, state} <- Parser.Prolog.parse(<<>>, true, <<>>, 0, state) do
+      {:ok, %__MODULE__{context_fun: context_fun, state: state}}
     end
   end
 
@@ -75,11 +76,11 @@ defmodule Saxy.Partial do
           | {:halt, state :: term()}
           | {:error, exception :: Saxy.ParseError.t()}
 
-  def parse(%__MODULE__{context_fun: context_fun} = partial, data)
+  def parse(%__MODULE__{context_fun: context_fun, state: state} = partial, data)
       when is_binary(data) do
-    case context_fun.(data, true) do
-      {:halted, context_fun} ->
-        {:cont, %{partial | context_fun: context_fun}}
+    case context_fun.(data, true, state) do
+      {:halted, context_fun, state} ->
+        {:cont, %{partial | context_fun: context_fun, state: state}}
 
       {:ok, state} ->
         {:halt, state.user_state}
@@ -95,8 +96,8 @@ defmodule Saxy.Partial do
 
   @spec terminate(partial :: t()) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
 
-  def terminate(%__MODULE__{context_fun: context_fun}) do
-    with {:ok, state} <- context_fun.(<<>>, false) do
+  def terminate(%__MODULE__{context_fun: context_fun, state: state}) do
+    with {:ok, state} <- context_fun.(<<>>, false, state) do
       {:ok, state.user_state}
     end
   end

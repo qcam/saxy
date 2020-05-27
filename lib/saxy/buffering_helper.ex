@@ -12,10 +12,11 @@ defmodule Saxy.BufferingHelper do
       case Macro.decompose_call(call) do
         {name, args} ->
           context_fun = build_context_fun(name, args)
+          state = List.keyfind(args, :state, 0)
 
           quote do
             defp unquote(name)(unquote_splicing(args)) do
-              {:halted, unquote(context_fun)}
+              {:halted, unquote(context_fun), unquote(state)}
             end
           end
 
@@ -37,13 +38,15 @@ defmodule Saxy.BufferingHelper do
     Keyword.get(config, :streaming, true)
   end
 
-  defp build_context_fun(fun_name, [token, _more?, original | args]) do
+  defp build_context_fun(fun_name, [token, _more?, original, pos, _state | args]) do
     quote do
-      fn cont_buffer, more? ->
+      fn cont_buffer, more?, state ->
         unquote(fun_name)(
           unquote(token) <> cont_buffer,
           more?,
           unquote(original) <> cont_buffer,
+          unquote(pos),
+          state,
           unquote_splicing(args)
         )
       end
