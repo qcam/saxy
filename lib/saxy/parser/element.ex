@@ -5,8 +5,9 @@ defmodule Saxy.Parser.Element do
 
   import Saxy.BufferingHelper, only: [defhalt: 1, utf8_binaries: 0]
 
-  alias Saxy.Emitter
+  import Saxy.Emitter, only: [emit_event: 2]
 
+  alias Saxy.Emitter
   alias Saxy.Parser.Utils
 
   def parse(<<rest::bits>>, more?, original, pos, state) do
@@ -61,15 +62,8 @@ defmodule Saxy.Parser.Element do
     [tag_name | _] = state.stack
     attributes = Enum.reverse(attributes)
 
-    case Emitter.emit(:start_element, {tag_name, attributes}, state) do
-      {:stop, state} ->
-        {:ok, state}
-
-      {:ok, state} ->
-        element_content(rest, more?, original, pos + 1, state)
-
-      {:error, reason} ->
-        Utils.bad_return_error(reason)
+    emit_event state <- [:start_element, {tag_name, attributes}, state] do
+      element_content(rest, more?, original, pos + 1, state)
     end
   end
 
@@ -79,22 +73,17 @@ defmodule Saxy.Parser.Element do
     state = %{state | stack: stack}
     attributes = Enum.reverse(attributes)
 
-    with {:ok, state} <- Emitter.emit(:start_element, {tag_name, attributes}, state),
-         {:ok, state} <- Emitter.emit(:end_element, tag_name, state) do
-      case stack do
-        [] ->
-          element_misc(rest, more?, original, pos + 2, state)
+    emit_event state <- [:start_element, {tag_name, attributes}, state] do
+      emit_event state <- [:end_element, tag_name, state] do
+        case stack do
+          [] ->
+            element_misc(rest, more?, original, pos + 2, state)
 
-        _ ->
-          {original, pos} = maybe_trim(more?, original, pos)
-          element_content(rest, more?, original, pos + 2, state)
+          _ ->
+            {original, pos} = maybe_trim(more?, original, pos)
+            element_content(rest, more?, original, pos + 2, state)
+        end
       end
-    else
-      {:stop, state} ->
-        {:ok, state}
-
-      {:error, other} ->
-        Utils.bad_return_error(other)
     end
   end
 
@@ -363,15 +352,8 @@ defmodule Saxy.Parser.Element do
   defp element_cdata(<<"]]>", rest::bits>>, more?, original, pos, state, len) do
     cdata = binary_part(original, pos, len)
 
-    case Emitter.emit(:characters, cdata, state) do
-      {:ok, state} ->
-        element_content(rest, more?, original, pos + len + 3, state)
-
-      {:stop, state} ->
-        {:ok, state}
-
-      {:error, other} ->
-        Utils.bad_return_error(other)
+    emit_event state <- [:characters, cdata, state] do
+      element_content(rest, more?, original, pos + len + 3, state)
     end
   end
 
@@ -400,15 +382,8 @@ defmodule Saxy.Parser.Element do
   defp chardata_whitespace(<<?<, rest::bits>>, more?, original, pos, state, len) do
     chars = binary_part(original, pos, len)
 
-    case Emitter.emit(:characters, chars, state) do
-      {:ok, state} ->
-        element_content_rest(rest, more?, original, pos + len + 1, state)
-
-      {:stop, state} ->
-        {:ok, state}
-
-      {:error, other} ->
-        Utils.bad_return_error(other)
+    emit_event state <- [:characters, chars, state] do
+      element_content_rest(rest, more?, original, pos + len + 1, state)
     end
   end
 
@@ -439,15 +414,8 @@ defmodule Saxy.Parser.Element do
   defp chardata(<<?<, rest::bits>>, more?, original, pos, state, acc, len) do
     chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
 
-    case Emitter.emit(:characters, chars, state) do
-      {:ok, state} ->
-        element_content_rest(rest, more?, original, pos + len + 1, state)
-
-      {:stop, state} ->
-        {:ok, state}
-
-      {:error, other} ->
-        Utils.bad_return_error(other)
+    emit_event state <- [:characters, chars, state] do
+      element_content_rest(rest, more?, original, pos + len + 1, state)
     end
   end
 
@@ -474,16 +442,9 @@ defmodule Saxy.Parser.Element do
        when max_length != :infinity and len >= max_length do
     chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
 
-    case Emitter.emit(:characters, chars, state) do
-      {:ok, state} ->
-        {original, pos} = maybe_trim(true, original, pos + len)
-        chardata(<<>>, true, original, pos, state, <<>>, 0)
-
-      {:stop, state} ->
-        {:ok, state}
-
-      {:error, other} ->
-        Utils.bad_return_error(other)
+    emit_event state <- [:characters, chars, state] do
+      {original, pos} = maybe_trim(true, original, pos + len)
+      chardata(<<>>, true, original, pos, state, <<>>, 0)
     end
   end
 
@@ -680,24 +641,17 @@ defmodule Saxy.Parser.Element do
     ending_tag = binary_part(original, pos, len)
 
     if open_tag == ending_tag do
-      case Emitter.emit(:end_element, ending_tag, state) do
-        {:ok, state} ->
-          state = %{state | stack: stack}
+      emit_event state <- [:end_element, ending_tag, state] do
+        state = %{state | stack: stack}
 
-          case stack do
-            [] ->
-              element_misc(rest, more?, original, pos + len + 1, state)
+        case stack do
+          [] ->
+            element_misc(rest, more?, original, pos + len + 1, state)
 
-            [_parent | _stack] ->
-              {original, pos} = maybe_trim(more?, original, pos)
-              element_content(rest, more?, original, pos + len + 1, state)
-          end
-
-        {:stop, state} ->
-          {:ok, state}
-
-        {:error, other} ->
-          Utils.bad_return_error(other)
+          [_parent | _stack] ->
+            {original, pos} = maybe_trim(more?, original, pos)
+            element_content(rest, more?, original, pos + len + 1, state)
+        end
       end
     else
       Utils.parse_error(original, pos, state, {:wrong_closing_tag, open_tag, ending_tag})
@@ -721,10 +675,8 @@ defmodule Saxy.Parser.Element do
   defhalt element_misc(<<>>, true, original, pos, state)
 
   defp element_misc(<<>>, _more?, _original, _pos, state) do
-    case Emitter.emit(:end_document, {}, state) do
-      {:ok, state} -> {:ok, state}
-      {:stop, state} -> {:stop, state}
-      {:error, other} -> Utils.bad_return_error(other)
+    emit_event state <- [:end_document, {}, state] do
+      {:ok, state}
     end
   end
 
