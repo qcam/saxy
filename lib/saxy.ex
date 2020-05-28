@@ -182,6 +182,10 @@ defmodule Saxy do
       {:ok, state} ->
         {:ok, state.user_state}
 
+      {:halt, state, {buffer, pos}} ->
+        length = byte_size(buffer) - pos
+        {:halt, state.user_state, binary_part(buffer, pos, length)}
+
       {:error, _reason} = error ->
         error
     end
@@ -272,6 +276,10 @@ defmodule Saxy do
          |> Enum.reduce_while(init, &reduce_stream/2) do
       {:ok, state} ->
         {:ok, state.user_state}
+
+      {:halt, state, {buffer, pos}} ->
+        length = byte_size(buffer) - pos
+        {:halt, state.user_state, binary_part(buffer, pos, length)}
 
       {:error, reason} ->
         {:error, reason}
