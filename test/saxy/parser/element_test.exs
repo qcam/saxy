@@ -374,38 +374,39 @@ defmodule Saxy.Parser.ElementTest do
     end)
   end
 
+  @name_start_char_ranges [
+    ?:,
+    ?_,
+    ?A..?Z,
+    ?a..?z,
+    0xC0..0xD6,
+    0xD8..0xF6,
+    0xF8..0x2FF,
+    0x370..0x37D,
+    0x37F..0x1FFF,
+    0x200C..0x200D,
+    0x2070..0x218F,
+    0x2C00..0x2FEF,
+    0x3001..0xD7FF,
+    0xF900..0xFDCF,
+    0xFDF0..0xFFFD,
+    0x10000..0xEFFFF
+  ]
+
+  @name_char_ranges @name_start_char_ranges ++
+                      [
+                        ?0..?9,
+                        ?-,
+                        ?.,
+                        0xB7,
+                        0x0300..0x036F,
+                        0x203F..0x2040
+                      ]
+
   defp name() do
-    name_start_char_ranges = [
-      ?:,
-      ?A..?Z,
-      ?a..?z,
-      ?_,
-      0xC0..0xD6,
-      0xD8..0xF6,
-      0xF8..0x2FF,
-      0x370..0x200D,
-      0x2070..0x218F,
-      0x2C00..0x2FEF,
-      0x3001..0xD7FF,
-      0xF900..0xFDCF,
-      0xFDF0..0xFFFD,
-      0x10000..0xEFFFF
-    ]
-
-    name_char_ranges =
-      name_start_char_ranges ++
-        [
-          ?0..?9,
-          ?-,
-          ?.,
-          0xB7,
-          0x300..0x036F,
-          0x203F..0x2040
-        ]
-
     gen all(
-          start_char <- string(name_start_char_ranges, min_length: 1, max_length: 4),
-          chars <- string(name_char_ranges)
+          start_char <- string(@name_start_char_ranges, min_length: 1, max_length: 4),
+          chars <- string(@name_char_ranges)
         ) do
       start_char <> chars
     end
