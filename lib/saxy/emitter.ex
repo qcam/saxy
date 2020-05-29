@@ -16,25 +16,19 @@ defmodule Saxy.Emitter do
         {:halt, state} ->
           {:halt, state, unquote(on_halt)}
 
-        {:error, other} ->
-          Saxy.Parser.Utils.bad_return_error(other)
+        other ->
+          other
       end
     end
   end
 
   def emit(event_type, data, %State{user_state: user_state, handler: handler} = state) do
     case do_emit(event_type, data, handler, user_state) do
-      {:ok, user_state} ->
-        {:ok, %{state | user_state: user_state}}
-
-      {:stop, returning} ->
-        {:stop, %{state | user_state: returning}}
-
-      {:halt, returning} ->
-        {:halt, %{state | user_state: returning}}
+      {result, user_state} when result in [:ok, :stop, :halt] ->
+        {result, %{state | user_state: user_state}}
 
       other ->
-        {:error, {event_type, other}}
+        Saxy.Parser.Utils.bad_return_error({event_type, other})
     end
   end
 
