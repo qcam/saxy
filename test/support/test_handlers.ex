@@ -14,6 +14,22 @@ defmodule Saxy.TestHandlers.FastReturnHandler do
   end
 end
 
+defmodule Saxy.TestHandlers.HaltHandler do
+  @behaviour Saxy.Handler
+
+  def handle_event(event_type, _event_data, event_type) do
+    {:halt, :halt_return}
+  end
+
+  def handle_event(event_type, event_data, [event_type, event_data]) do
+    {:halt, :halt_return}
+  end
+
+  def handle_event(_, _, event) do
+    {:ok, event}
+  end
+end
+
 defmodule Saxy.TestHandlers.WrongHandler do
   @behaviour Saxy.Handler
 

@@ -7,6 +7,7 @@ defmodule SaxyTest do
 
   alias Saxy.TestHandlers.{
     FastReturnHandler,
+    HaltHandler,
     WrongHandler,
     StackHandler
   }
@@ -265,6 +266,41 @@ defmodule SaxyTest do
 
     assert {:error, error} = Saxy.parse_string(data, WrongHandler, [])
     assert ParseError.message(error) == "unexpected return :something_wrong in :start_document event handler"
+  end
+
+  describe "parser halting" do
+    test "halts the parsing process and returns the rest of the binary" do
+      data = "<?xml version=\"1.0\" ?><foo/>"
+      assert parse_halt(data, :start_document) == "<foo/>"
+
+      data = "<?xml version=\"1.0\" ?><foo/>"
+      assert parse_halt(data, :start_element) == ""
+      assert parse_halt(data, :end_element) == ""
+      assert parse_halt(data, :end_document) == ""
+
+      data = "<?xml version=\"1.0\" ?><foo>foo</foo>"
+      assert parse_halt(data, :start_element) == "foo</foo>"
+      assert parse_halt(data, :characters) == "</foo>"
+      assert parse_halt(data, :end_element) == ""
+
+      data = "<?xml version=\"1.0\" ?><foo>foo <bar/></foo>"
+      assert parse_halt(data, [:start_element, {"foo", []}]) == "foo <bar/></foo>"
+      assert parse_halt(data, [:characters, "foo "]) == "<bar/></foo>"
+      assert parse_halt(data, [:start_element, {"bar", []}]) == "</foo>"
+      assert parse_halt(data, [:end_element, "bar"]) == "</foo>"
+      assert parse_halt(data, [:end_element, "foo"]) == ""
+      assert parse_halt(data <> "trailing", [:end_element, "foo"]) == "trailing"
+
+      data = "<?xml version=\"1.0\" ?><foo><![CDATA[foo]]></foo>"
+      assert parse_halt(data, [:characters, "foo"]) == "</foo>"
+    end
+  end
+
+  defp parse_halt(data, halt_event) do
+    assert {:halt, :halt_return, rest} = Saxy.parse_string(data, HaltHandler, halt_event)
+    assert Saxy.parse_stream([data], HaltHandler, halt_event) == {:halt, :halt_return, rest}
+
+    rest
   end
 
   describe "encode!/2" do

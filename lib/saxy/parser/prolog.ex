@@ -5,7 +5,7 @@ defmodule Saxy.Parser.Prolog do
 
   import Saxy.BufferingHelper, only: [defhalt: 1]
 
-  import Saxy.Emitter, only: [emit_event: 2]
+  import Saxy.Emitter, only: [emit_event: 3]
 
   alias Saxy.Parser.{
     Element,
@@ -299,7 +299,7 @@ defmodule Saxy.Parser.Prolog do
   defp prolog_misc(<<rest::bits>>, more?, original, pos, state, prolog) do
     state = %{state | prolog: prolog}
 
-    emit_event(state <- [:start_document, prolog, state]) do
+    emit_event state <- [:start_document, prolog, state], {original, pos} do
       dtd(rest, more?, original, pos, state)
     end
   end

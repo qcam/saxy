@@ -3,7 +3,7 @@ defmodule Saxy.Emitter do
 
   alias Saxy.State
 
-  defmacro emit_event({:<-, _, [state, emit_args]}, do: block) do
+  defmacro emit_event({:<-, _, [state, emit_args]}, on_halt, do: block) do
     quote do
       case Saxy.Emitter.emit(unquote_splicing(emit_args)) do
         {:ok, new_state} ->
@@ -13,22 +13,22 @@ defmodule Saxy.Emitter do
         {:stop, state} ->
           {:ok, state}
 
-        {:error, other} ->
-          Saxy.Parser.Utils.bad_return_error(other)
+        {:halt, state} ->
+          {:halt, state, unquote(on_halt)}
+
+        other ->
+          other
       end
     end
   end
 
   def emit(event_type, data, %State{user_state: user_state, handler: handler} = state) do
     case do_emit(event_type, data, handler, user_state) do
-      {:ok, user_state} ->
-        {:ok, %{state | user_state: user_state}}
-
-      {:stop, returning} ->
-        {:stop, %{state | user_state: returning}}
+      {result, user_state} when result in [:ok, :stop, :halt] ->
+        {result, %{state | user_state: user_state}}
 
       other ->
-        {:error, {event_type, other}}
+        Saxy.Parser.Utils.bad_return_error({event_type, other})
     end
   end
 

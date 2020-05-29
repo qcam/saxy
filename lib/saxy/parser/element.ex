@@ -5,7 +5,7 @@ defmodule Saxy.Parser.Element do
 
   import Saxy.BufferingHelper, only: [defhalt: 1, utf8_binaries: 0]
 
-  import Saxy.Emitter, only: [emit_event: 2]
+  import Saxy.Emitter, only: [emit_event: 3]
 
   alias Saxy.Emitter
   alias Saxy.Parser.Utils
@@ -61,27 +61,30 @@ defmodule Saxy.Parser.Element do
   defp sattribute(<<?>, rest::bits>>, more?, original, pos, state, attributes) do
     [tag_name | _] = state.stack
     attributes = Enum.reverse(attributes)
+    pos = pos + 1
 
-    emit_event state <- [:start_element, {tag_name, attributes}, state] do
-      element_content(rest, more?, original, pos + 1, state)
+    emit_event state <- [:start_element, {tag_name, attributes}, state],
+               {original, pos} do
+      element_content(rest, more?, original, pos, state)
     end
   end
 
   defp sattribute(<<"/>", rest::bits>>, more?, original, pos, state, attributes) do
     [tag_name | stack] = state.stack
+    pos = pos + 2
 
     state = %{state | stack: stack}
     attributes = Enum.reverse(attributes)
 
-    emit_event state <- [:start_element, {tag_name, attributes}, state] do
-      emit_event state <- [:end_element, tag_name, state] do
+    emit_event state <- [:start_element, {tag_name, attributes}, state], {original, pos} do
+      emit_event state <- [:end_element, tag_name, state], {original, pos} do
         case stack do
           [] ->
-            element_misc(rest, more?, original, pos + 2, state)
+            element_misc(rest, more?, original, pos, state)
 
           _ ->
             {original, pos} = maybe_trim(more?, original, pos)
-            element_content(rest, more?, original, pos + 2, state)
+            element_content(rest, more?, original, pos, state)
         end
       end
     end
@@ -351,9 +354,10 @@ defmodule Saxy.Parser.Element do
 
   defp element_cdata(<<"]]>", rest::bits>>, more?, original, pos, state, len) do
     cdata = binary_part(original, pos, len)
+    pos = pos + len + 3
 
-    emit_event state <- [:characters, cdata, state] do
-      element_content(rest, more?, original, pos + len + 3, state)
+    emit_event state <- [:characters, cdata, state], {original, pos} do
+      element_content(rest, more?, original, pos, state)
     end
   end
 
@@ -381,9 +385,10 @@ defmodule Saxy.Parser.Element do
 
   defp chardata_whitespace(<<?<, rest::bits>>, more?, original, pos, state, len) do
     chars = binary_part(original, pos, len)
+    pos = pos + len + 1
 
-    emit_event state <- [:characters, chars, state] do
-      element_content_rest(rest, more?, original, pos + len + 1, state)
+    emit_event state <- [:characters, chars, state], {original, pos - 1} do
+      element_content_rest(rest, more?, original, pos, state)
     end
   end
 
@@ -413,9 +418,10 @@ defmodule Saxy.Parser.Element do
 
   defp chardata(<<?<, rest::bits>>, more?, original, pos, state, acc, len) do
     chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+    pos = pos + len + 1
 
-    emit_event state <- [:characters, chars, state] do
-      element_content_rest(rest, more?, original, pos + len + 1, state)
+    emit_event state <- [:characters, chars, state], {original, pos - 1} do
+      element_content_rest(rest, more?, original, pos, state)
     end
   end
 
@@ -441,9 +447,10 @@ defmodule Saxy.Parser.Element do
   defp chardata(<<>>, true, original, pos, %{character_data_max_length: max_length} = state, acc, len)
        when max_length != :infinity and len >= max_length do
     chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+    pos = pos + len
 
-    emit_event state <- [:characters, chars, state] do
-      {original, pos} = maybe_trim(true, original, pos + len)
+    emit_event state <- [:characters, chars, state], {original, pos} do
+      {original, pos} = maybe_trim(true, original, pos)
       chardata(<<>>, true, original, pos, state, <<>>, 0)
     end
   end
@@ -639,18 +646,19 @@ defmodule Saxy.Parser.Element do
   defp close_tag_name(<<?>, rest::bits>>, more?, original, pos, state, len) do
     [open_tag | stack] = state.stack
     ending_tag = binary_part(original, pos, len)
+    pos = pos + len + 1
 
     if open_tag == ending_tag do
-      emit_event state <- [:end_element, ending_tag, state] do
+      emit_event state <- [:end_element, ending_tag, state], {original, pos} do
         state = %{state | stack: stack}
 
         case stack do
           [] ->
-            element_misc(rest, more?, original, pos + len + 1, state)
+            element_misc(rest, more?, original, pos, state)
 
           [_parent | _stack] ->
             {original, pos} = maybe_trim(more?, original, pos)
-            element_content(rest, more?, original, pos + len + 1, state)
+            element_content(rest, more?, original, pos, state)
         end
       end
     else
@@ -674,8 +682,8 @@ defmodule Saxy.Parser.Element do
 
   defhalt element_misc(<<>>, true, original, pos, state)
 
-  defp element_misc(<<>>, _more?, _original, _pos, state) do
-    emit_event state <- [:end_document, {}, state] do
+  defp element_misc(<<>>, _more?, original, pos, state) do
+    emit_event state <- [:end_document, {}, state], {original, pos} do
       {:ok, state}
     end
   end
