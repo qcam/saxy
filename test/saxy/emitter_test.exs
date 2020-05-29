@@ -1,42 +1,80 @@
 defmodule Saxy.EmitterTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
-  alias Saxy.TestHandlers.{StackHandler, FastReturnHandler}
+  alias SaxyTest.ControlHandler
 
-  describe "emit/3" do
-    test "emits events" do
-      xml = """
-      <?xml version="1.0" encoding="utf-8" standalone="no"?>
-      <foo>First Foo<bar>First Bar</bar><bar>Second Bar</bar>Last Foo</foo>
-      """
+  @events [
+    :start_document,
+    :start_element,
+    :characters,
+    :end_element,
+    :end_document
+  ]
 
-      assert {:ok, state} = Saxy.parse_string(xml, StackHandler, [])
-      state = Enum.reverse(state)
-      assert [{:start_document, prolog} | state] = state
-      assert Keyword.fetch!(prolog, :version) == "1.0"
-      assert Keyword.fetch!(prolog, :encoding) == "utf-8"
-      assert Keyword.fetch!(prolog, :standalone) == false
-
-      assert [{:start_element, {"foo", []}} | state] = state
-      assert [{:characters, "First Foo"} | state] = state
-      assert [{:start_element, {"bar", []}} | state] = state
-      assert [{:characters, "First Bar"} | state] = state
-      assert [{:end_element, "bar"} | state] = state
-      assert [{:start_element, {"bar", []}} | state] = state
-      assert [{:characters, "Second Bar"} | state] = state
-      assert [{:end_element, "bar"} | state] = state
-      assert [{:characters, "Last Foo"} | state] = state
-      assert [{:end_element, "foo"} | state] = state
-      assert [{:end_document, {}} | []] = state
+  for event <- @events do
+    test "allows stopping the parsing process on #{inspect(event)}" do
+      data = "<?xml version=\"1.0\" ?><foo>foo</foo>"
+      assert_parse_stop(data, unquote(event))
     end
+  end
 
-    test "controls parsing process and quick return" do
-      xml = """
-      <?xml version="1.0" encoding="utf-8" standalone="no"?>
-      <foo>First Foo</foo>
-      """
+  defp assert_parse_stop(data, stop_event) do
+    value = make_ref()
+    state = {stop_event, {:stop, value}}
 
-      assert Saxy.parse_string(xml, FastReturnHandler, []) == {:ok, :fast_return}
+    assert parse(data, ControlHandler, state) == {:ok, value}
+  end
+
+  describe "parser halting" do
+    test "halts the parsing process and returns the rest of the binary" do
+      data = "<?xml version=\"1.0\" ?><foo/>"
+      assert parse_halt(data, :start_document) == "<foo/>"
+      assert parse_halt(data, :start_element) == ""
+      assert parse_halt(data, :end_element) == ""
+      assert parse_halt(data, :end_document) == ""
+
+      data = "<?xml version=\"1.0\" ?><foo>foo</foo>"
+      assert parse_halt(data, :start_element) == "foo</foo>"
+      assert parse_halt(data, :characters) == "</foo>"
+      assert parse_halt(data, :end_element) == ""
+
+      data = "<?xml version=\"1.0\" ?><foo>foo <bar/></foo>"
+      assert parse_halt(data, {:start_element, {"foo", []}}) == "foo <bar/></foo>"
+      assert parse_halt(data, {:characters, "foo "}) == "<bar/></foo>"
+      assert parse_halt(data, {:start_element, {"bar", []}}) == "</foo>"
+      assert parse_halt(data, {:end_element, "bar"}) == "</foo>"
+      assert parse_halt(data, {:end_element, "foo"}) == ""
+      assert parse_halt(data <> "trailing", {:end_element, "foo"}) == "trailing"
+
+      data = "<?xml version=\"1.0\" ?><foo><![CDATA[foo]]></foo>"
+      assert parse_halt(data, {:characters, "foo"}) == "</foo>"
     end
+  end
+
+  defp parse_halt(data, halt_event) do
+    value = make_ref()
+    state = {halt_event, {:halt, value}}
+
+    assert {:halt, ^value, rest} = parse(data, ControlHandler, state)
+
+    rest
+  end
+
+  for event <- @events do
+    test "errs on handler invalid returning on #{event}" do
+      event = unquote(event)
+      data = "<?xml version=\"1.0\" ?><foo>foo</foo>"
+      value = System.unique_integer()
+
+      assert {:error, error} = parse(data, ControlHandler, {event, value})
+      assert Exception.message(error) == "unexpected return #{value} in #{inspect(event)} event handler"
+    end
+  end
+
+  defp parse(data, handler, state) do
+    assert result = Saxy.parse_string(data, handler, state)
+    assert Saxy.parse_stream([data], handler, state) == result
+
+    result
   end
 end

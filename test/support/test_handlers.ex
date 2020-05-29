@@ -6,35 +6,37 @@ defmodule Saxy.TestHandlers.StackHandler do
   end
 end
 
+defmodule SaxyTest.StackHandler do
+  @behaviour Saxy.Handler
+
+  @impl true
+  def handle_event(event_type, event_data, acc) do
+    {:ok, [{event_type, event_data} | acc]}
+  end
+end
+
+defmodule SaxyTest.ControlHandler do
+  @behaviour Saxy.Handler
+
+  @impl true
+  def handle_event(event_type, _, {event_type, returning}) do
+    returning
+  end
+
+  def handle_event(event_type, event_data, {{event_type, event_data}, returning}) do
+    returning
+  end
+
+  def handle_event(_, _, state) do
+    {:ok, state}
+  end
+end
+
 defmodule Saxy.TestHandlers.FastReturnHandler do
   @behaviour Saxy.Handler
 
   def handle_event(_event_type, _event_data, _acc) do
     {:stop, :fast_return}
-  end
-end
-
-defmodule Saxy.TestHandlers.HaltHandler do
-  @behaviour Saxy.Handler
-
-  def handle_event(event_type, _event_data, event_type) do
-    {:halt, :halt_return}
-  end
-
-  def handle_event(event_type, event_data, [event_type, event_data]) do
-    {:halt, :halt_return}
-  end
-
-  def handle_event(_, _, event) do
-    {:ok, event}
-  end
-end
-
-defmodule Saxy.TestHandlers.WrongHandler do
-  @behaviour Saxy.Handler
-
-  def handle_event(_event_type, _event_data, _acc) do
-    :something_wrong
   end
 end
 

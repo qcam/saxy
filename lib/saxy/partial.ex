@@ -74,6 +74,7 @@ defmodule Saxy.Partial do
         ) ::
           {:cont, partial :: t()}
           | {:halt, state :: term()}
+          | {:halt, state :: term(), rest :: binary()}
           | {:error, exception :: Saxy.ParseError.t()}
 
   def parse(%__MODULE__{context_fun: context_fun, state: state} = partial, data)
@@ -84,6 +85,10 @@ defmodule Saxy.Partial do
 
       {:ok, state} ->
         {:halt, state.user_state}
+
+      {:halt, state, {buffer, pos}} ->
+        rest = binary_part(buffer, pos, byte_size(buffer) - pos)
+        {:halt, state.user_state, rest}
 
       {:error, reason} ->
         {:error, reason}
