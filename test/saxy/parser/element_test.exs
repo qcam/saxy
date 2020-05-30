@@ -5,7 +5,6 @@ defmodule Saxy.Parser.ElementTest do
   import SaxyTest.Utils
 
   alias Saxy.{
-    ParseError,
     Parser,
     TestHandlers.StackHandler
   }
@@ -174,7 +173,7 @@ defmodule Saxy.Parser.ElementTest do
     buffer = "<foo><!--IGNORE ME---></foo>"
 
     assert {:error, error} = parse(buffer)
-    assert ParseError.message(error) == "unexpected byte \"-\", expected token: :comment"
+    assert Exception.message(error) == "unexpected byte \"-\", expected token: :comment"
   end
 
   test "parses element references" do
@@ -198,17 +197,17 @@ defmodule Saxy.Parser.ElementTest do
     buffer = "<foo>Tom &#xt5; Jerry</foo>"
 
     assert {:error, error} = parse(buffer)
-    assert ParseError.message(error) == "unexpected byte \"t\", expected token: :char_ref"
+    assert Exception.message(error) == "unexpected byte \"t\", expected token: :char_ref"
 
     buffer = "<foo>Tom &#t5; Jerry</foo>"
 
     assert {:error, error} = parse(buffer)
-    assert ParseError.message(error) == "unexpected byte \"t\", expected token: :char_ref"
+    assert Exception.message(error) == "unexpected byte \"t\", expected token: :char_ref"
 
     buffer = "<foo>Tom &t5 Jerry</foo>"
 
     assert {:error, error} = parse(buffer)
-    assert ParseError.message(error) == "unexpected byte \" \", expected token: :entity_ref"
+    assert Exception.message(error) == "unexpected byte \" \", expected token: :entity_ref"
   end
 
   test "parses CDATA" do
@@ -222,7 +221,7 @@ defmodule Saxy.Parser.ElementTest do
     buffer = "<foo><![CDATA[John Cena </foo>"
 
     assert {:error, error} = parse(buffer)
-    assert ParseError.message(error) == "unexpected end of input, expected token: :\"]]\""
+    assert Exception.message(error) == "unexpected end of input, expected token: :\"]]\""
   end
 
   test "parses processing instruction" do
@@ -236,7 +235,7 @@ defmodule Saxy.Parser.ElementTest do
     buffer = "<foo><?hello the instruction"
 
     assert {:error, error} = parse(buffer)
-    assert ParseError.message(error) == "unexpected end of input, expected token: :processing_instruction"
+    assert Exception.message(error) == "unexpected end of input, expected token: :processing_instruction"
   end
 
   test "parses element attributes" do
@@ -263,7 +262,7 @@ defmodule Saxy.Parser.ElementTest do
     buffer = ~s(<foo val="Tom &#x26 Jerry" />)
 
     assert {:error, error} = parse(buffer)
-    assert ParseError.message(error) == "unexpected byte \" \", expected token: :char_ref"
+    assert Exception.message(error) == "unexpected byte \" \", expected token: :char_ref"
 
     buffer = ~s(<foo val="Tom &#38; Jerry" />)
 
@@ -274,7 +273,7 @@ defmodule Saxy.Parser.ElementTest do
     buffer = ~s(<foo val="Tom &#38 Jerry" />)
 
     assert {:error, error} = parse(buffer)
-    assert ParseError.message(error) == "unexpected byte \" \", expected token: :char_ref"
+    assert Exception.message(error) == "unexpected byte \" \", expected token: :char_ref"
 
     buffer = ~s(<foo val="Tom &amp; Jerry" />)
 

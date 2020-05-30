@@ -1,4 +1,6 @@
 defmodule SaxyTest.Utils do
+  use ExUnitProperties
+
   import ExUnit.Assertions
 
   def remove_indents(xml) do
@@ -27,5 +29,18 @@ defmodule SaxyTest.Utils do
     |> Kernel.<>(name)
     |> Path.relative_to_cwd()
     |> File.stream!([], 100)
+  end
+
+  def xml_quote(), do: one_of([constant(?"), constant(?')])
+
+  def xml_equal_sign() do
+    gen all s1 <- string([32]),
+            s2 <- string([32]) do
+      s1 <> "=" <> s2
+    end
+  end
+
+  def xml_whitespace(options \\ []) do
+    string([0xA, 0x9, 0xD, 0x20], options)
   end
 end

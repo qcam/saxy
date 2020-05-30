@@ -1,7 +1,5 @@
 defmodule Saxy.PartialTest do
-  use ExUnit.Case, async: true
-
-  import SaxyTest.Utils
+  use SaxyTest.ParsingCase, async: true
 
   alias Saxy.Partial
 
@@ -12,41 +10,54 @@ defmodule Saxy.PartialTest do
 
   doctest Saxy.Partial
 
-  test "parses XML document partially line by line" do
-    data_chunks =
-      "./test/support/fixture/food.xml"
-      |> File.read!()
-      |> remove_indents()
-      |> String.split("\n")
+  @fixtures [
+    "food.xml",
+    "food.xml",
+    "complex.xml",
+    "illustrator.svg",
+    "unicode.xml"
+  ]
 
-    assert {:ok, partial} = Partial.new(StackHandler, [])
+  test "parses partially and emits events" do
+    chunks = [
+      ~s(<?xml version="1.0"?>),
+      "<foo>",
+      "foo",
+      "<!--COMMENT-->",
+      "</foo>"
+    ]
 
-    partial =
-      Enum.reduce(data_chunks, partial, fn data, acc ->
-        assert {:cont, partial} = Partial.parse(acc, data)
-        partial
-      end)
+    assert {:ok, events} = parse_partial(chunks)
 
-    assert {:ok, _state} = Partial.terminate(partial)
+    events = Enum.reverse(events)
+
+    assert events == [
+             {:start_document, [version: "1.0"]},
+             {:start_element, {"foo", []}},
+             {:characters, "foo"},
+             {:end_element, "foo"},
+             {:end_document, {}}
+           ]
   end
 
-  test "parses XML document partially character by character" do
-    data_chunks =
-      "./test/support/fixture/food.xml"
-      |> File.read!()
-      |> remove_indents()
-      |> String.split("")
-
+  defp parse_partial(chunks) do
     assert {:ok, partial} = Partial.new(StackHandler, [])
 
     partial =
-      Enum.reduce(data_chunks, partial, fn data, acc ->
-        assert {:cont, partial} = Partial.parse(acc, data)
+      Enum.reduce(chunks, partial, fn chunk, acc ->
+        assert {:cont, partial} = Partial.parse(acc, chunk)
         partial
       end)
 
-    assert {:ok, state} = Partial.terminate(partial)
-    assert length(state) == 74
+    Partial.terminate(partial)
+  end
+
+  test "parses XML document partially line by line" do
+    for fixture <- @fixtures do
+      data_chunks = stream_fixture(fixture)
+
+      assert {:ok, _state} = parse_partial(data_chunks)
+    end
   end
 
   test "supports parser stopping" do

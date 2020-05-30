@@ -32,14 +32,6 @@ defmodule SaxyTest.ControlHandler do
   end
 end
 
-defmodule Saxy.TestHandlers.FastReturnHandler do
-  @behaviour Saxy.Handler
-
-  def handle_event(_event_type, _event_data, _acc) do
-    {:stop, :fast_return}
-  end
-end
-
 # For docs test
 
 defmodule MyTestHandler do

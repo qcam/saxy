@@ -3,6 +3,8 @@ defmodule SaxyTest.ParsingCase do
 
   using do
     quote do
+      use ExUnitProperties
+
       import SaxyTest.Utils
     end
   end

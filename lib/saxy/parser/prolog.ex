@@ -143,9 +143,9 @@ defmodule Saxy.Parser.Prolog do
     Utils.parse_error(original, pos, state, {:token, :eq})
   end
 
-  defp encoding_decl_eq_quote(<<charcode::integer, rest::bits>>, more?, original, pos, state, prolog)
+  defp encoding_decl_eq_quote(<<charcode, rest::bits>>, more?, original, pos, state, prolog)
        when is_whitespace(charcode) do
-    encoding_decl_eq_quote(rest, more?, original, pos, state, prolog)
+    encoding_decl_eq_quote(rest, more?, original, pos + 1, state, prolog)
   end
 
   defp encoding_decl_eq_quote(<<?", rest::bits>>, more?, original, pos, state, prolog) do
@@ -163,7 +163,7 @@ defmodule Saxy.Parser.Prolog do
   end
 
   defp encoding_decl_enc_name(<<charcode, rest::bits>>, more?, original, pos, state, prolog, open_quote, len)
-       when charcode in '\'"' and open_quote == charcode do
+       when charcode in [?', ?"] and open_quote == charcode do
     encoding = binary_part(original, pos, len)
 
     if Utils.valid_encoding?(encoding) do
@@ -223,6 +223,11 @@ defmodule Saxy.Parser.Prolog do
     Utils.parse_error(original, pos, state, {:token, :standalone})
   end
 
+  defp standalone_eq_quote(<<charcode, rest::bits>>, more?, original, pos, state, prolog)
+       when is_whitespace(charcode) do
+    standalone_eq_quote(rest, more?, original, pos + 1, state, prolog)
+  end
+
   defp standalone_eq_quote(<<quote, rest::bits>>, more?, original, pos, state, prolog)
        when quote in '\'"' do
     standalone_bool(rest, more?, original, pos + 1, state, prolog, quote)
@@ -251,8 +256,8 @@ defmodule Saxy.Parser.Prolog do
     Utils.parse_error(original, pos, state, {:token, :yes_or_no})
   end
 
-  defp standalone_end_quote(<<quote, rest::bits>>, more?, original, pos, state, prolog, open_quote)
-       when quote in '"\'' and open_quote == quote do
+  defp standalone_end_quote(<<ending_quote, rest::bits>>, more?, original, pos, state, prolog, open_quote)
+       when ending_quote in '"\'' and open_quote == ending_quote do
     xml_decl_close(rest, more?, original, pos + 1, state, prolog)
   end
 
