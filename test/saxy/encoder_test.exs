@@ -164,8 +164,6 @@ defmodule Saxy.EncoderTest do
   end
 
   defp encode(document, prolog \\ nil) do
-    document
-    |> Saxy.Encoder.encode_to_iodata(prolog)
-    |> IO.iodata_to_binary()
+    Saxy.encode!(document, prolog)
   end
 end
