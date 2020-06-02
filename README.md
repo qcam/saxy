@@ -20,8 +20,8 @@ Comply with [Extensible Markup Language (XML) 1.0 (Fifth Edition)](https://www.w
 Add `:saxy` to your `mix.exs`.
 
 ```elixir
-def deps do
-  [{:saxy, "~> 1.1"}]
+def deps() do
+  [{:saxy, "~> 1.2"}]
 end
 ```
 
