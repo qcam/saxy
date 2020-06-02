@@ -1,5 +1,12 @@
 # Changelog
 
+## To be released
+
+* Fix XML encoding without prolog [#57](https://github.com/qcam/saxy/pull/57).
+* Fix integer typespec [#58](https://github.com/qcam/saxy/pull/58).
+* Introduce parser halting [#66](https://github.com/qcam/saxy/pull/66).
+* Speed up XML builder [#69](https://github.com/qcam/saxy/pull/69).
+
 ## v1.1.0
 
 * Introduce `:character_data_max_length` option in stream and partial parsing.

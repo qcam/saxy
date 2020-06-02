@@ -165,7 +165,10 @@ defmodule Saxy do
           handler :: module(),
           initial_state :: term(),
           options :: Keyword.t()
-        ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
+        ) ::
+          {:ok, state :: term()}
+          | {:halt, state :: term(), rest :: String.t()}
+          | {:error, exception :: Saxy.ParseError.t()}
   def parse_string(data, handler, initial_state, options \\ [])
       when is_binary(data) and is_atom(handler) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
@@ -255,7 +258,10 @@ defmodule Saxy do
           handler :: module(),
           initial_state :: term(),
           options :: Keyword.t()
-        ) :: {:ok, state :: term()} | {:error, exception :: Saxy.ParseError.t()}
+        ) ::
+          {:ok, state :: term()}
+          | {:halt, state :: term(), rest :: String.t()}
+          | {:error, exception :: Saxy.ParseError.t()}
 
   def parse_stream(stream, handler, initial_state, options \\ []) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)

@@ -15,7 +15,11 @@ defmodule Saxy.Handler do
   Returning `{:ok, new_state}` continues the parsing process with the new state.
 
   Returning `{:stop, anything}` stops the prosing process immediately, and `anything` will be returned.
-  This feature is usually handy when we want to get the desired return without parsing the whole file.
+  This is usually handy when we want to get the desired return without parsing the whole file.
+
+  Returning `{:halt, anything}` stops the prosing process immediately, `anything` will be returned, together
+  with the rest of buffer being parsed. This is usually handy when we want to get the desired return
+  without parsing the whole file.
 
   ## SAX Events
 
@@ -68,5 +72,5 @@ defmodule Saxy.Handler do
   @type event_data() :: start_element_data() | end_document_data() | start_element_data() | end_element_data() | characters_data()
 
   @callback handle_event(event_type :: event_name(), data :: event_data(), user_state :: any()) ::
-              {:ok, user_state :: any()} | {:stop, returning :: any()}
+              {:ok, user_state :: any()} | {:stop, returning :: any()} | {:halt, returning :: any()}
 end
