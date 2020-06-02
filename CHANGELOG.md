@@ -2,6 +2,8 @@
 
 ## To be released
 
+## v1.2.0
+
 * Fix XML encoding without prolog [#57](https://github.com/qcam/saxy/pull/57).
 * Fix integer typespec [#58](https://github.com/qcam/saxy/pull/58).
 * Introduce parser halting [#66](https://github.com/qcam/saxy/pull/66).
