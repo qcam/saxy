@@ -1,0 +1,41 @@
+name: Benchmarking
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  bench:
+    strategy:
+      matrix:
+        script_file:
+          - 'bench.binary.exs'
+          - 'bench.stream.exs'
+          - 'bench.simple_form.exs'
+          - 'bench.encoder.exs'
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: bench
+
+    name: ${{ matrix.script_file }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Elixir
+      uses: actions/setup-elixir@v1
+      with:
+        elixir-version: '1.10'
+        otp-version: '22.2'
+    - name: Install Dependencies
+      run: |
+        mix local.rebar --force
+        mix local.hex --force
+        mix deps.get
+        mix compile
+    - name: Benchmark
+      run: mix run ${{ matrix.script_file }}

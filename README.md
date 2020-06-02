@@ -168,26 +168,36 @@ iex> Saxy.encode!(root, [])
 
 ### Benchmarking
 
-Benchmarking in XML is hard and highly depends on the complexity of the
-document. Saxy usually yields **1.4 times** better than [Erlsom](https://github.com/willemdj/erlsom)
-in benchmark results. With deeply nested documents, it is particularly noticeably
-faster with [**4.35 times faster**](https://github.com/qcam/saxy-bench#soccer-11mb-xml-file-1).
+Note that benchmarking XML parsers is difficult and highly depends on the complexity
+of the documents being parsed. Event I try hard to make the benchmarking suite
+fair but it's hard to avoid biases when choosing the documents to benchmark
+against.
 
-As for XML builder, Saxy is usually 4 times faster than [xml_builder](https://github.com/joshnuss/xml_builder) on
-simple element encoding, and 17 times faster in deeply nested elements encoding.
+Therefore the conclusion in this section is only for reference purpose. Please
+feel free to benchmark against your target documents. The benchmark suite can be found
+in [bench/](./bench).
 
-The benchmark suite can be found in [this repository](https://github.com/qcam/saxy-bench).
+A rule of thumb is that we should compare apple to apple. Some XML parsers
+target only specific types of XML. Therefore some indicators are provided in the
+test suite to let know of the fairness of the benchmark results.
+
+Some quick and biased conclusions from the benchmark suite:
+
+* For SAX parser, Saxy is usually 1.4 times faster than [Erlsom](https://github.com/willemdj/erlsom).
+  With deeply nested documents, Saxy is noticeably faster (4 times faster).
+* For XML builder and encoding, Saxy is usually 4 times faster than [XML Builder](https://github.com/joshnuss/xml_builder).
+  With deeply nested documents, it could be 120 times faster.
 
 ### Limitations
 
 * No XSD supported.
-* No DTD supported, when the parser encounters a `<!DOCTYPE`, it simply stops parsing.
+* No DTD supported, when Saxy encounters a `<!DOCTYPE`, it skips that.
 
 ## Where did the name come from?
 
 ![Sa xi Chuong Duong](./saxi.jpg)
 
-☝️  Sa Xi, pronounced like `sa-see`, is an awesome soft drink made by [Chuong Duong](http://www.cdbeco.com.vn/en).
+Sa Xi, pronounced like `sa-see`, is an awesome soft drink made by [Chuong Duong](http://www.cdbeco.com.vn/en).
 
 ## Contributing
 
