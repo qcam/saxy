@@ -145,8 +145,24 @@ defmodule Saxy.XML do
     Enum.map(attributes, &attribute/1)
   end
 
-  defp children(children) do
-    Enum.map(children, &Builder.build/1)
+  defp children(children, acc \\ [])
+
+  defp children([binary | children], acc) when is_binary(binary) do
+    children(children, [binary | acc])
+  end
+
+  defp children([{type, _} = form | children], acc)
+       when type in [:characters, :comment, :cdata, :reference],
+       do: children(children, [form | acc])
+
+  defp children([{_name, _attributes, _content} = form | children], acc) do
+    children(children, [form | acc])
+  end
+
+  defp children([], acc), do: Enum.reverse(acc)
+
+  defp children([child | children], acc) do
+    children(children, [Builder.build(child) | acc])
   end
 
   defp attribute({name, value}) when not is_nil(name) do

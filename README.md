@@ -185,8 +185,11 @@ Some quick and biased conclusions from the benchmark suite:
 
 * For SAX parser, Saxy is usually 1.4 times faster than [Erlsom](https://github.com/willemdj/erlsom).
   With deeply nested documents, Saxy is noticeably faster (4 times faster).
-* For XML builder and encoding, Saxy is usually 4 times faster than [XML Builder](https://github.com/joshnuss/xml_builder).
-  With deeply nested documents, it could be 120 times faster.
+* For XML builder and encoding, Saxy is usually 10 to 30 times faster than [XML Builder](https://github.com/joshnuss/xml_builder).
+  With deeply nested documents, it could be 180 times faster.
+* Saxy significantly uses less memory than XML Builder (4 times to 25 times).
+* Saxy significantly uses less memory than Xmerl, Erlsom and Exomler (1.4 times
+  10 times).
 
 ### Limitations
 

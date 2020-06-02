@@ -22,7 +22,7 @@ defprotocol Saxy.Builder do
 
       iex> person = %Person{name: "Alice", gender: "female"}
       iex> Saxy.Builder.build(person)
-      {"person", [{"gender", "female"}], [{:characters, "Alice"}]}
+      {"person", [{"gender", "female"}], ["Alice"]}
 
   Custom implementation could be done by implementing protocol:
 
@@ -44,7 +44,7 @@ defprotocol Saxy.Builder do
 
       iex> user = %User{name: "Alice", username: "alice99"}
       iex> Saxy.Builder.build(user)
-      {"Person", [{"userName", "alice99"}], [{"Name", [], [characters: "Alice"]}]}
+      {"Person", [{"userName", "alice99"}], [{"Name", [], ["Alice"]}]}
   """
 
   @doc """
@@ -104,8 +104,6 @@ defimpl Saxy.Builder, for: Any do
 end
 
 defimpl Saxy.Builder, for: Tuple do
-  import Saxy.XML, only: [characters: 1]
-
   def build({type, _} = form)
       when type in [:characters, :comment, :cdata, :reference],
       do: form
@@ -121,10 +119,8 @@ defimpl Saxy.Builder, for: Tuple do
 end
 
 defimpl Saxy.Builder, for: BitString do
-  import Saxy.XML, only: [characters: 1]
-
   def build(binary) when is_binary(binary) do
-    characters(binary)
+    binary
   end
 
   def build(bitstring) do
@@ -136,73 +132,45 @@ defimpl Saxy.Builder, for: BitString do
 end
 
 defimpl Saxy.Builder, for: Atom do
-  import Saxy.XML, only: [characters: 1]
-
-  def build(nil), do: characters("")
+  def build(nil), do: ""
 
   def build(value) do
-    value
-    |> Atom.to_string()
-    |> characters()
+    Atom.to_string(value)
   end
 end
 
 defimpl Saxy.Builder, for: Integer do
-  import Saxy.XML, only: [characters: 1]
-
   def build(value) do
-    value
-    |> Integer.to_string()
-    |> characters()
+    Integer.to_string(value)
   end
 end
 
 defimpl Saxy.Builder, for: Float do
-  import Saxy.XML, only: [characters: 1]
-
   def build(value) do
-    value
-    |> Float.to_string()
-    |> characters()
+    Float.to_string(value)
   end
 end
 
 defimpl Saxy.Builder, for: NaiveDateTime do
-  import Saxy.XML, only: [characters: 1]
-
   def build(value) do
-    value
-    |> NaiveDateTime.to_iso8601()
-    |> characters()
+    NaiveDateTime.to_iso8601(value)
   end
 end
 
 defimpl Saxy.Builder, for: DateTime do
-  import Saxy.XML, only: [characters: 1]
-
   def build(value) do
-    value
-    |> DateTime.to_iso8601()
-    |> characters()
+    DateTime.to_iso8601(value)
   end
 end
 
 defimpl Saxy.Builder, for: Date do
-  import Saxy.XML, only: [characters: 1]
-
   def build(value) do
-    value
-    |> Date.to_iso8601()
-    |> characters()
+    Date.to_iso8601(value)
   end
 end
 
 defimpl Saxy.Builder, for: Time do
-  import Saxy.XML, only: [characters: 1]
-
   def build(value) do
-    value
-    |> Time.to_iso8601()
-    |> characters()
+    Time.to_iso8601(value)
   end
 end
