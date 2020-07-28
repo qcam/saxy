@@ -69,7 +69,7 @@ defmodule Saxy.Handler do
   @type end_element_data() :: name :: String.t()
   @type characters_data() :: String.t()
 
-  @type event_data() :: start_element_data() | end_document_data() | start_element_data() | end_element_data() | characters_data()
+  @type event_data() :: start_document_data() | end_document_data() | start_element_data() | end_element_data() | characters_data()
 
   @callback handle_event(event_type :: event_name(), data :: event_data(), user_state :: any()) ::
               {:ok, user_state :: any()} | {:stop, returning :: any()} | {:halt, returning :: any()}
