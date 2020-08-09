@@ -356,8 +356,20 @@ defmodule Saxy.Parser.Element do
     cdata = binary_part(original, pos, len)
     pos = pos + len + 3
 
-    emit_event state <- [:characters, cdata, state], {original, pos} do
-      element_content(rest, more?, original, pos, state)
+    if state.cdata_as_characters do
+      IO.warn("""
+      Emitting CDATA content as characters is deprecated.
+
+      Please pass `cdata_as_characters: false` option to the parser and start handling :cdata event.
+      """)
+
+      emit_event state <- [:characters, cdata, state], {original, pos} do
+        element_content(rest, more?, original, pos, state)
+      end
+    else
+      emit_event state <- [:cdata, cdata, state], {original, pos} do
+        element_content(rest, more?, original, pos, state)
+      end
     end
   end
 
