@@ -34,8 +34,7 @@ defmodule Saxy.MixProject do
   defp deps() do
     [
       {:ex_doc, "~> 0.16", only: :dev, runtime: false},
-      {:stream_data, "~> 0.5", only: [:dev, :test]},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+      {:stream_data, "~> 0.5", only: [:dev, :test]}
     ]
   end
 
