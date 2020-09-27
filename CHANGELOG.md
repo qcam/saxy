@@ -2,6 +2,10 @@
 
 ## To be released
 
+## v1.2.1
+
+* Fix incorrect type spec.
+
 ## v1.2.0
 
 * Fix XML encoding without prolog [#57](https://github.com/qcam/saxy/pull/57).
