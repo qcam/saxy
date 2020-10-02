@@ -51,7 +51,7 @@ defprotocol Saxy.Builder do
   Builds `content` to XML content in simple form.
   """
 
-  @spec build(content :: term()) :: Saxy.XML.content()
+  @spec build(content :: term()) :: Saxy.XML.content() | binary()
 
   def build(content)
 end
