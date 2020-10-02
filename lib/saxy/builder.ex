@@ -120,7 +120,7 @@ end
 
 defimpl Saxy.Builder, for: BitString do
   def build(binary) when is_binary(binary) do
-    binary
+    Saxy.XML.characters(binary)
   end
 
   def build(bitstring) do
@@ -135,42 +135,56 @@ defimpl Saxy.Builder, for: Atom do
   def build(nil), do: ""
 
   def build(value) do
-    Atom.to_string(value)
+    value
+    |> Atom.to_string()
+    |> Saxy.XML.characters()
   end
 end
 
 defimpl Saxy.Builder, for: Integer do
   def build(value) do
-    Integer.to_string(value)
+    value
+    |> Integer.to_string()
+    |> Saxy.XML.characters()
   end
 end
 
 defimpl Saxy.Builder, for: Float do
   def build(value) do
-    Float.to_string(value)
+    value
+    |> Float.to_string()
+    |> Saxy.XML.characters()
   end
 end
 
 defimpl Saxy.Builder, for: NaiveDateTime do
   def build(value) do
-    NaiveDateTime.to_iso8601(value)
+    value
+    |> NaiveDateTime.to_iso8601()
+    |> Saxy.XML.characters()
   end
 end
 
 defimpl Saxy.Builder, for: DateTime do
   def build(value) do
-    DateTime.to_iso8601(value)
+    value
+    |> DateTime.to_iso8601()
+    |> Saxy.XML.characters()
   end
 end
 
 defimpl Saxy.Builder, for: Date do
   def build(value) do
-    Date.to_iso8601(value)
+    value
+    |> Date.to_iso8601()
+    |> Saxy.XML.characters()
   end
 end
 
 defimpl Saxy.Builder, for: Time do
   def build(value) do
-    Time.to_iso8601(value)
+    value
+    |> Time.to_iso8601()
+    |> Saxy.XML.characters()
   end
 end
