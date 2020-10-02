@@ -2,7 +2,11 @@
 
 ## To be released
 
-## v1.2.1
+## v1.2.2
+
+* Bring back accidentally removed XML builders.
+
+## v1.2.1 (retired)
 
 * Fix incorrect type spec.
 
