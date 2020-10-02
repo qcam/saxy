@@ -82,7 +82,7 @@ defmodule Saxy do
 
       iex> import Saxy.XML
       iex> element = element("person", [gender: "female"], "Alice")
-      {"person", [{"gender", "female"}], ["Alice"]}
+      {"person", [{"gender", "female"}], [{:characters, "Alice"}]}
       iex> Saxy.encode!(element, [version: "1.0"])
       "<?xml version=\"1.0\"?><person gender=\"female\">Alice</person>"
 

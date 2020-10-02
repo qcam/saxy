@@ -22,7 +22,7 @@ defprotocol Saxy.Builder do
 
       iex> person = %Person{name: "Alice", gender: "female"}
       iex> Saxy.Builder.build(person)
-      {"person", [{"gender", "female"}], ["Alice"]}
+      {"person", [{"gender", "female"}], [{:characters, "Alice"}]}
 
   Custom implementation could be done by implementing protocol:
 
@@ -44,7 +44,7 @@ defprotocol Saxy.Builder do
 
       iex> user = %User{name: "Alice", username: "alice99"}
       iex> Saxy.Builder.build(user)
-      {"Person", [{"userName", "alice99"}], [{"Name", [], ["Alice"]}]}
+      {"Person", [{"userName", "alice99"}], [{"Name", [], [{:characters, "Alice"}]}]}
   """
 
   @doc """

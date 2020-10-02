@@ -54,11 +54,11 @@ defmodule Saxy.BuilderTest do
 
   test "builds element from struct" do
     struct = %Struct{foo: "foo", bar: "bar"}
-    assert build(struct) == {"test", [{"foo", "foo"}], ["bar"]}
+    assert build(struct) == {"test", [{"foo", "foo"}], [{:characters, "bar"}]}
 
     nested_struct = %Struct{bar: struct}
 
-    assert build(nested_struct) == {"test", [{"foo", ""}], [{"test", [{"foo", "foo"}], ["bar"]}]}
+    assert build(nested_struct) == {"test", [{"foo", ""}], [{"test", [{"foo", "foo"}], [{:characters, "bar"}]}]}
 
     underived_struct = %UnderivedStruct{}
     assert_raise Protocol.UndefinedError, fn -> build(underived_struct) end
