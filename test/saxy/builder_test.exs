@@ -28,6 +28,20 @@ defmodule Saxy.BuilderTest do
     assert_raise Protocol.UndefinedError, fn -> build({}) end
   end
 
+  test "builds datetime" do
+    date = ~D[2018-03-01]
+    assert build(date) == "2018-03-01"
+
+    time = ~T[20:18:11.023]
+    assert build(time) == "20:18:11.023"
+
+    {:ok, naive_datetime} = NaiveDateTime.new(~D[2018-01-01], ~T[23:04:00.005])
+    assert build(naive_datetime) == "2018-01-01T23:04:00.005"
+
+    datetime = DateTime.utc_now()
+    assert build(datetime) == DateTime.to_iso8601(datetime)
+  end
+
   defmodule Struct do
     @derive {Saxy.Builder, name: :test, attributes: [:foo], children: [:bar]}
 
@@ -48,5 +62,31 @@ defmodule Saxy.BuilderTest do
 
     underived_struct = %UnderivedStruct{}
     assert_raise Protocol.UndefinedError, fn -> build(underived_struct) end
+  end
+
+  @tag :property
+
+  property "number" do
+    check all(integer <- integer()) do
+      assert build(integer) == Integer.to_string(integer)
+    end
+
+    check all(float <- float()) do
+      assert build(float) == Float.to_string(float)
+    end
+  end
+
+  property "bitstring" do
+    check all(string <- string(:printable)) do
+      assert build(string) == string
+    end
+  end
+
+  property "atom" do
+    assert build(nil) == ""
+
+    check all(atom <- atom(:alphanumeric)) do
+      assert build(atom) == Atom.to_string(atom)
+    end
   end
 end

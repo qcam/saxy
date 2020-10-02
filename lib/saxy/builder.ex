@@ -117,3 +117,60 @@ defimpl Saxy.Builder, for: Tuple do
       description: "cannot build content with tuple"
   end
 end
+
+defimpl Saxy.Builder, for: BitString do
+  def build(binary) when is_binary(binary) do
+    binary
+  end
+
+  def build(bitstring) do
+    raise Protocol.UndefinedError,
+      protocol: @protocol,
+      value: bitstring,
+      description: "cannot build content with a bitstring"
+  end
+end
+
+defimpl Saxy.Builder, for: Atom do
+  def build(nil), do: ""
+
+  def build(value) do
+    Atom.to_string(value)
+  end
+end
+
+defimpl Saxy.Builder, for: Integer do
+  def build(value) do
+    Integer.to_string(value)
+  end
+end
+
+defimpl Saxy.Builder, for: Float do
+  def build(value) do
+    Float.to_string(value)
+  end
+end
+
+defimpl Saxy.Builder, for: NaiveDateTime do
+  def build(value) do
+    NaiveDateTime.to_iso8601(value)
+  end
+end
+
+defimpl Saxy.Builder, for: DateTime do
+  def build(value) do
+    DateTime.to_iso8601(value)
+  end
+end
+
+defimpl Saxy.Builder, for: Date do
+  def build(value) do
+    Date.to_iso8601(value)
+  end
+end
+
+defimpl Saxy.Builder, for: Time do
+  def build(value) do
+    Time.to_iso8601(value)
+  end
+end
