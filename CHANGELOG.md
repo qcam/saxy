@@ -2,6 +2,10 @@
 
 ## To be released
 
+* Fix Saxy.Builder primitive type implementations.
+* Add `:cdata` SAX event type.
+* Introduce `:cdata_as_characters` option in parsers.
+
 ## v1.2.2
 
 * Bring back accidentally removed XML builders.
