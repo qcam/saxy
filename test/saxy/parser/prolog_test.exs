@@ -11,7 +11,7 @@ defmodule Saxy.Parser.PrologTest do
     end
   end
 
-  describe "welformed prolog parsing" do
+  describe "welformed XML prologs" do
     test "with all properties declared" do
       data = ~s(<?xml version="1.0" encoding="utf-8" standalone='yes' ?>)
 
@@ -84,6 +84,10 @@ defmodule Saxy.Parser.PrologTest do
 
       assert {:error, error} = parse_prolog(data)
       assert Exception.message(error) == "unexpected byte \"e\", expected token: :version_num"
+
+      data = ~s(<?xml version="1." ?>)
+      assert {:error, error} = parse_prolog(data)
+      assert Exception.message(error) == ~s(unexpected byte "\\"", expected token: :version_num)
     end
 
     test "invalid ending quote in version declaration" do
@@ -155,6 +159,12 @@ defmodule Saxy.Parser.PrologTest do
 
       assert {:error, error} = parse_prolog(data)
       assert Exception.message(error) == "unexpected byte \"x\", expected token: :xml_decl_close"
+    end
+
+    test "incomplete version declaration" do
+      data = ~s(<?xml version)
+      assert {:error, error} = parse_prolog(data)
+      assert Exception.message(error) == "unexpected end of input, expected token: :="
     end
   end
 
@@ -272,11 +282,11 @@ defmodule Saxy.Parser.PrologTest do
             s3 <- xml_whitespace(min_length: 1),
             {standalone_value, standalone} <- prolog_standalone(),
             s4 <- xml_whitespace() do
-      prolog = [
+      prolog = %{
         version: version_value,
         encoding: encoding_value,
         standalone: standalone_value
-      ]
+      }
 
       prolog_text = "<?xml" <> s1 <> version <> s2 <> encoding <> s3 <> standalone <> s4 <> "?>"
 
@@ -321,11 +331,11 @@ defmodule Saxy.Parser.PrologTest do
     end
   end
 
-  def parse_prolog(data) do
+  defp parse_prolog(data) do
     parse(data, PrologHandler, nil)
   end
 
-  def assert_parse_dtd(data) do
+  defp assert_parse_dtd(data) do
     assert parse(data, ControlHandler, {:start_element, {:stop, :foo}}) == {:ok, :foo}
   end
 end

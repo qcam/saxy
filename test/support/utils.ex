@@ -34,8 +34,8 @@ defmodule SaxyTest.Utils do
   def xml_quote(), do: one_of([constant(?"), constant(?')])
 
   def xml_equal_sign() do
-    gen all s1 <- string([32]),
-            s2 <- string([32]) do
+    gen all s1 <- xml_whitespace(),
+            s2 <- xml_whitespace() do
       s1 <> "=" <> s2
     end
   end
