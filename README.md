@@ -132,6 +132,13 @@ Saxy.SimpleForm.parse_string(data)
  ]}
 ```
 
+### Sounds cool! But ... I just wanted to quickly convert some XML to maps/JSON
+
+You should check out these awesome projects:
+
+* https://github.com/bennyhat/xml_json
+* https://github.com/xinz/sax_map
+
 ### XML builder
 
 Saxy offers two APIs to build simple form and encode XML document.
