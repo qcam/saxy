@@ -73,6 +73,27 @@ defmodule Saxy.SimpleFormTest do
     assert second_children == [{"name", [], ["Forest Gump"]}, {"characters", [], ["Forest & Jenny"]}]
   end
 
+  test "handles CData" do
+    xml = """
+    <?xml version="1.0" encoding="utf-8" ?>
+    <foo><![CDATA[<greeting>Hello, world!</greeting>]]></foo>
+    """
+
+    assert {:ok, simple_form} =
+             xml
+             |> remove_indents()
+             |> Saxy.SimpleForm.parse_string(cdata_as_characters: false)
+
+    assert simple_form == {"foo", [], [{:cdata, "<greeting>Hello, world!</greeting>"}]}
+
+    assert {:ok, simple_form} =
+             xml
+             |> remove_indents()
+             |> Saxy.SimpleForm.parse_string(cdata_as_characters: false)
+
+    assert simple_form == {"foo", [], [{:cdata, "<greeting>Hello, world!</greeting>"}]}
+  end
+
   def handle_entity_reference("reg") do
     "®"
   end

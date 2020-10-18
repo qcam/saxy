@@ -20,6 +20,14 @@ defmodule Saxy.SimpleForm.Handler do
     {:ok, [current | stack]}
   end
 
+  def handle_event(:cdata, chars, stack) do
+    [{tag_name, attributes, content} | stack] = stack
+
+    current = {tag_name, attributes, [{:cdata, chars} | content]}
+
+    {:ok, [current | stack]}
+  end
+
   def handle_event(:end_element, tag_name, [{tag_name, attributes, content} | stack]) do
     current = {tag_name, attributes, Enum.reverse(content)}
 
