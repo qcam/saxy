@@ -29,6 +29,9 @@ end
 
 Full documentation is available on [HexDocs](https://hexdocs.pm/saxy/).
 
+If you never work with a SAX parser before, please check out [this
+guide][sax-guide].
+
 ### SAX parser
 
 A SAX event handler implementation is required before starting parsing.
@@ -59,7 +62,12 @@ defmodule MyEventHandler do
 
   def handle_event(:characters, chars, state) do
     IO.inspect("Receive characters #{chars}")
-    {:ok, [{:chacters, chars} | state]}
+    {:ok, [{:characters, chars} | state]}
+  end
+
+  def handle_event(:cdata, cdata, state) do
+    IO.inspect("Receive CData #{cdata}")
+    {:ok, [{:cdata, cdata} | state]}
   end
 end
 ```
@@ -132,13 +140,6 @@ Saxy.SimpleForm.parse_string(data)
  ]}
 ```
 
-### Sounds cool! But ... I just wanted to quickly convert some XML to maps/JSON
-
-You should check out these awesome projects:
-
-* https://github.com/bennyhat/xml_json
-* https://github.com/xinz/sax_map
-
 ### XML builder
 
 Saxy offers two APIs to build simple form and encode XML document.
@@ -173,6 +174,34 @@ iex> Saxy.encode!(root, [])
 "<?xml version=\"1.0\"?><people><person gender=\"male\">Jack</person><person gender=\"male\">John</person></people>"
 ```
 
+### FAQs with Saxy/XMLs
+
+1. Saxy sounds cool! But I just wanted to quickly convert some XMLs into
+   maps/JSON...
+
+  Saxy does not have offer XML to maps conversion, because many awesome people
+  already made it happen 💪:
+
+  * https://github.com/bennyhat/xml_json
+  * https://github.com/xinz/sax_map
+
+1. Does Saxy work with XPath?
+
+  Saxy in its core is a SAX parser, therefore Saxy does not, and likely will
+  not, offer any XPath functionality.
+
+  [SweetXml][sweet_xml] is a wonderful library to work with XPath. However,
+  `:xmerl`, the library used by SweetXml, is not always memory efficient and
+  speedy. You can combine the best of both sides with [Saxmerl][saxmerl], which
+  is a Saxy extension converting XML documents into SweetXml compatible format.
+  Please check that library out for more information.
+
+1. Saxy! Where did the name come from?
+
+  ![Sa xi Chuong Duong](./saxi.jpg)
+
+  Sa Xi, pronounced like `sa-see`, is an awesome soft drink made by [Chuong Duong](http://www.cdbeco.com.vn/en).
+
 ### Benchmarking
 
 Note that benchmarking XML parsers is difficult and highly depends on the complexity
@@ -203,12 +232,6 @@ Some quick and biased conclusions from the benchmark suite:
 * No XSD supported.
 * No DTD supported, when Saxy encounters a `<!DOCTYPE`, it skips that.
 
-## Where did the name come from?
-
-![Sa xi Chuong Duong](./saxi.jpg)
-
-Sa Xi, pronounced like `sa-see`, is an awesome soft drink made by [Chuong Duong](http://www.cdbeco.com.vn/en).
-
 ## Contributing
 
 If you have any issues or ideas, feel free to write to https://github.com/qcam/saxy/issues.
@@ -218,3 +241,8 @@ To start developing:
 1. Fork the repository.
 2. Write your code and related tests.
 3. Create a pull request at https://github.com/qcam/saxy/pulls.
+
+
+[saxmerl]: https:github.com/qcam/saxmerl
+[sweet_xml]: https://github.com/kbrw/sweet_xml
+[sax-guide]: https://hexdocs.pm/saxy/getting-started-with-sax.html
