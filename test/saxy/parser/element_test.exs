@@ -61,7 +61,7 @@ defmodule Saxy.Parser.ElementTest do
     assert [{:end_element, "author"} | events] = events
 
     assert [{:start_element, {"description", []}} | events] = events
-    assert [{:characters, "<strong>\"Tom & Jerry\" is a cool movie!</strong>"} | events] = events
+    assert [{:cdata, "<strong>\"Tom & Jerry\" is a cool movie!</strong>"} | events] = events
     assert [{:end_element, "description"} | events] = events
 
     assert [{:start_element, {"actors", []}} | events] = events
@@ -214,7 +214,7 @@ defmodule Saxy.Parser.ElementTest do
     buffer = "<foo><![CDATA[John Cena <foo></foo> &amp;]]></foo>"
 
     assert {:ok, state} = parse(buffer)
-    assert find_events(state, :characters) == [{:characters, "John Cena <foo></foo> &amp;"}]
+    assert find_events(state, :cdata) == [{:cdata, "John Cena <foo></foo> &amp;"}]
   end
 
   test "handles malformed CDATA" do
@@ -360,7 +360,14 @@ defmodule Saxy.Parser.ElementTest do
   end
 
   defp make_state(state \\ []) do
-    %Saxy.State{prolog: nil, handler: StackHandler, user_state: state, expand_entity: :keep, character_data_max_length: :infinity, cdata_as_characters: false}
+    %Saxy.State{
+      prolog: nil,
+      handler: StackHandler,
+      user_state: state,
+      expand_entity: :keep,
+      character_data_max_length: :infinity,
+      cdata_as_characters: false
+    }
   end
 
   defp find_events(state, event_type) do

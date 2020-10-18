@@ -27,8 +27,9 @@ defmodule Saxy.Handler do
 
   * `:start_document`.
   * `:start_element`.
-  * `:characters`–the binary that matches [`CharData*`](https://www.w3.org/TR/xml/#d0e1106) and [Reference](https://www.w3.org/TR/xml/#NT-Reference).
+  * `:characters` – the binary that matches [`CharData*`](https://www.w3.org/TR/xml/#d0e1106) and [Reference](https://www.w3.org/TR/xml/#NT-Reference).
     Note that it is **not trimmed** and includes **ALL** whitespace characters that match `CharData`.
+  * `:cdata` – the binary that matches [`CData*`](https://www.w3.org/TR/2006/REC-xml11-20060816/#NT-CData).
   * `:end_document`.
   * `:end_element`.
 
@@ -61,16 +62,22 @@ defmodule Saxy.Handler do
       end
   """
 
-  @type event_name() :: :start_document | :end_document | :start_element | :characters | :end_element
+  @type event_name() :: :start_document | :end_document | :start_element | :characters | :cdata | :end_element
 
   @type start_document_data() :: Keyword.t()
   @type end_document_data() :: any()
   @type start_element_data() :: {name :: String.t(), attributes :: [{name :: String.t(), value :: String.t()}]}
   @type end_element_data() :: name :: String.t()
   @type characters_data() :: String.t()
+  @type cdata_data() :: String.t()
 
   @type event_data() ::
-          start_document_data() | end_document_data() | start_element_data() | end_element_data() | characters_data()
+          start_document_data()
+          | end_document_data()
+          | start_element_data()
+          | end_element_data()
+          | characters_data()
+          | cdata_data()
 
   @callback handle_event(event_type :: event_name(), data :: event_data(), user_state :: any()) ::
               {:ok, user_state :: any()} | {:stop, returning :: any()} | {:halt, returning :: any()}
