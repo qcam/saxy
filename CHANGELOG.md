@@ -1,6 +1,6 @@
 # Changelog
 
-## To be released
+## v1.3.0
 
 * Fix Saxy.Builder primitive type implementations.
 * Add `:cdata` SAX event type.
