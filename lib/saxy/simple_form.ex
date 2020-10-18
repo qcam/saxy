@@ -10,7 +10,7 @@ defmodule Saxy.SimpleForm do
 
   ```
   element = {tag_name, attributes, content}
-  content = (element | binary)*
+  content = (element | binary | cdata)*
   ```
 
   See "Types" section for more information.
@@ -26,6 +26,16 @@ defmodule Saxy.SimpleForm do
     * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
     * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
     * `{mod, fun, args}` - take the applied result of the specified MFA.
+  * `:cdata_as_characters` - `true` to return CData as characters, `false` to wrap CData as `{:cdata, data}`. Defaults to `true`.
+
+  Note that it is recommended to disable `:cdata_as_characters` if the outcome simple form data is meant to be re-encoded later.
+  Consider the following example, the encoded document has different sematics from the original one.
+
+      iex> xml = \"<foo><![CDATA[<greeting>Hello, world!</greeting>]]></foo>\"
+      iex> {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml, cdata_as_characters: true)
+      {:ok, {"foo", [], ["<greeting>Hello, world!</greeting>"]}}
+      iex> Saxy.encode!(simple_form)
+      "<foo><greeting>Hello, world!</greeting></foo>"
 
   ## Examples
 
@@ -86,11 +96,11 @@ defmodule Saxy.SimpleForm do
 
   @type attributes() :: [{name :: String.t(), value :: String.t()}]
 
-  @type content() :: [String.t() | Saxy.SimpleForm.t()]
+  @type content() :: [String.t() | {:cdata, String.t()} | Saxy.SimpleForm.t()]
 
   @type t() :: {tag_name(), attributes(), content()}
 
-  @spec parse_string(data :: binary, options :: Keyword.t()) ::
+  @spec parse_string(data :: binary(), options :: Keyword.t()) ::
           {:ok, Saxy.SimpleForm.t()} | {:error, exception :: Saxy.ParseError.t()}
 
   def parse_string(data, options \\ []) when is_binary(data) do

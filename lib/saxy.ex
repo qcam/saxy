@@ -17,11 +17,12 @@ defmodule Saxy do
   SAX is an event driven algorithm for parsing XML documents. A SAX parser takes XML document as the input
   and emits events out to a pre-configured event handler during parsing.
 
-  There are 5 types of SAX events supported by Saxy:
+  There are several types of SAX events supported by Saxy:
 
   * `:start_document` - after prolog is parsed.
   * `:start_element` - when open tag is parsed.
   * `:characters` - when a chunk of `CharData` is parsed.
+  * `:cdata` - when a chunk of `CData` is parsed.
   * `:end_element` - when end tag is parsed.
   * `:end_document` - when the root element is closed.
 
@@ -72,6 +73,7 @@ defmodule Saxy do
     * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
     * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
     * `{mod, fun, args}` - take the applied result of the specified MFA.
+  * `:cdata_as_characters` - `true` to emit CData events as `:characters`. Defaults to `true`.
 
   ## Encoder
 
@@ -173,11 +175,15 @@ defmodule Saxy do
       when is_binary(data) and is_atom(handler) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
 
+    # TODO: Start deprecating this option in next minor versions.
+    cdata_as_characters = Keyword.get(options, :cdata_as_characters, true)
+
     state = %State{
       prolog: nil,
       handler: handler,
       user_state: initial_state,
       expand_entity: expand_entity,
+      cdata_as_characters: cdata_as_characters,
       character_data_max_length: :infinity
     }
 
@@ -266,12 +272,14 @@ defmodule Saxy do
   def parse_stream(stream, handler, initial_state, options \\ []) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
     character_data_max_length = Keyword.get(options, :character_data_max_length, :infinity)
+    cdata_as_characters = Keyword.get(options, :cdata_as_characters, true)
 
     state = %State{
       prolog: nil,
       handler: handler,
       user_state: initial_state,
       expand_entity: expand_entity,
+      cdata_as_characters: cdata_as_characters,
       character_data_max_length: character_data_max_length
     }
 

@@ -43,12 +43,14 @@ defmodule Saxy.Partial do
       when is_atom(handler) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
     character_data_max_length = Keyword.get(options, :character_data_max_length, :infinity)
+    cdata_as_characters = Keyword.get(options, :cdata_as_characters, true)
 
     state = %Saxy.State{
       prolog: nil,
       handler: handler,
       user_state: initial_state,
       expand_entity: expand_entity,
+      cdata_as_characters: cdata_as_characters,
       character_data_max_length: character_data_max_length
     }
 

@@ -249,7 +249,8 @@ defmodule Saxy.Parser.PrologTest do
       handler: StackHandler,
       user_state: state,
       expand_entity: :keep,
-      character_data_max_length: :infinity
+      character_data_max_length: :infinity,
+      cdata_as_characters: false
     }
   end
 
