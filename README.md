@@ -243,6 +243,6 @@ To start developing:
 3. Create a pull request at https://github.com/qcam/saxy/pulls.
 
 
-[saxmerl]: https:github.com/qcam/saxmerl
+[saxmerl]: https://github.com/qcam/saxmerl
 [sweet_xml]: https://github.com/kbrw/sweet_xml
 [sax-guide]: https://hexdocs.pm/saxy/getting-started-with-sax.html
