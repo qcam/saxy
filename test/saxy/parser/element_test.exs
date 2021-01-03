@@ -1,8 +1,5 @@
 defmodule Saxy.Parser.ElementTest do
-  use ExUnit.Case, async: true
-  use ExUnitProperties
-
-  import SaxyTest.Utils
+  use SaxyTest.ParsingCase, async: true
 
   alias Saxy.{
     Parser,
@@ -13,7 +10,6 @@ defmodule Saxy.Parser.ElementTest do
     buffer = "<foo></foo>"
 
     assert {:ok, state} = parse(buffer)
-
     events = Enum.reverse(state.user_state)
 
     assert [{:start_element, {"foo", []}} | events] = events
@@ -31,6 +27,8 @@ defmodule Saxy.Parser.ElementTest do
     assert [{:end_element, "fóo"} | events] = events
     assert [{:end_document, {}} | events] = events
     assert events == []
+
+    assert_parse("<cổ></cổ>")
   end
 
   test "parses element with nested children" do
@@ -174,6 +172,9 @@ defmodule Saxy.Parser.ElementTest do
 
     assert {:error, error} = parse(buffer)
     assert Exception.message(error) == "unexpected byte \"-\", expected token: :comment"
+
+    buffer = "<foo><!--IGNORE ME"
+    assert {:error, _} = parse(buffer)
   end
 
   test "parses element references" do
@@ -210,6 +211,17 @@ defmodule Saxy.Parser.ElementTest do
     assert Exception.message(error) == "unexpected byte \" \", expected token: :entity_ref"
   end
 
+  test "malformed misc in the end of the document" do
+    buffer = "<foo/>bar"
+
+    assert {:error, error} = parse(buffer)
+    assert Exception.message(error) == "unexpected byte \"b\", expected token: :misc"
+
+    buffer = "<foo/><_"
+    assert {:error, error} = parse(buffer)
+    assert Exception.message(error) == "unexpected byte \"_\", expected token: :misc"
+  end
+
   test "parses CDATA" do
     buffer = "<foo><![CDATA[John Cena <foo></foo> &amp;]]></foo>"
 
@@ -229,6 +241,11 @@ defmodule Saxy.Parser.ElementTest do
 
     assert {:ok, state} = parse(buffer)
     assert length(state.user_state) == 3
+
+    assert_parse("<foo><?ổ instruction?></foo>")
+    assert_parse("<foo><?cổ instruction?></foo>")
+    assert_parse("<foo/><?ổ instruction?>")
+    assert_parse("<foo/><?cổ instruction?>")
   end
 
   test "handles malformed processing instruction" do
@@ -416,5 +433,13 @@ defmodule Saxy.Parser.ElementTest do
         ) do
       start_char <> chars
     end
+  end
+
+  defp assert_parse(data) do
+    stream = for <<char <- data>>, do: <<char>>
+    assert {:ok, return} = Saxy.parse_string(data, StackHandler, [])
+    assert Saxy.parse_stream(stream, StackHandler, []) == {:ok, return}
+
+    return
   end
 end

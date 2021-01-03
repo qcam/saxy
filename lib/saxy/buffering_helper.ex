@@ -5,24 +5,13 @@ defmodule Saxy.BufferingHelper do
   Define a named function that matches a token and returns the parsing context.
   """
 
-  @parser_config Application.get_env(:saxy, :parser, [])
+  defmacro halt!(call) do
+    {name, args} = Macro.decompose_call(call)
+    context_fun = build_context_fun(name, args)
+    state = List.keyfind(args, :state, 0)
 
-  defmacro defhalt(call) do
-    if streaming_enabled?(@parser_config) do
-      case Macro.decompose_call(call) do
-        {name, args} ->
-          context_fun = build_context_fun(name, args)
-          state = List.keyfind(args, :state, 0)
-
-          quote do
-            defp unquote(name)(unquote_splicing(args)) do
-              {:halted, unquote(context_fun), unquote(state)}
-            end
-          end
-
-        _invalid ->
-          raise ArgumentError, "invalid syntax in defhalt #{Macro.to_string(call)}"
-      end
+    quote do
+      {:halted, unquote(context_fun), unquote(state)}
     end
   end
 
@@ -32,10 +21,6 @@ defmodule Saxy.BufferingHelper do
       quote(do: <<1::1, 1::1, rest_of_first_byte::6, next_char::1-bytes>>),
       quote(do: <<1::1, 1::1, 1::1, rest_of_first_byte::5, next_two_chars::2-bytes>>)
     ]
-  end
-
-  defp streaming_enabled?(config) do
-    Keyword.get(config, :streaming, true)
   end
 
   defp build_context_fun(fun_name, [token, _more?, original, pos, _state | args]) do

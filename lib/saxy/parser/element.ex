@@ -2,808 +2,822 @@ defmodule Saxy.Parser.Element do
   @moduledoc false
 
   import Saxy.Guards
-
-  import Saxy.BufferingHelper, only: [defhalt: 1, utf8_binaries: 0]
-
-  import Saxy.Emitter, only: [emit_event: 3]
+  import Saxy.BufferingHelper
+  import Saxy.Emitter, only: [emit: 4]
+  import Saxy.Parser.Lookahead
 
   alias Saxy.Emitter
   alias Saxy.Parser.Utils
+
+  @streaming :saxy |> Application.get_env(:parser, []) |> Keyword.get(:streaming, true)
 
   def parse(<<rest::bits>>, more?, original, pos, state) do
     element(rest, more?, original, pos, state)
   end
 
-  defp element(<<?<, rest::bits>>, more?, original, pos, state) do
-    open_tag(rest, more?, original, pos + 1, state)
+  defp element(<<buffer::bits>>, more?, original, pos, state) do
+    lookahead(buffer, @streaming) do
+      "<" <> rest ->
+        open_tag(rest, more?, original, pos + 1, state)
+
+      _ in [""] when more? ->
+        halt!(element("", more?, original, pos, state))
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :lt})
+    end
   end
 
-  defhalt element(<<>>, true, original, pos, state)
+  defp open_tag(<<buffer::bits>>, more?, original, pos, state) do
+    lookahead(buffer, @streaming) do
+      char <> rest when is_ascii_name_start_char(char) ->
+        open_tag_name(rest, more?, original, pos, state, 1)
 
-  defp element(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.parse_error(original, pos, state, {:token, :lt})
+      token in unquote(utf8_binaries()) when more? ->
+        halt!(open_tag(token, more?, original, pos, state))
+
+      <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
+        open_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(codepoint))
+
+      _ in [""] when more? ->
+        halt!(open_tag("", more?, original, pos, state))
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :name_start_char})
+    end
   end
-
-  defp open_tag(<<charcode, rest::bits>>, more?, original, pos, state)
-       when is_ascii(charcode) and is_name_start_char(charcode) do
-    open_tag_name(rest, more?, original, pos, state, 1)
-  end
-
-  defp open_tag(<<charcode::utf8, rest::bits>>, more?, original, pos, state)
-       when is_name_start_char(charcode) do
-    open_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
-  end
-
-  defhalt open_tag(<<>>, true, original, pos, state)
-
-  defp open_tag(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.parse_error(original, pos, state, {:token, :name_start_char})
-  end
-
-  defp open_tag_name(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_ascii(charcode) and is_name_char(charcode) do
-    open_tag_name(rest, more?, original, pos, state, len + 1)
-  end
-
-  defp open_tag_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
-    open_tag_name(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
-  end
-
-  defhalt open_tag_name(<<>>, true, original, pos, state, len)
 
   defp open_tag_name(<<buffer::bits>>, more?, original, pos, state, len) do
-    name = binary_part(original, pos, len)
-    state = %{state | stack: [name | state.stack]}
-    sattribute(buffer, more?, original, pos + len, state, [])
-  end
+    lookahead(buffer, @streaming) do
+      char <> rest when is_ascii_name_char(char) ->
+        open_tag_name(rest, more?, original, pos, state, len + 1)
 
-  defp sattribute(<<?>, rest::bits>>, more?, original, pos, state, attributes) do
-    [tag_name | _] = state.stack
-    attributes = Enum.reverse(attributes)
-    pos = pos + 1
+      <<codepoint::utf8>> <> rest when is_utf8_name_char(codepoint) ->
+        open_tag_name(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
 
-    emit_event state <- [:start_element, {tag_name, attributes}, state],
-               {original, pos} do
-      element_content(rest, more?, original, pos, state)
+      token in unquote(utf8_binaries()) when more? ->
+        halt!(open_tag_name(token, more?, original, pos, state, len))
+
+      _ in [""] when more? ->
+        halt!(open_tag_name("", more?, original, pos, state, len))
+
+      _ ->
+        name = binary_part(original, pos, len)
+        state = %{state | stack: [name | state.stack]}
+        sattribute(buffer, more?, original, pos + len, state, [])
     end
   end
 
-  defp sattribute(<<"/>", rest::bits>>, more?, original, pos, state, attributes) do
-    [tag_name | stack] = state.stack
-    pos = pos + 2
+  defp sattribute(<<buffer::bits>>, more?, original, pos, state, attributes) do
+    lookahead buffer, @streaming do
+      ">" <> rest ->
+        [tag_name | _] = state.stack
+        event_data = {tag_name, Enum.reverse(attributes)}
+        pos = pos + 1
 
-    state = %{state | stack: stack}
-    attributes = Enum.reverse(attributes)
-
-    emit_event state <- [:start_element, {tag_name, attributes}, state], {original, pos} do
-      emit_event state <- [:end_element, tag_name, state], {original, pos} do
-        case stack do
-          [] ->
-            element_misc(rest, more?, original, pos, state)
-
-          _ ->
-            {original, pos} = maybe_trim(more?, original, pos)
-            element_content(rest, more?, original, pos, state)
+        with {:cont, state} <- emit(:start_element, event_data, state, {original, pos}) do
+          element_content(rest, more?, original, pos, state)
         end
-      end
+
+      "/>" <> rest ->
+        [tag_name | stack] = state.stack
+        pos = pos + 2
+
+        state = %{state | stack: stack}
+        event_data = {tag_name, Enum.reverse(attributes)}
+        on_halt_data = {original, pos}
+
+        with {:cont, state} <- emit(:start_element, event_data, state, on_halt_data),
+             {:cont, state} <- emit(:end_element, tag_name, state, on_halt_data) do
+          case stack do
+            [] ->
+              element_misc(rest, more?, original, pos, state)
+
+            _ ->
+              {original, pos} = maybe_trim(more?, original, pos)
+              element_content(rest, more?, original, pos, state)
+          end
+        end
+
+      char <> rest when is_ascii_name_start_char(char) ->
+        attribute_name(rest, more?, original, pos, state, attributes, 1)
+
+      <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
+        attribute_name(rest, more?, original, pos, state, attributes, Utils.compute_char_len(codepoint))
+
+      whitespace <> rest when is_whitespace(whitespace) ->
+        sattribute(rest, more?, original, pos + 1, state, attributes)
+
+      token in unquote(edge_ngrams("/")) when more? ->
+        halt!(sattribute(token, more?, original, pos, state, attributes))
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :name_start_char})
     end
   end
 
-  defp sattribute(<<charcode, rest::bits>>, more?, original, pos, state, attributes)
-       when is_ascii(charcode) and is_name_start_char(charcode) do
-    attribute_name(rest, more?, original, pos, state, attributes, 1)
-  end
+  defp attribute_name(<<buffer::bits>>, more?, original, pos, state, attributes, len) do
+    lookahead(buffer, @streaming) do
+      char <> rest when is_ascii_name_char(char) ->
+        attribute_name(rest, more?, original, pos, state, attributes, len + 1)
 
-  defp sattribute(<<charcode::utf8, rest::bits>>, more?, original, pos, state, attributes)
-       when is_name_start_char(charcode) do
-    attribute_name(rest, more?, original, pos, state, attributes, Utils.compute_char_len(charcode))
-  end
+      <<codepoint::utf8>> <> rest when is_utf8_name_char(codepoint) ->
+        attribute_name(rest, more?, original, pos, state, attributes, len + Utils.compute_char_len(codepoint))
 
-  defp sattribute(<<whitespace, rest::bits>>, more?, original, pos, state, attributes)
-       when is_whitespace(whitespace) do
-    sattribute(rest, more?, original, pos + 1, state, attributes)
-  end
+      _ in [""] when more? ->
+        halt!(attribute_name("", more?, original, pos, state, attributes, len))
 
-  defhalt sattribute(<<>>, true, original, pos, state, attributes)
-  defhalt sattribute("/", true, original, pos, state, attributes)
-
-  defp sattribute(<<_buffer::bits>>, _more?, original, pos, state, _attributes) do
-    Utils.parse_error(original, pos, state, {:token, :name_start_char})
-  end
-
-  defp attribute_name(<<charcode, rest::bits>>, more?, original, pos, state, attributes, len)
-       when is_ascii(charcode) and is_name_char(charcode) do
-    attribute_name(rest, more?, original, pos, state, attributes, len + 1)
-  end
-
-  defp attribute_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, attributes, len)
-       when is_name_char(charcode) do
-    attribute_name(rest, more?, original, pos, state, attributes, len + Utils.compute_char_len(charcode))
-  end
-
-  defhalt attribute_name(<<>>, true, original, pos, state, attributes, len)
-
-  defp attribute_name(<<rest::bits>>, more?, original, pos, state, attributes, len) do
-    att_name = binary_part(original, pos, len)
-    attribute_eq(rest, more?, original, pos + len, state, attributes, att_name)
-  end
-
-  defp attribute_eq(<<whitespace::integer, rest::bits>>, more?, original, pos, state, attributes, att_name)
-       when is_whitespace(whitespace) do
-    attribute_eq(rest, more?, original, pos + 1, state, attributes, att_name)
-  end
-
-  defp attribute_eq(<<?=, rest::bits>>, more?, original, pos, state, attributes, att_name) do
-    attribute_quote(rest, more?, original, pos + 1, state, attributes, att_name)
-  end
-
-  defhalt attribute_eq(<<>>, true, original, pos, state, attributes, att_name)
-
-  defp attribute_eq(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _att_name) do
-    Utils.parse_error(original, pos, state, {:token, :eq})
-  end
-
-  defp attribute_quote(<<whitespace::integer, rest::bits>>, more?, original, pos, state, attributes, att_name)
-       when is_whitespace(whitespace) do
-    attribute_quote(rest, more?, original, pos + 1, state, attributes, att_name)
-  end
-
-  defp attribute_quote(<<quote, rest::bits>>, more?, original, pos, state, attributes, att_name)
-       when quote in '"\'' do
-    att_value(rest, more?, original, pos + 1, state, attributes, quote, att_name, "", 0)
-  end
-
-  defhalt attribute_quote(<<>>, true, original, pos, state, attributes, att_name)
-
-  defp attribute_quote(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _att_name) do
-    Utils.parse_error(original, pos, state, {:token, :quote})
-  end
-
-  defp att_value(<<quote, rest::bits>>, more?, original, pos, state, attributes, open_quote, att_name, acc, len)
-       when quote == open_quote do
-    att_value = [acc | binary_part(original, pos, len)] |> IO.iodata_to_binary()
-    attributes = [{att_name, att_value} | attributes]
-
-    sattribute(rest, more?, original, pos + len + 1, state, attributes)
-  end
-
-  defhalt att_value(<<>>, true, original, pos, state, attributes, q, att_name, acc, len)
-  defhalt att_value(<<?&>>, true, original, pos, state, attributes, q, att_name, acc, len)
-  defhalt att_value(<<?&, ?#>>, true, original, pos, state, attributes, q, att_name, acc, len)
-
-  defp att_value(<<"&#x", rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len) do
-    att_value = binary_part(original, pos, len)
-    acc = [acc | att_value]
-    att_value_char_hex_ref(rest, more?, original, pos + len + 3, state, attributes, q, att_name, acc, 0)
-  end
-
-  defp att_value(<<"&#", rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len) do
-    att_value = binary_part(original, pos, len)
-    acc = [acc | att_value]
-    att_value_char_dec_ref(rest, more?, original, pos + len + 2, state, attributes, q, att_name, acc, 0)
-  end
-
-  defp att_value(<<?&, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len) do
-    att_value = binary_part(original, pos, len)
-    acc = [acc | att_value]
-    att_value_entity_ref(rest, more?, original, pos + len + 1, state, attributes, q, att_name, acc, 0)
-  end
-
-  defp att_value(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when is_ascii(charcode) do
-    att_value(rest, more?, original, pos, state, attributes, q, att_name, acc, len + 1)
-  end
-
-  Enum.each(utf8_binaries(), fn token ->
-    defhalt att_value(unquote(token), true, original, pos, state, attributes, q, att_name, acc, len)
-  end)
-
-  defp att_value(<<charcode::utf8, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len) do
-    att_value(rest, more?, original, pos, state, attributes, q, att_name, acc, len + Utils.compute_char_len(charcode))
-  end
-
-  defp att_value(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :att_value})
-  end
-
-  defp att_value_entity_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, 0)
-       when is_ascii(charcode) and is_name_start_char(charcode) do
-    att_value_entity_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, 1)
-  end
-
-  defp att_value_entity_ref(<<charcode::utf8, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, 0)
-       when is_name_start_char(charcode) do
-    att_value_entity_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, Utils.compute_char_len(charcode))
-  end
-
-  defp att_value_entity_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when is_ascii(charcode) and is_name_char(charcode) do
-    att_value_entity_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len + 1)
-  end
-
-  defp att_value_entity_ref(<<charcode::utf8, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when is_name_char(charcode) do
-    len = len + Utils.compute_char_len(charcode)
-    att_value_entity_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len)
-  end
-
-  defp att_value_entity_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, 0) do
-    Utils.parse_error(original, pos, state, {:token, :name_start_char})
-  end
-
-  defp att_value_entity_ref(<<?;, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len) do
-    name = binary_part(original, pos, len)
-    converted = Emitter.convert_entity_reference(name, state)
-    acc = [acc | converted]
-
-    att_value(rest, more?, original, pos + len + 1, state, attributes, q, att_name, acc, 0)
-  end
-
-  defhalt att_value_entity_ref(<<>>, true, original, pos, state, attributes, q, att_name, acc, len)
-
-  defp att_value_entity_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :entity_ref})
-  end
-
-  defp att_value_char_dec_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when charcode in ?0..?9 do
-    att_value_char_dec_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len + 1)
-  end
-
-  defp att_value_char_dec_ref(<<?;, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len) do
-    char = original |> binary_part(pos, len) |> String.to_integer(10)
-
-    att_value(rest, more?, original, pos + len + 1, state, attributes, q, att_name, [acc | <<char::utf8>>], 0)
-  end
-
-  defhalt att_value_char_dec_ref(<<>>, true, original, pos, state, attributes, q, att_name, acc, len)
-
-  defp att_value_char_dec_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :char_ref})
-  end
-
-  defp att_value_char_hex_ref(<<charcode, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len)
-       when charcode in ?0..?9 or charcode in ?A..?F or charcode in ?a..?f do
-    att_value_char_hex_ref(rest, more?, original, pos, state, attributes, q, att_name, acc, len + 1)
-  end
-
-  defp att_value_char_hex_ref(<<?;, rest::bits>>, more?, original, pos, state, attributes, q, att_name, acc, len) do
-    char = original |> binary_part(pos, len) |> String.to_integer(16)
-
-    att_value(rest, more?, original, pos + len + 1, state, attributes, q, att_name, [acc | <<char::utf8>>], 0)
-  end
-
-  defhalt att_value_char_hex_ref(<<>>, true, original, pos, state, attributes, q, att_name, acc, len)
-
-  defp att_value_char_hex_ref(<<_buffer::bits>>, _more?, original, pos, state, _attributes, _q, _att_name, _acc, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :char_ref})
-  end
-
-  defp element_content(<<?<, rest::bits>>, more?, original, pos, state) do
-    element_content_rest(rest, more?, original, pos + 1, state)
-  end
-
-  defp element_content(<<?&, rest::bits>>, more?, original, pos, state) do
-    element_content_reference(rest, more?, original, pos + 1, state, <<>>)
-  end
-
-  defp element_content(<<whitespace::integer, rest::bits>>, more?, original, pos, state)
-       when is_whitespace(whitespace) do
-    chardata_whitespace(rest, more?, original, pos, state, 1)
-  end
-
-  defhalt element_content(<<>>, true, original, pos, state)
-
-  defp element_content(<<charcode, rest::bits>>, more?, original, pos, state)
-       when is_ascii(charcode) do
-    chardata(rest, more?, original, pos, state, "", 1)
-  end
-
-  Enum.each(utf8_binaries(), fn token ->
-    defhalt element_content(unquote(token), true, original, pos, state)
-  end)
-
-  defp element_content(<<charcode::utf8, rest::bits>>, more?, original, pos, state) do
-    chardata(rest, more?, original, pos, state, "", Utils.compute_char_len(charcode))
-  end
-
-  defp element_content(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.parse_error(original, pos, state, {:token, :content})
-  end
-
-  defp element_content_rest(<<charcode, rest::bits>>, more?, original, pos, state)
-       when is_name_start_char(charcode) do
-    open_tag_name(rest, more?, original, pos, state, 1)
-  end
-
-  defp element_content_rest(<<charcode::utf8, rest::bits>>, more?, original, pos, state)
-       when is_name_start_char(charcode) do
-    open_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
-  end
-
-  defp element_content_rest(<<?/, rest::bits>>, more?, original, pos, state) do
-    close_tag_name(rest, more?, original, pos + 1, state, 0)
-  end
-
-  defp element_content_rest(<<"![CDATA[", rest::bits>>, more?, original, pos, state) do
-    element_cdata(rest, more?, original, pos + 8, state, 0)
-  end
-
-  defp element_content_rest(<<"!--", buffer::bits>>, more?, original, pos, state) do
-    element_content_comment(buffer, more?, original, pos + 3, state, 0)
-  end
-
-  defp element_content_rest(<<??, buffer::bits>>, more?, original, pos, state) do
-    element_processing_instruction(buffer, more?, original, pos + 1, state, 0)
-  end
-
-  defhalt element_content_rest(<<>>, true, original, pos, state)
-  defhalt element_content_rest(<<?!>>, true, original, pos, state)
-  defhalt element_content_rest(<<?!, ?->>, true, original, pos, state)
-  defhalt element_content_rest(<<?!, ?[>>, true, original, pos, state)
-  defhalt element_content_rest(<<?!, ?[, ?C>>, true, original, pos, state)
-  defhalt element_content_rest(<<?!, ?[, ?C, ?D>>, true, original, pos, state)
-  defhalt element_content_rest(<<?!, ?[, ?C, ?D, ?A>>, true, original, pos, state)
-  defhalt element_content_rest(<<?!, ?[, ?C, ?D, ?A, ?T>>, true, original, pos, state)
-  defhalt element_content_rest(<<?!, ?[, ?C, ?D, ?A, ?T, ?A>>, true, original, pos, state)
-
-  defp element_content_rest(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.parse_error(original, pos, state, {:token, :lt})
-  end
-
-  defp element_cdata(<<"]]>", rest::bits>>, more?, original, pos, state, len) do
-    cdata = binary_part(original, pos, len)
-    pos = pos + len + 3
-
-    if state.cdata_as_characters do
-      emit_event state <- [:characters, cdata, state], {original, pos} do
-        element_content(rest, more?, original, pos, state)
-      end
-    else
-      emit_event state <- [:cdata, cdata, state], {original, pos} do
-        element_content(rest, more?, original, pos, state)
-      end
+      _ ->
+        attribute_name = binary_part(original, pos, len)
+        attribute_eq(buffer, more?, original, pos + len, state, attributes, attribute_name)
     end
   end
 
-  defhalt element_cdata(<<>>, true, original, pos, state, len)
-  defhalt element_cdata(<<?]>>, true, original, pos, state, len)
-  defhalt element_cdata(<<?], ?]>>, true, original, pos, state, len)
+  defp attribute_eq(<<buffer::bits>>, more?, original, pos, state, attributes, att_name) do
+    lookahead(buffer, @streaming) do
+      "=" <> rest ->
+        attribute_quote(rest, more?, original, pos + 1, state, attributes, att_name)
 
-  defp element_cdata(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_ascii(charcode) do
-    element_cdata(rest, more?, original, pos, state, len + 1)
-  end
+      whitespace <> rest when is_whitespace(whitespace) ->
+        attribute_eq(rest, more?, original, pos + 1, state, attributes, att_name)
 
-  defp element_cdata(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len) do
-    element_cdata(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
-  end
+      _ in [""] when more? ->
+        halt!(attribute_eq("", more?, original, pos, state, attributes, att_name))
 
-  defp element_cdata(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :"]]"})
-  end
-
-  defp chardata_whitespace(<<whitespace::integer, rest::bits>>, more?, original, pos, state, len)
-       when is_whitespace(whitespace) do
-    chardata_whitespace(rest, more?, original, pos, state, len + 1)
-  end
-
-  defp chardata_whitespace(<<?<, rest::bits>>, more?, original, pos, state, len) do
-    chars = binary_part(original, pos, len)
-    pos = pos + len + 1
-
-    emit_event state <- [:characters, chars, state], {original, pos - 1} do
-      element_content_rest(rest, more?, original, pos, state)
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :eq})
     end
   end
 
-  defp chardata_whitespace(<<?&, rest::bits>>, more?, original, pos, state, len) do
-    chars = binary_part(original, pos, len)
-    element_content_reference(rest, more?, original, pos + len + 1, state, chars)
-  end
+  defp attribute_quote(<<buffer::bits>>, more?, original, pos, state, attributes, att_name) do
+    lookahead buffer, @streaming do
+      open_quote <> rest when open_quote in [?", ?'] ->
+        att_value(rest, more?, original, pos + 1, state, attributes, open_quote, att_name, "", 0)
 
-  defp chardata_whitespace(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_ascii(charcode) do
-    chardata(rest, more?, original, pos, state, "", len + 1)
-  end
+      whitespace <> rest when is_whitespace(whitespace) ->
+        attribute_quote(rest, more?, original, pos + 1, state, attributes, att_name)
 
-  Enum.each(utf8_binaries(), fn token ->
-    defhalt chardata_whitespace(unquote(token), true, original, pos, state, len)
-  end)
+      _ in [""] when more? ->
+        halt!(attribute_quote("", more?, original, pos, state, attributes, att_name))
 
-  defp chardata_whitespace(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len) do
-    chardata(rest, more?, original, pos, state, "", len + Utils.compute_char_len(charcode))
-  end
-
-  defhalt chardata_whitespace(<<>>, true, original, pos, state, len)
-
-  defp chardata_whitespace(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :chardata})
-  end
-
-  defp chardata(<<?<, rest::bits>>, more?, original, pos, state, acc, len) do
-    chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
-    pos = pos + len + 1
-
-    emit_event state <- [:characters, chars, state], {original, pos - 1} do
-      element_content_rest(rest, more?, original, pos, state)
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :quote})
     end
   end
 
-  defp chardata(<<?&, rest::bits>>, more?, original, pos, state, acc, len) do
-    chars = binary_part(original, pos, len)
+  defp att_value(<<buffer::bits>>, more?, original, pos, state, attributes, open_quote, att_name, acc, len) do
+    lookahead(buffer, @streaming) do
+      ^open_quote <> rest ->
+        att_value = [acc | binary_part(original, pos, len)] |> IO.iodata_to_binary()
+        attributes = [{att_name, att_value} | attributes]
 
-    element_content_reference(rest, more?, original, pos + len + 1, state, [acc | chars])
-  end
+        sattribute(rest, more?, original, pos + len + 1, state, attributes)
 
-  defp chardata(<<charcode, rest::bits>>, more?, original, pos, state, acc, len)
-       when is_ascii(charcode) do
-    chardata(rest, more?, original, pos, state, acc, len + 1)
-  end
+      token in unquote(edge_ngrams("&#")) when more? ->
+        halt!(att_value(token, more?, original, pos, state, attributes, open_quote, att_name, acc, len))
 
-  Enum.each(utf8_binaries(), fn token ->
-    defhalt chardata(unquote(token), true, original, pos, state, acc, len)
-  end)
+      "&#x" <> rest ->
+        att_value = binary_part(original, pos, len)
+        acc = [acc | att_value]
+        pos = pos + len + 3
+        att_value_char_hex_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, 0)
 
-  defp chardata(<<charcode::utf8, rest::bits>>, more?, original, pos, state, acc, len) do
-    chardata(rest, more?, original, pos, state, acc, len + Utils.compute_char_len(charcode))
-  end
+      "&#" <> rest ->
+        att_value = binary_part(original, pos, len)
+        acc = [acc | att_value]
+        pos = pos + len + 2
+        att_value_char_dec_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, 0)
 
-  defp chardata(<<>>, true, original, pos, %{character_data_max_length: max_length} = state, acc, len)
-       when max_length != :infinity and len >= max_length do
-    chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
-    pos = pos + len
+      "&" <> rest ->
+        att_value = binary_part(original, pos, len)
+        acc = [acc | att_value]
+        pos = pos + len + 1
+        att_value_entity_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, 0)
 
-    emit_event state <- [:characters, chars, state], {original, pos} do
-      {original, pos} = maybe_trim(true, original, pos)
-      chardata(<<>>, true, original, pos, state, <<>>, 0)
+      char <> rest when is_ascii(char) ->
+        att_value(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, len + 1)
+
+      token in unquote(utf8_binaries()) when more? ->
+        halt!(att_value(token, more?, original, pos, state, attributes, open_quote, att_name, acc, len))
+
+      <<codepoint::utf8>> <> rest ->
+        len = len + Utils.compute_char_len(codepoint)
+        att_value(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, len)
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :att_value})
     end
   end
 
-  defhalt chardata(<<>>, true, original, pos, state, acc, len)
+  defp att_value_entity_ref(<<buffer::bits>>, more?, original, pos, state, attributes, open_quote, att_name, acc, 0) do
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_start_char(char) ->
+        att_value_entity_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, 1)
 
-  defp chardata(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :chardata})
+      <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
+        att_value_entity_ref(
+          rest,
+          more?,
+          original,
+          pos,
+          state,
+          attributes,
+          open_quote,
+          att_name,
+          acc,
+          Utils.compute_char_len(codepoint)
+        )
+
+      _ in [""] when more? ->
+        halt!(att_value_entity_ref("", more?, original, pos, state, attributes, open_quote, att_name, acc, 0))
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :name_start_char})
+    end
   end
 
-  defhalt element_content_reference(<<>>, true, original, pos, state, acc)
-  defhalt element_content_reference(<<?#>>, true, original, pos, state, acc)
+  defp att_value_entity_ref(<<buffer::bits>>, more?, original, pos, state, attributes, open_quote, att_name, acc, len) do
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_char(char) ->
+        att_value_entity_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, len + 1)
 
-  defp element_content_reference(<<charcode, rest::bits>>, more?, original, pos, state, acc)
-       when is_name_start_char(charcode) do
-    element_entity_ref(rest, more?, original, pos, state, acc, 1)
+      <<codepoint::utf8>> <> rest when is_utf8_name_char(codepoint) ->
+        len = len + Utils.compute_char_len(codepoint)
+        att_value_entity_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, len)
+
+      ";" <> rest ->
+        name = binary_part(original, pos, len)
+        converted = Emitter.convert_entity_reference(name, state)
+        acc = [acc | converted]
+
+        att_value(rest, more?, original, pos + len + 1, state, attributes, open_quote, att_name, acc, 0)
+
+      _ in [""] when more? ->
+        halt!(att_value_entity_ref("", more?, original, pos, state, attributes, open_quote, att_name, acc, len))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :entity_ref})
+    end
   end
 
-  defp element_content_reference(<<charcode::utf8, rest::bits>>, more?, original, pos, state, acc)
-       when is_name_start_char(charcode) do
-    element_entity_ref(rest, more?, original, pos, state, acc, Utils.compute_char_len(charcode))
+  defp att_value_char_dec_ref(<<buffer::bits>>, more?, original, pos, state, attributes, open_quote, att_name, acc, len) do
+    lookahead buffer, @streaming do
+      digit <> rest when digit in ?0..?9 ->
+        att_value_char_dec_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, len + 1)
+
+      ";" <> rest ->
+        codepoint = original |> binary_part(pos, len) |> String.to_integer(10)
+        pos = pos + len + 1
+        att_value(rest, more?, original, pos, state, attributes, open_quote, att_name, [acc | <<codepoint::utf8>>], 0)
+
+      _ in [""] when more? ->
+        halt!(att_value_char_dec_ref("", more?, original, pos, state, attributes, open_quote, att_name, acc, len))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :char_ref})
+    end
   end
 
-  defp element_content_reference(<<?#, ?x, rest::bits>>, more?, original, pos, state, acc) do
-    element_char_hex_ref(rest, more?, original, pos + 2, state, acc, 0)
+  defp att_value_char_hex_ref(<<buffer::bits>>, more?, original, pos, state, attributes, open_quote, att_name, acc, len) do
+    lookahead buffer, @streaming do
+      char <> rest when char in ?0..?9 or char in ?A..?F or char in ?a..?f ->
+        att_value_char_hex_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, len + 1)
+
+      ";" <> rest ->
+        codepoint = original |> binary_part(pos, len) |> String.to_integer(16)
+        pos = pos + len + 1
+
+        att_value(rest, more?, original, pos, state, attributes, open_quote, att_name, [acc | <<codepoint::utf8>>], 0)
+
+      _ in [""] when more? ->
+        halt!(att_value_char_hex_ref("", more?, original, pos, state, attributes, open_quote, att_name, acc, len))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :char_ref})
+    end
   end
 
-  defp element_content_reference(<<?#, rest::bits>>, more?, original, pos, state, acc) do
-    element_char_dec_ref(rest, more?, original, pos + 1, state, acc, 0)
+  defp element_content(<<buffer::bits>>, more?, original, pos, state) do
+    lookahead buffer, @streaming do
+      "<" <> rest ->
+        element_content_rest(rest, more?, original, pos + 1, state)
+
+      "&" <> rest ->
+        element_content_reference(rest, more?, original, pos + 1, state, <<>>)
+
+      whitespace <> rest when is_whitespace(whitespace) ->
+        chardata_whitespace(rest, more?, original, pos, state, 1)
+
+      _ in [""] when more? ->
+        halt!(element_content("", more?, original, pos, state))
+
+      char <> rest when is_ascii(char) ->
+        chardata(rest, more?, original, pos, state, "", 1)
+
+      token in unquote(utf8_binaries()) when more? ->
+        halt!(element_content(token, more?, original, pos, state))
+
+      <<codepoint::utf8>> <> rest ->
+        chardata(rest, more?, original, pos, state, "", Utils.compute_char_len(codepoint))
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :content})
+    end
   end
 
-  defp element_content_reference(<<_buffer::bits>>, _more?, original, pos, state, _acc) do
-    Utils.parse_error(original, pos, state, {:token, :reference})
+  defp element_content_rest(<<buffer::bits>>, more?, original, pos, state) do
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_start_char(char) ->
+        open_tag_name(rest, more?, original, pos, state, 1)
+
+      <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
+        open_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(codepoint))
+
+      "/" <> rest ->
+        close_tag_name(rest, more?, original, pos + 1, state, 0)
+
+      "![CDATA[" <> rest ->
+        element_cdata(rest, more?, original, pos + 8, state, 0)
+
+      "!--" <> rest ->
+        element_content_comment(rest, more?, original, pos + 3, state, 0)
+
+      "?" <> rest ->
+        element_processing_instruction(rest, more?, original, pos + 1, state, 0)
+
+      token in unquote(Enum.uniq(edge_ngrams("![CDATA") ++ edge_ngrams("!-"))) when more? ->
+        halt!(element_content_rest(token, more?, original, pos, state))
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :lt})
+    end
   end
 
-  defp element_entity_ref(<<charcode, rest::bits>>, more?, original, pos, state, acc, len)
-       when is_name_char(charcode) do
-    element_entity_ref(rest, more?, original, pos, state, acc, len + 1)
+  defp element_cdata(<<buffer::bits>>, more?, original, pos, state, len) do
+    lookahead buffer, @streaming do
+      "]]>" <> rest ->
+        cdata = binary_part(original, pos, len)
+        pos = pos + len + 3
+
+        if state.cdata_as_characters do
+          with {:cont, state} <- emit(:characters, cdata, state, {original, pos}) do
+            element_content(rest, more?, original, pos, state)
+          end
+        else
+          with {:cont, state} <- emit(:cdata, cdata, state, {original, pos}) do
+            element_content(rest, more?, original, pos, state)
+          end
+        end
+
+      token in unquote(edge_ngrams("]]")) when more? ->
+        halt!(element_cdata(token, more?, original, pos, state, len))
+
+      char <> rest when is_ascii(char) ->
+        element_cdata(rest, more?, original, pos, state, len + 1)
+
+      <<codepoint::utf8>> <> rest ->
+        element_cdata(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :"]]"})
+    end
   end
 
-  defp element_entity_ref(<<charcode::utf8, rest::bits>>, more?, original, pos, state, acc, len)
-       when is_name_char(charcode) do
-    element_entity_ref(rest, more?, original, pos, state, acc, len + Utils.compute_char_len(charcode))
+  defp chardata_whitespace(<<buffer::bits>>, more?, original, pos, state, len) do
+    lookahead buffer, @streaming do
+      whitespace <> rest when is_whitespace(whitespace) ->
+        chardata_whitespace(rest, more?, original, pos, state, len + 1)
+
+      "<" <> rest ->
+        chars = binary_part(original, pos, len)
+        pos = pos + len + 1
+
+        with {:cont, state} <- emit(:characters, chars, state, {original, pos - 1}) do
+          element_content_rest(rest, more?, original, pos, state)
+        end
+
+      "&" <> rest ->
+        chars = binary_part(original, pos, len)
+        element_content_reference(rest, more?, original, pos + len + 1, state, chars)
+
+      char <> rest when is_ascii(char) ->
+        chardata(rest, more?, original, pos, state, "", len + 1)
+
+      token in unquote(utf8_binaries()) when more? ->
+        halt!(chardata_whitespace(token, more?, original, pos, state, len))
+
+      <<codepoint::utf8>> <> rest ->
+        chardata(rest, more?, original, pos, state, "", len + Utils.compute_char_len(codepoint))
+
+      _ in [""] when more? ->
+        halt!(chardata_whitespace("", more?, original, pos, state, len))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :chardata})
+    end
   end
 
-  defp element_entity_ref(<<?;, rest::bits>>, more?, original, pos, state, acc, len) do
-    name = binary_part(original, pos, len)
-    char = Emitter.convert_entity_reference(name, state)
-    chardata(rest, more?, original, pos + len + 1, state, [acc | char], 0)
+  defp chardata(<<buffer::bits>>, more?, original, pos, state, acc, len) do
+    lookahead buffer, @streaming do
+      "<" <> rest ->
+        chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+        pos = pos + len + 1
+
+        with {:cont, state} <- emit(:characters, chars, state, {original, pos - 1}) do
+          element_content_rest(rest, more?, original, pos, state)
+        end
+
+      "&" <> rest ->
+        chars = binary_part(original, pos, len)
+
+        element_content_reference(rest, more?, original, pos + len + 1, state, [acc | chars])
+
+      char <> rest when is_ascii(char) ->
+        chardata(rest, more?, original, pos, state, acc, len + 1)
+
+      token in unquote(utf8_binaries()) when more? ->
+        halt!(chardata(token, more?, original, pos, state, acc, len))
+
+      <<codepoint::utf8>> <> rest ->
+        chardata(rest, more?, original, pos, state, acc, len + Utils.compute_char_len(codepoint))
+
+      _ in [""] when more? ->
+        %{character_data_max_length: max_length} = state
+
+        if max_length != :infinity and len >= max_length do
+          chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+          pos = pos + len
+
+          with {:cont, state} <- emit(:characters, chars, state, {original, pos}) do
+            {original, pos} = maybe_trim(true, original, pos)
+            chardata(<<>>, true, original, pos, state, <<>>, 0)
+          end
+        else
+          halt!(chardata("", more?, original, pos, state, acc, len))
+        end
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :chardata})
+    end
   end
 
-  defhalt element_entity_ref(<<>>, true, original, pos, state, acc, len)
+  defp element_content_reference(<<buffer::bits>>, more?, original, pos, state, acc) do
+    lookahead buffer, @streaming do
+      token in ["", "#"] when more? ->
+        halt!(element_content_reference(token, more?, original, pos, state, acc))
 
-  defp element_entity_ref(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :entity_ref})
+      char <> rest when is_ascii_name_start_char(char) ->
+        element_entity_ref(rest, more?, original, pos, state, acc, 1)
+
+      <<codepoint::utf8>> <> rest when is_ascii_name_start_char(codepoint) ->
+        element_entity_ref(rest, more?, original, pos, state, acc, Utils.compute_char_len(codepoint))
+
+      "#x" <> rest ->
+        element_char_hex_ref(rest, more?, original, pos + 2, state, acc, 0)
+
+      "#" <> rest ->
+        element_char_dec_ref(rest, more?, original, pos + 1, state, acc, 0)
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :reference})
+    end
   end
 
-  defp element_char_dec_ref(<<?;, _rest::bits>>, _more?, original, pos, state, _acc, 0) do
-    Utils.parse_error(original, pos, state, {:token, :char_ref})
+  defp element_entity_ref(<<buffer::bits>>, more?, original, pos, state, acc, len) do
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_char(char) ->
+        element_entity_ref(rest, more?, original, pos, state, acc, len + 1)
+
+      <<codepoint::utf8>> <> rest when is_utf8_name_char(codepoint) ->
+        element_entity_ref(rest, more?, original, pos, state, acc, len + Utils.compute_char_len(codepoint))
+
+      ";" <> rest ->
+        name = binary_part(original, pos, len)
+        char = Emitter.convert_entity_reference(name, state)
+        chardata(rest, more?, original, pos + len + 1, state, [acc | char], 0)
+
+      _ in [""] when more? ->
+        halt!(element_entity_ref("", more?, original, pos, state, acc, len))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :entity_ref})
+    end
   end
 
-  defp element_char_dec_ref(<<?;, rest::bits>>, more?, original, pos, state, acc, len) do
-    char = original |> binary_part(pos, len) |> String.to_integer(10)
+  defp element_char_dec_ref(<<buffer::bits>>, more?, original, pos, state, acc, len) do
+    lookahead buffer, @streaming do
+      ";" <> rest ->
+        if len == 0 do
+          Utils.parse_error(original, pos, state, {:token, :char_ref})
+        else
+          char = original |> binary_part(pos, len) |> String.to_integer(10)
 
-    chardata(rest, more?, original, pos + len + 1, state, [acc | <<char::utf8>>], 0)
+          chardata(rest, more?, original, pos + len + 1, state, [acc | <<char::utf8>>], 0)
+        end
+
+      char <> rest when char in ?0..?9 ->
+        element_char_dec_ref(rest, more?, original, pos, state, acc, len + 1)
+
+      _ in [""] when more? ->
+        halt!(element_char_dec_ref("", more?, original, pos, state, acc, len))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :char_ref})
+    end
   end
 
-  defp element_char_dec_ref(<<charcode::integer, rest::bits>>, more?, original, pos, state, acc, len)
-       when charcode in ?0..?9 do
-    element_char_dec_ref(rest, more?, original, pos, state, acc, len + 1)
+  defp element_char_hex_ref(<<buffer::bits>>, more?, original, pos, state, acc, len) do
+    lookahead buffer, @streaming do
+      ";" <> rest ->
+        if len == 0 do
+          Utils.parse_error(original, pos, state, [])
+        else
+          char = original |> binary_part(pos, len) |> String.to_integer(16)
+
+          chardata(rest, more?, original, pos + len + 1, state, [acc | <<char::utf8>>], 0)
+        end
+
+      char <> rest when char in ?0..?9 or char in ?A..?F or char in ?a..?f ->
+        element_char_hex_ref(rest, more?, original, pos, state, acc, len + 1)
+
+      _ in [""] when more? ->
+        halt!(element_char_hex_ref("", more?, original, pos, state, acc, len))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :char_ref})
+    end
   end
 
-  defhalt element_char_dec_ref(<<>>, true, original, pos, state, acc, len)
+  defp element_processing_instruction(<<buffer::bits>>, more?, original, pos, state, 0) do
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_start_char(char) ->
+        element_processing_instruction(rest, more?, original, pos, state, 1)
 
-  defp element_char_dec_ref(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :char_ref})
-  end
+      token in unquote(utf8_binaries() ++ [""]) when more? ->
+        halt!(element_processing_instruction(token, more?, original, pos, state, 0))
 
-  defp element_char_hex_ref(<<?;, _rest::bits>>, _more?, original, pos, state, _acc, 0) do
-    Utils.parse_error(original, pos, state, [])
-  end
+      <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
+        element_processing_instruction(rest, more?, original, pos, state, Utils.compute_char_len(codepoint))
 
-  defp element_char_hex_ref(<<?;, rest::bits>>, more?, original, pos, state, acc, len) do
-    char = original |> binary_part(pos, len) |> String.to_integer(16)
-
-    chardata(rest, more?, original, pos + len + 1, state, [acc | <<char::utf8>>], 0)
-  end
-
-  defp element_char_hex_ref(<<charcode::integer, rest::bits>>, more?, original, pos, state, acc, len)
-       when charcode in ?0..?9 or charcode in ?A..?F or charcode in ?a..?f do
-    element_char_hex_ref(rest, more?, original, pos, state, acc, len + 1)
-  end
-
-  defhalt element_char_hex_ref(<<>>, true, original, pos, state, acc, len)
-
-  defp element_char_hex_ref(<<_buffer::bits>>, _more?, original, pos, state, _acc, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :char_ref})
-  end
-
-  defp element_processing_instruction(<<charcode, rest::bits>>, more?, original, pos, state, 0)
-       when is_name_start_char(charcode) do
-    element_processing_instruction(rest, more?, original, pos, state, 1)
-  end
-
-  defp element_processing_instruction(<<charcode::utf8, rest::bits>>, more?, original, pos, state, 0)
-       when is_name_start_char(charcode) do
-    element_processing_instruction(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
-  end
-
-  defhalt element_processing_instruction(<<>>, true, original, pos, state, len)
-
-  defp element_processing_instruction(<<_buffer::bits>>, _more?, original, pos, state, 0) do
-    Utils.parse_error(original, pos, state, {:token, :processing_instruction})
-  end
-
-  defp element_processing_instruction(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
-    element_processing_instruction(rest, more?, original, pos, state, len + 1)
-  end
-
-  defp element_processing_instruction(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
-    element_processing_instruction(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :processing_instruction})
+    end
   end
 
   defp element_processing_instruction(<<buffer::bits>>, more?, original, pos, state, len) do
-    pi_name = binary_part(original, pos, len)
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_char(char) ->
+        element_processing_instruction(rest, more?, original, pos, state, len + 1)
 
-    if Utils.valid_pi_name?(pi_name) do
-      element_processing_instruction_content(buffer, more?, original, pos + len, state, pi_name, 0)
-    else
-      Utils.parse_error(original, pos, state, {:invalid_pi, pi_name})
-    end
-  end
+      token in unquote(["" | utf8_binaries()]) when more? ->
+        halt!(element_processing_instruction(token, more?, original, pos, state, len))
 
-  defp element_processing_instruction_content(<<"?>", rest::bits>>, more?, original, pos, state, _name, len) do
-    element_content(rest, more?, original, pos + len + 2, state)
-  end
+      <<codepoint::utf8>> <> rest when is_utf8_name_char(codepoint) ->
+        element_processing_instruction(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
 
-  defhalt element_processing_instruction_content(<<>>, true, original, pos, state, name, len)
-  defhalt element_processing_instruction_content(<<??>>, true, original, pos, state, name, len)
+      _ ->
+        pi_name = binary_part(original, pos, len)
 
-  defp element_processing_instruction_content(<<charcode, rest::bits>>, more?, original, pos, state, name, len)
-       when is_ascii(charcode) do
-    element_processing_instruction_content(rest, more?, original, pos, state, name, len + 1)
-  end
-
-  defp element_processing_instruction_content(<<charcode::utf8, rest::bits>>, more?, original, pos, state, name, len) do
-    element_processing_instruction_content(rest, more?, original, pos, state, name, len + Utils.compute_char_len(charcode))
-  end
-
-  defp element_processing_instruction_content(<<_buffer::bits>>, _more?, original, pos, state, _name, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :processing_instruction})
-  end
-
-  defp element_content_comment(<<"-->", rest::bits>>, more?, original, pos, state, len) do
-    element_content(rest, more?, original, pos + len + 3, state)
-  end
-
-  defhalt element_content_comment(<<>>, true, original, pos, state, len)
-  defhalt element_content_comment(<<?->>, true, original, pos, state, len)
-  defhalt element_content_comment(<<?-, ?->>, true, original, pos, state, len)
-  defhalt element_content_comment(<<?-, ?-, ?->>, true, original, pos, state, len)
-
-  defp element_content_comment(<<"--->", _rest::bits>>, _more?, original, pos, state, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :comment})
-  end
-
-  defp element_content_comment(<<charcode, rest::bits>>, more?, original, pos, state, len) when is_ascii(charcode) do
-    element_content_comment(rest, more?, original, pos, state, len + 1)
-  end
-
-  defp element_content_comment(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len) do
-    element_content_comment(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
-  end
-
-  defp close_tag_name(<<charcode, rest::bits>>, more?, original, pos, state, 0)
-       when is_ascii(charcode) and is_name_start_char(charcode) do
-    close_tag_name(rest, more?, original, pos, state, 1)
-  end
-
-  defp close_tag_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, 0)
-       when is_name_start_char(charcode) do
-    close_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
-  end
-
-  defhalt close_tag_name(<<>>, true, original, pos, state, len)
-
-  defp close_tag_name(<<_buffer::bits>>, _more?, original, pos, state, 0) do
-    Utils.parse_error(original, pos, state, {:token, :end_tag})
-  end
-
-  defp close_tag_name(<<?>, rest::bits>>, more?, original, pos, state, len) do
-    [open_tag | stack] = state.stack
-    ending_tag = binary_part(original, pos, len)
-    pos = pos + len + 1
-
-    if open_tag == ending_tag do
-      emit_event state <- [:end_element, ending_tag, state], {original, pos} do
-        state = %{state | stack: stack}
-
-        case stack do
-          [] ->
-            element_misc(rest, more?, original, pos, state)
-
-          [_parent | _stack] ->
-            {original, pos} = maybe_trim(more?, original, pos)
-            element_content(rest, more?, original, pos, state)
+        if Utils.valid_pi_name?(pi_name) do
+          element_processing_instruction_content(buffer, more?, original, pos + len, state, pi_name, 0)
+        else
+          Utils.parse_error(original, pos, state, {:invalid_pi, pi_name})
         end
-      end
-    else
-      Utils.parse_error(original, pos, state, {:wrong_closing_tag, open_tag, ending_tag})
     end
   end
 
-  defp close_tag_name(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_ascii(charcode) and is_name_char(charcode) do
-    close_tag_name(rest, more?, original, pos, state, len + 1)
-  end
+  defp element_processing_instruction_content(<<buffer::bits>>, more?, original, pos, state, name, len) do
+    lookahead buffer, @streaming do
+      "?>" <> rest ->
+        element_content(rest, more?, original, pos + len + 2, state)
 
-  defp close_tag_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
-    close_tag_name(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
-  end
+      token in ["", "?"] when more? ->
+        halt!(element_processing_instruction_content(token, more?, original, pos, state, name, len))
 
-  defp close_tag_name(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :end_tag})
-  end
+      char <> rest when is_ascii(char) ->
+        element_processing_instruction_content(rest, more?, original, pos, state, name, len + 1)
 
-  defhalt element_misc(<<>>, true, original, pos, state)
+      token in unquote(["" | utf8_binaries()]) when more? ->
+        halt!(element_processing_instruction_content(token, more?, original, pos, state, name, len))
 
-  defp element_misc(<<>>, _more?, original, pos, state) do
-    emit_event state <- [:end_document, {}, state], {original, pos} do
-      {:ok, state}
+      <<codepoint::utf8>> <> rest ->
+        element_processing_instruction_content(rest, more?, original, pos, state, name, len + Utils.compute_char_len(codepoint))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :processing_instruction})
     end
   end
 
-  defp element_misc(<<whitespace::integer, rest::bits>>, more?, original, pos, state)
-       when is_whitespace(whitespace) do
-    element_misc(rest, more?, original, pos + 1, state)
-  end
+  defp element_content_comment(<<buffer::bits>>, more?, original, pos, state, len) do
+    lookahead buffer, @streaming do
+      "-->" <> rest ->
+        element_content(rest, more?, original, pos + len + 3, state)
 
-  defp element_misc(<<?<, rest::bits>>, more?, original, pos, state) do
-    element_misc_rest(rest, more?, original, pos + 1, state)
-  end
+      token in unquote(edge_ngrams("---")) when more? ->
+        halt!(element_content_comment(token, more?, original, pos, state, len))
 
-  defhalt element_misc_rest(<<>>, true, original, pos, state)
+      "--->" <> _rest ->
+        Utils.parse_error(original, pos + len, state, {:token, :comment})
 
-  defp element_misc_rest(<<?!, rest::bits>>, more?, original, pos, state) do
-    element_misc_comment(rest, more?, original, pos + 1, state)
-  end
+      char <> rest when is_ascii(char) ->
+        element_content_comment(rest, more?, original, pos, state, len + 1)
 
-  defp element_misc_rest(<<??, rest::bits>>, more?, original, pos, state) do
-    element_misc_pi(rest, more?, original, pos + 1, state)
-  end
+      <<codepoint::utf8>> <> rest ->
+        element_content_comment(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
 
-  defhalt element_misc_comment(<<>>, true, original, pos, state)
-  defhalt element_misc_comment(<<?->>, true, original, pos, state)
-
-  defp element_misc_comment(<<"--", rest::bits>>, more?, original, pos, state) do
-    element_misc_comment_char(rest, more?, original, pos + 2, state, 0)
-  end
-
-  defp element_misc_comment(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.parse_error(original, pos, state, {:token, :--})
-  end
-
-  defhalt element_misc_comment_char(<<>>, true, original, pos, state, len)
-  defhalt element_misc_comment_char(<<?->>, true, original, pos, state, len)
-  defhalt element_misc_comment_char(<<?-, ?->>, true, original, pos, state, len)
-  defhalt element_misc_comment_char(<<?-, ?-, ?->>, true, original, pos, state, len)
-
-  defp element_misc_comment_char(<<"--->", _rest::bits>>, _more?, original, pos, state, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :comment})
-  end
-
-  defp element_misc_comment_char(<<"-->", rest::bits>>, more?, original, pos, state, len) do
-    element_misc(rest, more?, original, pos + len + 3, state)
-  end
-
-  defp element_misc_comment_char(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_ascii(charcode) do
-    element_misc_comment_char(rest, more?, original, pos, state, len + 1)
-  end
-
-  defp element_misc_comment_char(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len) do
-    element_misc_comment_char(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
-  end
-
-  defp element_misc_comment_char(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :"-->"})
-  end
-
-  defhalt element_misc_pi(<<>>, true, original, pos, state)
-
-  defp element_misc_pi(<<char, rest::bits>>, more?, original, pos, state)
-       when is_name_start_char(char) do
-    element_misc_pi_name(rest, more?, original, pos, state, 1)
-  end
-
-  defp element_misc_pi(<<charcode::utf8, rest::bits>>, more?, original, pos, state)
-       when is_name_start_char(charcode) do
-    element_misc_pi_name(rest, more?, original, pos, state, Utils.compute_char_len(charcode))
-  end
-
-  defp element_misc_pi(<<_buffer::bits>>, _more?, original, pos, state) do
-    Utils.parse_error(original, pos, state, {:token, :processing_instruction})
-  end
-
-  defp element_misc_pi_name(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
-    element_misc_pi_name(rest, more?, original, pos, state, len + 1)
-  end
-
-  defp element_misc_pi_name(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len)
-       when is_name_char(charcode) do
-    element_misc_pi_name(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
-  end
-
-  defp element_misc_pi_name(<<rest::bits>>, more?, original, pos, state, len) do
-    name = binary_part(original, pos, len)
-
-    if Utils.valid_pi_name?(name) do
-      element_misc_pi_content(rest, more?, original, pos + len, state, 0)
-    else
-      Utils.parse_error(original, pos, state, {:invalid_pi, name})
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :comment})
     end
   end
 
-  defhalt element_misc_pi_content(<<>>, true, original, pos, state, len)
-  defhalt element_misc_pi_content(<<??>>, true, original, pos, state, len)
+  defp close_tag_name(<<buffer::bits>>, more?, original, pos, state, 0) do
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_start_char(char) ->
+        close_tag_name(rest, more?, original, pos, state, 1)
 
-  defp element_misc_pi_content(<<"?>", rest::bits>>, more?, original, pos, state, len) do
-    element_misc(rest, more?, original, pos + len + 2, state)
+      token in unquote(utf8_binaries()) when more? ->
+        halt!(close_tag_name(token, more?, original, pos, state, 0))
+
+      <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
+        close_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(codepoint))
+
+      _ in [""] when more? ->
+        halt!(close_tag_name("", more?, original, pos, state, 0))
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :end_tag})
+    end
   end
 
-  defp element_misc_pi_content(<<charcode, rest::bits>>, more?, original, pos, state, len)
-       when is_ascii(charcode) do
-    element_misc_pi_content(rest, more?, original, pos, state, len + 1)
+  defp close_tag_name(<<buffer::bits>>, more?, original, pos, state, len) do
+    lookahead buffer, @streaming do
+      ">" <> rest ->
+        [open_tag | stack] = state.stack
+        ending_tag = binary_part(original, pos, len)
+        pos = pos + len + 1
+
+        if open_tag == ending_tag do
+          with {:cont, state} <- emit(:end_element, ending_tag, state, {original, pos}) do
+            state = %{state | stack: stack}
+
+            case stack do
+              [] ->
+                element_misc(rest, more?, original, pos, state)
+
+              [_parent | _stack] ->
+                {original, pos} = maybe_trim(more?, original, pos)
+                element_content(rest, more?, original, pos, state)
+            end
+          end
+        else
+          Utils.parse_error(original, pos, state, {:wrong_closing_tag, open_tag, ending_tag})
+        end
+
+      char <> rest when is_ascii_name_char(char) ->
+        close_tag_name(rest, more?, original, pos, state, len + 1)
+
+      token in unquote(utf8_binaries()) when more? ->
+        halt!(close_tag_name(token, more?, original, pos, state, len))
+
+      <<codepoint::utf8>> <> rest when is_utf8_name_char(codepoint) ->
+        close_tag_name(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
+
+      _ in [""] when more? ->
+        halt!(close_tag_name("", more?, original, pos, state, len))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :end_tag})
+    end
   end
 
-  defp element_misc_pi_content(<<charcode::utf8, rest::bits>>, more?, original, pos, state, len) do
-    element_misc_pi_content(rest, more?, original, pos, state, len + Utils.compute_char_len(charcode))
+  defp element_misc(<<buffer::bits>>, more?, original, pos, state) do
+    lookahead buffer, @streaming do
+      "" ->
+        if more? do
+          halt!(element_misc("", more?, original, pos, state))
+        else
+          with {:cont, state} <- emit(:end_document, {}, state, {original, pos}) do
+            {:ok, state}
+          end
+        end
+
+      whitespace <> rest when is_whitespace(whitespace) ->
+        element_misc(rest, more?, original, pos + 1, state)
+
+      "<" <> rest ->
+        element_misc_rest(rest, more?, original, pos + 1, state)
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :misc})
+    end
   end
 
-  defp element_misc_pi_content(<<_buffer::bits>>, _more?, original, pos, state, len) do
-    Utils.parse_error(original, pos + len, state, {:token, :processing_instruction})
+  defp element_misc_rest(<<buffer::bits>>, more?, original, pos, state) do
+    lookahead buffer, @streaming do
+      _ in [""] when more? ->
+        halt!(element_misc_rest("", more?, original, pos, state))
+
+      "!" <> rest ->
+        element_misc_comment(rest, more?, original, pos + 1, state)
+
+      "?" <> rest ->
+        element_misc_pi(rest, more?, original, pos + 1, state)
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :misc})
+    end
+  end
+
+  defp element_misc_comment(<<buffer::bits>>, more?, original, pos, state) do
+    lookahead buffer, @streaming do
+      token in ["", "-"] when more? ->
+        halt!(element_misc_comment(token, more?, original, pos, state))
+
+      "--" <> rest ->
+        element_misc_comment_char(rest, more?, original, pos + 2, state, 0)
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :--})
+    end
+  end
+
+  defp element_misc_comment_char(<<buffer::bits>>, more?, original, pos, state, len) do
+    lookahead buffer, @streaming do
+      token in unquote(edge_ngrams("---")) when more? ->
+        halt!(element_misc_comment_char(token, more?, original, pos, state, len))
+
+      "--->" <> _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :comment})
+
+      "-->" <> rest ->
+        element_misc(rest, more?, original, pos + len + 3, state)
+
+      char <> rest when is_ascii(char) ->
+        element_misc_comment_char(rest, more?, original, pos, state, len + 1)
+
+      <<codepoint::utf8>> <> rest ->
+        element_misc_comment_char(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :"-->"})
+    end
+  end
+
+  defp element_misc_pi(<<buffer::bits>>, more?, original, pos, state) do
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_start_char(char) ->
+        element_misc_pi_name(rest, more?, original, pos, state, 1)
+
+      token in unquote(["" | utf8_binaries()]) when more? ->
+        halt!(element_misc_pi(token, more?, original, pos, state))
+
+      <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
+        element_misc_pi_name(rest, more?, original, pos, state, Utils.compute_char_len(codepoint))
+
+      _ ->
+        Utils.parse_error(original, pos, state, {:token, :processing_instruction})
+    end
+  end
+
+  defp element_misc_pi_name(<<buffer::bits>>, more?, original, pos, state, len) do
+    lookahead buffer, @streaming do
+      char <> rest when is_ascii_name_char(char) ->
+        element_misc_pi_name(rest, more?, original, pos, state, len + 1)
+
+      token in unquote(["" | utf8_binaries()]) when more? ->
+        halt!(element_misc_pi_name(token, more?, original, pos, state, len))
+
+      <<codepoint::utf8>> <> rest when is_utf8_name_char(codepoint) ->
+        element_misc_pi_name(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
+
+      _ ->
+        name = binary_part(original, pos, len)
+
+        if Utils.valid_pi_name?(name) do
+          element_misc_pi_content(buffer, more?, original, pos + len, state, 0)
+        else
+          Utils.parse_error(original, pos, state, {:invalid_pi, name})
+        end
+    end
+  end
+
+  defp element_misc_pi_content(<<buffer::bits>>, more?, original, pos, state, len) do
+    lookahead buffer, @streaming do
+      token in ["", "?"] when more? ->
+        halt!(element_misc_pi_content(token, more?, original, pos, state, len))
+
+      "?>" <> rest ->
+        element_misc(rest, more?, original, pos + len + 2, state)
+
+      char <> rest when is_ascii(char) ->
+        element_misc_pi_content(rest, more?, original, pos, state, len + 1)
+
+      <<codepoint::utf8>> <> rest ->
+        element_misc_pi_content(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
+
+      _ ->
+        Utils.parse_error(original, pos + len, state, {:token, :processing_instruction})
+    end
   end
 
   @compile {:inline, [maybe_trim: 3]}
