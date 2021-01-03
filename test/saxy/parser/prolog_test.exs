@@ -1,8 +1,6 @@
 defmodule Saxy.Parser.PrologTest do
   use SaxyTest.ParsingCase, async: true
 
-  import Saxy.Parser.Prolog, only: [parse: 5]
-
   alias SaxyTest.ControlHandler
 
   defmodule PrologHandler do
@@ -136,14 +134,14 @@ defmodule Saxy.Parser.PrologTest do
       <?xml version="1.0" standalone="yes' ?> <foo></foo>
       """
 
-      assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+      assert {:error, error} = parse_prolog(buffer)
       assert Exception.message(error) == "unexpected byte \"'\", expected token: :quote"
 
       buffer = """
       <?xml version="1.0" standalone='yes" ?> <foo></foo>
       """
 
-      assert {:error, error} = parse(buffer, false, buffer, 0, make_state())
+      assert {:error, error} = parse_prolog(buffer)
       assert Exception.message(error) == "unexpected byte \"\\\"\", expected token: :quote"
     end
 
@@ -251,17 +249,6 @@ defmodule Saxy.Parser.PrologTest do
       assert {:error, error} = parse(data, ControlHandler, {:start_element, {:stop, :foo}})
       assert Exception.message(error) == "unexpected byte \" \", expected token: :dtd_content"
     end
-  end
-
-  defp make_state(state \\ []) do
-    %Saxy.State{
-      prolog: nil,
-      handler: StackHandler,
-      user_state: state,
-      expand_entity: :keep,
-      character_data_max_length: :infinity,
-      cdata_as_characters: false
-    }
   end
 
   property "prolog parsing" do

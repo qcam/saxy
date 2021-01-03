@@ -187,7 +187,7 @@ defmodule Saxy do
       character_data_max_length: :infinity
     }
 
-    case Parser.Prolog.parse(data, false, data, 0, state) do
+    case Parser.Binary.parse_prolog(data, false, data, 0, state) do
       {:ok, state} ->
         {:ok, state.user_state}
 
@@ -283,7 +283,7 @@ defmodule Saxy do
       character_data_max_length: character_data_max_length
     }
 
-    init = {&Parser.Prolog.parse(&1, &2, &1, 0, &3), state}
+    init = {&Parser.Stream.parse_prolog(&1, &2, &1, 0, &3), state}
 
     case stream
          |> Stream.concat([:end_of_stream])
