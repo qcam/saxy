@@ -10,24 +10,23 @@ defmodule Saxy.Parser.Lookahead do
         {[last_word], last_word}
       end)
 
-    [""] ++ grams
+    grams ++ [""]
   end
 
-  defmacro lookahead(data, streaming?, do: clauses) do
+  defmacro lookahead(data, streaming?, do: rules) do
     streaming? = Macro.expand(streaming?, __CALLER__)
-    jump_table = build_jump_table(clauses, streaming?)
 
     quote do
       case unquote(data) do
-        unquote(jump_table)
+        unquote(build_clauses(rules, streaming?))
       end
     end
   end
 
-  defp build_jump_table([], _streaming?), do: []
+  defp build_clauses([], _streaming?), do: []
 
-  defp build_jump_table([{:->, _, [clause, code]} | rest], streaming?) do
-    build_clause(clause, code, streaming?) ++ build_jump_table(rest, streaming?)
+  defp build_clauses([{:->, _, [clause, code]} | rest], streaming?) do
+    build_clause(clause, code, streaming?) ++ build_clauses(rest, streaming?)
   end
 
   # "binary" <> rest.
@@ -39,7 +38,7 @@ defmodule Saxy.Parser.Lookahead do
 
   defp build_clause([{:when, _, [left, guards]}], code, streaming?) do
     case left do
-      # "in" is used in streaming.
+      # "in" is exclusively used in streaming.
       {:in, _, [token_var, tokens]} ->
         if streaming? do
           Enum.flat_map(tokens, fn token ->
@@ -49,6 +48,8 @@ defmodule Saxy.Parser.Lookahead do
                 unquote(code)
             end
           end)
+        else
+          []
         end
 
       # char <> rest when is_whitespace(char).
