@@ -15,7 +15,7 @@ defmodule Saxy.Parser.Lookahead do
 
   defmacro lookahead(data, streaming?, do: clauses) do
     streaming? = Macro.expand(streaming?, __CALLER__)
-    jump_table = build_jump_table(clauses, streaming?, __CALLER__)
+    jump_table = build_jump_table(clauses, streaming?)
 
     quote do
       case unquote(data) do
@@ -24,10 +24,10 @@ defmodule Saxy.Parser.Lookahead do
     end
   end
 
-  defp build_jump_table([], _streaming?, _env), do: []
+  defp build_jump_table([], _streaming?), do: []
 
-  defp build_jump_table([{:->, _, [clause, code]} | rest], streaming?, env) do
-    build_clause(clause, code, streaming?) ++ build_jump_table(rest, streaming?, env)
+  defp build_jump_table([{:->, _, [clause, code]} | rest], streaming?) do
+    build_clause(clause, code, streaming?) ++ build_jump_table(rest, streaming?)
   end
 
   # "binary" <> rest.
