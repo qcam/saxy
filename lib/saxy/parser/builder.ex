@@ -3,6 +3,11 @@ defmodule Saxy.Parser.Builder do
 
   import Saxy.Parser.Lookahead
   import Saxy.BufferingHelper
+  import Saxy.Emitter
+  import Saxy.Guards
+
+  alias Saxy.Parser.Utils
+  alias Saxy.Emitter
 
   defmacro __using__(options) do
     streaming? = Keyword.fetch!(options, :streaming?)
@@ -10,12 +15,12 @@ defmodule Saxy.Parser.Builder do
     quote do
       @streaming unquote(streaming?)
 
-      import Saxy.Guards
-      import Saxy.Emitter, only: [emit: 4]
+      @before_compile unquote(__MODULE__)
+    end
+  end
 
-      alias Saxy.Parser.Utils
-      alias Saxy.Emitter
-
+  defmacro __before_compile__(_env) do
+    quote location: :keep do
       def parse_prolog(<<buffer::bits>>, more?, original, pos, state) do
         prolog(buffer, more?, original, pos, state)
       end
@@ -559,7 +564,8 @@ defmodule Saxy.Parser.Builder do
 
           _ ->
             name = binary_part(original, pos, len)
-            state = %{state | stack: [name | state.stack]}
+            %{stack: stack} = state
+            state = %{state | stack: [name | stack]}
             sattribute(buffer, more?, original, pos + len, state, [])
         end
       end
@@ -570,7 +576,7 @@ defmodule Saxy.Parser.Builder do
             attribute_name(rest, more?, original, pos, state, attributes, 1)
 
           ">" <> rest ->
-            [tag_name | _] = state.stack
+            %{stack: [tag_name | _]} = state
             event_data = {tag_name, Enum.reverse(attributes)}
             pos = pos + 1
 
@@ -579,7 +585,7 @@ defmodule Saxy.Parser.Builder do
             end
 
           "/>" <> rest ->
-            [tag_name | stack] = state.stack
+            %{stack: [tag_name | stack]} = state
             pos = pos + 2
 
             state = %{state | stack: stack}
