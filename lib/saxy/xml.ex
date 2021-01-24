@@ -148,7 +148,7 @@ defmodule Saxy.XML do
   defp children(children, acc \\ [])
 
   defp children([binary | children], acc) when is_binary(binary) do
-    children(children, [binary | acc])
+    children(children, [characters(binary) | acc])
   end
 
   defp children([{type, _} = form | children], acc)

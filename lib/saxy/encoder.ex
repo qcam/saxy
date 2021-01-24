@@ -82,6 +82,12 @@ defmodule Saxy.Encoder do
   end
 
   defp content([characters | elements]) when is_binary(characters) do
+    IO.warn("""
+    Passing binary as :characters content is derepcated and will be removed in future versions.
+
+    Please wrap the binary with Saxy.XML.characters/1.
+    """)
+
     [characters | content(elements)]
   end
 
