@@ -93,17 +93,32 @@ defmodule Saxy do
   Saxy also provides `Saxy.Builder` protocol to help composing structs into simple form.
 
       defmodule Person do
-        @derive {Saxy.Builder, name: "person", attributes: [:gender], children: [:name]}
+        @derive {
+          Saxy.Builder,
+          name: "person", attributes: [:gender], children: [:name, emails: &__MODULE__.build_emails/1]
+        }
 
-        defstruct [:gender, :name]
+        import Saxy.XML
+
+        defstruct [:name, :gender, emails: []]
+
+        def build_emails(emails) do
+          count = Enum.count(emails)
+
+          element(
+            "emails",
+            [count: Enum.count(emails)],
+            Enum.map(emails, &element("email", [], &1))
+          )
+        end
       end
 
-      iex> jack = %Person{gender: :male, name: "Jack"}
+      iex> jack = %Person{gender: :male, name: "Jack", emails: ["john@example.com"]}
       iex> john = %Person{gender: :male, name: "John"}
       iex> import Saxy.XML
       iex> root = element("people", [], [jack, john])
       iex> Saxy.encode!(root, [version: "1.0"])
-      "<?xml version=\"1.0\"?><people><person gender=\"male\">Jack</person><person gender=\"male\">John</person></people>"
+      "<?xml version=\"1.0\"?><people><person gender=\"male\">Jack<emails count=\"1\"><email>john@example.com</email></emails></person><person gender=\"male\">John<emails count=\"0\"/></person></people>"
 
   """
 

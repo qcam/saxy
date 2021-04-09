@@ -162,7 +162,7 @@ defmodule Saxy.XML do
   defp children([], acc), do: Enum.reverse(acc)
 
   defp children([child | children], acc) do
-    children(children, [Builder.build(child) | acc])
+    children(children, child |> Builder.build() |> List.wrap() |> Enum.reverse() |> Kernel.++(acc))
   end
 
   defp attribute({name, value}) when not is_nil(name) do

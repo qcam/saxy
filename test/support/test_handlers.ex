@@ -61,10 +61,22 @@ end
 defmodule Person do
   @derive {
     Saxy.Builder,
-    name: "person", attributes: [:gender], children: [:name]
+    name: "person", attributes: [:gender], children: [:name, emails: &__MODULE__.build_emails/1]
   }
 
-  defstruct [:name, :gender]
+  import Saxy.XML
+
+  defstruct [:name, :gender, emails: []]
+
+  def build_emails(emails) do
+    count = Enum.count(emails)
+
+    element(
+      "emails",
+      [count: Enum.count(emails)],
+      Enum.map(emails, &element("email", [], &1))
+    )
+  end
 end
 
 defmodule User do

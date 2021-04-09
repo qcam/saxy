@@ -9,20 +9,38 @@ defprotocol Saxy.Builder do
   There are a few required options:
 
   * `name` - tag name of generated XML element.
-  * `attributes` - fields to be encoded as attributes.
-  * `children` - fields to be encoded as element children.
+  * `attributes` - struct keys to be encoded as attributes.
+  * `children` - a list of entries to be collected as element content. Each entry could be either:
+    * key - value will be used as the content.
+    * two-element tuple of key and transformer - struct value will be passed to the transformer.
+      Transformer function could be a captured public function or a tuple of module and function.
 
-  ## Examples
+  ### Examples
 
       defmodule Person do
-        @derive {Saxy.Builder, name: "person", attributes: [:gender], children: [:name]}
+        @derive {
+          Saxy.Builder,
+          name: "person", attributes: [:gender], children: [:name, emails: &__MODULE__.build_emails/1]
+        }
 
-        defstruct [:name, :gender]
+        import Saxy.XML
+
+        defstruct [:name, :gender, emails: []]
+
+        def build_emails(emails) do
+          count = Enum.count(emails)
+
+          element(
+            "emails",
+            [count: Enum.count(emails)],
+            Enum.map(emails, &element("email", [], &1))
+          )
+        end
       end
 
-      iex> person = %Person{name: "Alice", gender: "female"}
+      iex> person = %Person{name: "Alice", gender: "female", emails: ["alice@foo.com", "alice@bar.com"]}
       iex> Saxy.Builder.build(person)
-      {"person", [{"gender", "female"}], ["Alice"]}
+      {"person", [{"gender", "female"}], ["Alice", {"emails", [{"count", "2"}], [{"email", [], ["alice@foo.com"]}, {"email", [], ["alice@bar.com"]}]}]}
 
   Custom implementation could be done by implementing protocol:
 
@@ -30,7 +48,7 @@ defprotocol Saxy.Builder do
         defstruct [:username, :name]
       end
 
-      defimpl Saxy.Builder do
+      defimpl Saxy.Builder, for: User do
         import Saxy.XML
 
         def build(user) do
@@ -51,7 +69,7 @@ defprotocol Saxy.Builder do
   Builds `content` to XML content in simple form.
   """
 
-  @spec build(content :: term()) :: Saxy.XML.content()
+  @spec build(content :: term()) :: Saxy.XML.content() | list(Saxy.XML.content())
 
   def build(content)
 end
@@ -73,15 +91,26 @@ defimpl Saxy.Builder, for: Any do
             |> Enum.to_list()
 
           children =
-            struct
-            |> Map.take(unquote(children_fields))
-            |> Map.values()
+            Enum.map(
+              unquote(children_fields),
+              &unquote(__MODULE__).fetch_value(struct, &1)
+            )
 
           element(unquote(name), attributes, children)
         end
       end
     end
   end
+
+  def fetch_value(struct, {key, {transformer_module, transformer_fun}}) do
+    apply(transformer_module, transformer_fun, [Map.fetch!(struct, key)])
+  end
+
+  def fetch_value(struct, {key, transformer_fun}) do
+    apply(transformer_fun, [Map.fetch!(struct, key)])
+  end
+
+  def fetch_value(struct, key), do: Map.fetch!(struct, key)
 
   def build(%_{} = struct) do
     raise Protocol.UndefinedError,
@@ -186,5 +215,11 @@ defimpl Saxy.Builder, for: Time do
     value
     |> Time.to_iso8601()
     |> Saxy.XML.characters()
+  end
+end
+
+defimpl Saxy.Builder, for: List do
+  def build(items) do
+    Enum.map(items, &Saxy.Builder.build/1)
   end
 end
