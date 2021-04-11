@@ -10,24 +10,33 @@ jobs:
   build:
     strategy:
       matrix:
-        elixir_version: ['1.6', '1.11']
+        include:
+          - pair:
+              elixir: '1.6'
+              otp: '20.3'
+          - pair:
+              elixir: '1.11'
+              otp: '23.2'
+            check_format: true
 
     runs-on: ubuntu-latest
 
-    name: mix test ${{ matrix.elixir_version }}
-
-    container:
-      image: elixir:${{ matrix.elixir_version }}-alpine
+    name: mix test ${{ matrix.pair.elixir }}-erlang-${{ matrix.pair.otp }}
 
     steps:
     - uses: actions/checkout@v1
+    - name: Setup Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{matrix.pair.otp}}
+        elixir-version: ${{matrix.pair.elixir}}
     - name: Install Dependencies
       run: |
         mix local.rebar --force
         mix local.hex --force
         mix deps.get
     - name: Check format
-      if: matrix.elixir_version == '1.11'
+      if: matrix.check_format
       run: mix format --check-formatted
     - name: Run Tests
       run: mix test
