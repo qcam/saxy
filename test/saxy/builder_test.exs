@@ -64,6 +64,53 @@ defmodule Saxy.BuilderTest do
     assert_raise Protocol.UndefinedError, fn -> build(underived_struct) end
   end
 
+  defmodule Post do
+    @derive {Saxy.Builder,
+             name: :post,
+             children: [
+               categories: &__MODULE__.build_cats/1,
+               categories: {__MODULE__, :build_categories}
+             ]}
+
+    defstruct [:categories]
+
+    def build_categories(categories) do
+      import Saxy.XML
+
+      element("categories", [], categories)
+    end
+
+    def build_cats(categories) do
+      import Saxy.XML
+
+      element("cats", [], categories)
+    end
+  end
+
+  defmodule Category do
+    @derive {Saxy.Builder, name: :category, attributes: [:name]}
+
+    defstruct [:name]
+  end
+
+  test "builds structs with custom transformer" do
+    post = %Post{
+      categories: [
+        %Category{name: "foo"},
+        %Category{name: "bar"}
+      ]
+    }
+
+    assert build(post) == {
+             "post",
+             [],
+             [
+               {"cats", [], [{"category", [{"name", "foo"}], []}, {"category", [{"name", "bar"}], []}]},
+               {"categories", [], [{"category", [{"name", "foo"}], []}, {"category", [{"name", "bar"}], []}]}
+             ]
+           }
+  end
+
   @tag :property
 
   property "number" do
