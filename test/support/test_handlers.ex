@@ -69,11 +69,11 @@ defmodule Person do
   defstruct [:name, :gender, emails: []]
 
   def build_emails(emails) do
-    count = Enum.count(emails)
+    email_count = Enum.count(emails)
 
     element(
       "emails",
-      [count: Enum.count(emails)],
+      [count: email_count],
       Enum.map(emails, &element("email", [], &1))
     )
   end

@@ -68,6 +68,7 @@ defmodule Saxy.BuilderTest do
     @derive {Saxy.Builder,
              name: :post,
              children: [
+               :categories,
                categories: &__MODULE__.build_cats/1,
                categories: {__MODULE__, :build_categories}
              ]}
@@ -105,6 +106,8 @@ defmodule Saxy.BuilderTest do
              "post",
              [],
              [
+               {"category", [{"name", "foo"}], []},
+               {"category", [{"name", "bar"}], []},
                {"cats", [], [{"category", [{"name", "foo"}], []}, {"category", [{"name", "bar"}], []}]},
                {"categories", [], [{"category", [{"name", "foo"}], []}, {"category", [{"name", "bar"}], []}]}
              ]
