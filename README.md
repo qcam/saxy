@@ -1,7 +1,12 @@
-[![Hex pm](http://img.shields.io/hexpm/v/saxy.svg?style=flat)](https://hex.pm/packages/saxy)
-
 Saxy
-===
+====
+
+[![Test suite](https://github.com/qcam/saxy/actions/workflows/test.yml/badge.svg)](https://github.com/qcam/saxy/actions/workflows/test.yml)
+[![Module Version](https://img.shields.io/hexpm/v/saxy.svg)](https://hex.pm/packages/saxy)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/saxy/)
+[![Total Download](https://img.shields.io/hexpm/dt/saxy.svg)](https://hex.pm/packages/saxy)
+[![License](https://img.shields.io/hexpm/l/saxy.svg)](https://github.com/qcam/saxy/blob/master/LICENSE)
+[![Last Updated](https://img.shields.io/github/last-commit/qcam/saxy.svg)](https://github.com/qcam/saxy/commits/master)
 
 Saxy (Sá xị) is an XML SAX parser and encoder in Elixir that focuses on speed, usability and standard compliance.
 
@@ -21,7 +26,9 @@ Add `:saxy` to your `mix.exs`.
 
 ```elixir
 def deps() do
-  [{:saxy, "~> 1.3"}]
+  [
+    {:saxy, "~> 1.3"}
+  ]
 end
 ```
 
@@ -174,35 +181,34 @@ iex> Saxy.encode!(root, [])
 "<?xml version=\"1.0\"?><people><person gender=\"male\">Jack</person><person gender=\"male\">John</person></people>"
 ```
 
-### FAQs with Saxy/XMLs
+## FAQs with Saxy/XMLs
 
-1. Saxy sounds cool! But I just wanted to quickly convert some XMLs into
-   maps/JSON...
+### Saxy sounds cool! But I just wanted to quickly convert some XMLs into maps/JSON...
 
-  Saxy does not have offer XML to maps conversion, because many awesome people
-  already made it happen 💪:
+Saxy does not have offer XML to maps conversion, because many awesome people
+already made it happen 💪:
 
-  * https://github.com/bennyhat/xml_json
-  * https://github.com/xinz/sax_map
+* https://github.com/bennyhat/xml_json
+* https://github.com/xinz/sax_map
 
-1. Does Saxy work with XPath?
+### Does Saxy work with XPath?
 
-  Saxy in its core is a SAX parser, therefore Saxy does not, and likely will
-  not, offer any XPath functionality.
+Saxy in its core is a SAX parser, therefore Saxy does not, and likely will
+not, offer any XPath functionality.
 
-  [SweetXml][sweet_xml] is a wonderful library to work with XPath. However,
-  `:xmerl`, the library used by SweetXml, is not always memory efficient and
-  speedy. You can combine the best of both sides with [Saxmerl][saxmerl], which
-  is a Saxy extension converting XML documents into SweetXml compatible format.
-  Please check that library out for more information.
+[SweetXml][sweet_xml] is a wonderful library to work with XPath. However,
+`:xmerl`, the library used by SweetXml, is not always memory efficient and
+speedy. You can combine the best of both sides with [Saxmerl][saxmerl], which
+is a Saxy extension converting XML documents into SweetXml compatible format.
+Please check that library out for more information.
 
-1. Saxy! Where did the name come from?
+### Saxy! Where did the name come from?
 
-  ![Sa xi Chuong Duong](./saxi.jpg)
+![Sa xi Chuong Duong](./assets/saxi.jpg)
 
-  Sa Xi, pronounced like `sa-see`, is an awesome soft drink made by [Chuong Duong](http://www.cdbeco.com.vn/en).
+Sa Xi, pronounced like `sa-see`, is an awesome soft drink made by [Chuong Duong](http://www.cdbeco.com.vn/en).
 
-### Benchmarking
+## Benchmarking
 
 Note that benchmarking XML parsers is difficult and highly depends on the complexity
 of the documents being parsed. Event I try hard to make the benchmarking suite
@@ -211,7 +217,7 @@ against.
 
 Therefore the conclusion in this section is only for reference purpose. Please
 feel free to benchmark against your target documents. The benchmark suite can be found
-in [bench/](./bench).
+in [bench/](https://github.com/qcam/saxy/master/bench).
 
 A rule of thumb is that we should compare apple to apple. Some XML parsers
 target only specific types of XML. Therefore some indicators are provided in the
@@ -227,7 +233,7 @@ Some quick and biased conclusions from the benchmark suite:
 * Saxy significantly uses less memory than Xmerl, Erlsom and Exomler (1.4 times
   10 times).
 
-### Limitations
+## Limitations
 
 * No XSD supported.
 * No DTD supported, when Saxy encounters a `<!DOCTYPE`, it skips that.
@@ -242,6 +248,11 @@ To start developing:
 2. Write your code and related tests.
 3. Create a pull request at https://github.com/qcam/saxy/pulls.
 
+## Copyright and License
+
+Copyright (c) 2018 Cẩm Huỳnh
+
+This software is licensed under [the MIT license](./LICENSE.md).
 
 [saxmerl]: https://github.com/qcam/saxmerl
 [sweet_xml]: https://github.com/kbrw/sweet_xml
