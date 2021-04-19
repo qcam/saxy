@@ -1,6 +1,7 @@
 defmodule Saxy.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/qcam/saxy"
   @version "1.3.0"
 
   def project() do
@@ -8,44 +9,51 @@ defmodule Saxy.MixProject do
       app: :saxy,
       version: @version,
       elixir: "~> 1.6",
+      name: "Saxy",
       consolidate_protocols: Mix.env() != :test,
-      description: description(),
       deps: deps(),
       package: package(),
-      name: "Saxy",
       docs: docs()
     ]
   end
 
   def application(), do: []
 
-  defp description() do
-    "Saxy is an XML parser and encoder in Elixir that focuses on speed and standard compliance."
-  end
-
   defp package() do
     [
+      description:
+        "Saxy is an XML parser and encoder in Elixir that focuses on speed " <>
+          "and standard compliance.",
       maintainers: ["Cẩm Huỳnh"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/qcam/saxy"}
+      links: %{
+        "Changelog" => "https://hexdocs.pm/saxy/changelog.html",
+        "GitHub" => @source_url
+      }
     ]
   end
 
   defp deps() do
     [
-      {:ex_doc, "~> 0.16", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:stream_data, "~> 0.5", only: [:dev, :test]}
     ]
   end
 
   defp docs() do
     [
-      main: "Saxy",
       extras: [
+        "CHANGELOG.md",
+        {:"LICENSE.md", [title: "License"]},
+        "README.md",
         "guides/getting-started-with-sax.md"
       ],
+      main: "readme",
+      source_url: @source_url,
       source_ref: "v#{@version}",
-      source_url: "https://github.com/qcam/saxy"
+      assets: "assets",
+      formatters: ["html"],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
   end
 end
