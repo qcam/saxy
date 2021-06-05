@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.4.0 - 2020-06-05
+
+* Optimize `Saxy.parse_string` (about 20% faster) [#84](https://github.com/qcam/saxy/pull/84).
+  Previously this could be achieved with application config, you no longer have
+  to do that.
+* Support custom transformer in `Saxy.Builder` [#87](https://github.com/qcam/saxy/pull/87).
+* Miscellaneous fixes [#81](https://github.com/qcam/saxy/pull/81),
+  [#82](https://github.com/qcam/saxy/pull/82),
+  [#89](https://github.com/qcam/saxy/pull/89).
+
 ## v1.3.0 - 2020-10-18
 
 * Fix Saxy.Builder primitive type implementations.

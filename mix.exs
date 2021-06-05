@@ -2,7 +2,7 @@ defmodule Saxy.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/qcam/saxy"
-  @version "1.3.0"
+  @version "1.4.0"
 
   def project() do
     [
