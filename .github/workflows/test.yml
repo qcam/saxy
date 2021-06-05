@@ -15,8 +15,8 @@ jobs:
               elixir: '1.6'
               otp: '20.3'
           - pair:
-              elixir: '1.11'
-              otp: '23.2'
+              elixir: '1.12'
+              otp: '23'
             check_format: true
 
     runs-on: ubuntu-latest
