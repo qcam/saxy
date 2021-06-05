@@ -240,6 +240,7 @@ Some quick and biased conclusions from the benchmark suite:
 
 * No XSD supported.
 * No DTD supported, when Saxy encounters a `<!DOCTYPE`, it skips that.
+* Only support UTF-8 encoding.
 
 ## Contributing
 
