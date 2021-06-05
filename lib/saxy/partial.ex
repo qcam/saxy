@@ -54,7 +54,7 @@ defmodule Saxy.Partial do
       character_data_max_length: character_data_max_length
     }
 
-    with {:halted, context_fun, state} <- Parser.Prolog.parse(<<>>, true, <<>>, 0, state) do
+    with {:halted, context_fun, state} <- Parser.Stream.parse_prolog(<<>>, true, <<>>, 0, state) do
       {:ok, %__MODULE__{context_fun: context_fun, state: state}}
     end
   end

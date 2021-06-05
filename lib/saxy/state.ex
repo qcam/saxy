@@ -10,5 +10,5 @@ defmodule Saxy.State do
     :cdata_as_characters
   ]
 
-  defstruct @enforce_keys ++ [stack: []]
+  defstruct [stack: []] ++ @enforce_keys
 end
