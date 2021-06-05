@@ -191,6 +191,9 @@ already made it happen 💪:
 * https://github.com/bennyhat/xml_json
 * https://github.com/xinz/sax_map
 
+Alternatively, this [pull request](https://github.com/qcam/saxy/pull/78) could
+serve as a good reference if you want to implement your own map-based handler.
+
 ### Does Saxy work with XPath?
 
 Saxy in its core is a SAX parser, therefore Saxy does not, and likely will
