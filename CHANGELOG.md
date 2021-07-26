@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.4.0 - 2020-06-05
+## v1.4.0 - 2021-06-05
 
 * Optimize `Saxy.parse_string` (about 20% faster) [#84](https://github.com/qcam/saxy/pull/84).
   Previously this could be achieved with application config, you no longer have
