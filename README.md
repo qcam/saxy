@@ -4,9 +4,6 @@ Saxy
 [![Test suite](https://github.com/qcam/saxy/actions/workflows/test.yml/badge.svg)](https://github.com/qcam/saxy/actions/workflows/test.yml)
 [![Module Version](https://img.shields.io/hexpm/v/saxy.svg)](https://hex.pm/packages/saxy)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/saxy/)
-[![Total Download](https://img.shields.io/hexpm/dt/saxy.svg)](https://hex.pm/packages/saxy)
-[![License](https://img.shields.io/hexpm/l/saxy.svg)](https://github.com/qcam/saxy/blob/master/LICENSE)
-[![Last Updated](https://img.shields.io/github/last-commit/qcam/saxy.svg)](https://github.com/qcam/saxy/commits/master)
 
 Saxy (Sá xị) is an XML SAX parser and encoder in Elixir that focuses on speed, usability and standard compliance.
 
