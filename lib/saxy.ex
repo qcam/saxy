@@ -113,7 +113,7 @@ defmodule Saxy do
   alias Saxy.{
     Encoder,
     Parser,
-    State
+    Parser.State
   }
 
   @doc ~S"""
