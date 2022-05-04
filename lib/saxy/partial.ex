@@ -109,4 +109,19 @@ defmodule Saxy.Partial do
       {:ok, state.user_state}
     end
   end
+
+  @doc """
+  Obtain the state set by the user.
+  """
+  @spec get_state(partial :: t()) :: state :: term()
+  def get_state(%__MODULE__{state: %{user_state: user_state}}), do: user_state
+
+  @doc """
+  Sets the user state.
+  """
+  @spec set_state(partial :: t(), user_state :: term()) :: partial :: t()
+  def set_state(%__MODULE__{state: state} = partial, user_state),
+    do: %{partial | state: %{state | user_state: user_state}}
+
+
 end
