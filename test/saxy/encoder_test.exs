@@ -62,6 +62,13 @@ defmodule Saxy.EncoderTest do
     assert xml == ~s(<?xml version="1.0" encoding="utf-8"?><body/>)
   end
 
+  test "supports mentioning UTF-8 encoding in the prolog (as string)" do
+    document = {"body", [], []}
+
+    xml = encode(document, version: "1.0", encoding: "UTF-8")
+    assert xml == ~s(<?xml version="1.0" encoding="UTF-8"?><body/>)
+  end
+
   test "encodes reference" do
     content = [
       {:reference, {:entity, "foo"}},

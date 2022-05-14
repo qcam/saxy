@@ -30,6 +30,10 @@ defmodule Saxy.Encoder do
     [?\s, 'encoding', ?=, ?", 'utf-8', ?"]
   end
 
+  defp encoding("UTF-8") do
+    [?\s, 'encoding', ?=, ?", 'UTF-8', ?"]
+  end
+
   defp standalone(nil), do: []
 
   defp standalone(true) do
