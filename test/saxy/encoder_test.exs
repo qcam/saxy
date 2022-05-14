@@ -67,6 +67,9 @@ defmodule Saxy.EncoderTest do
 
     xml = encode(document, version: "1.0", encoding: "UTF-8")
     assert xml == ~s(<?xml version="1.0" encoding="UTF-8"?><body/>)
+
+    xml = encode(document, version: "1.0", encoding: "utf-8")
+    assert xml == ~s(<?xml version="1.0" encoding="utf-8"?><body/>)
   end
 
   test "encodes reference" do
