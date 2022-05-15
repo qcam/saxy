@@ -1,5 +1,9 @@
 # Changelog
 
+## master
+
+* Saxy.encode! now supports "UTF-8"/"utf-8" as string in the prolog [#102](https://github.com/qcam/saxy/pull/102).
+
 ## v1.4.0 - 2021-06-05
 
 * Optimize `Saxy.parse_string` (about 20% faster) [#84](https://github.com/qcam/saxy/pull/84).
