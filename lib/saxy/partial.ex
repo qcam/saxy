@@ -122,6 +122,4 @@ defmodule Saxy.Partial do
   @spec set_state(partial :: t(), user_state :: term()) :: partial :: t()
   def set_state(%__MODULE__{state: state} = partial, user_state),
     do: %{partial | state: %{state | user_state: user_state}}
-
-
 end
