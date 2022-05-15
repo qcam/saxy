@@ -327,7 +327,9 @@ defmodule Saxy do
       iex> prolog = [version: "1.0"]
       iex> Saxy.encode!(root, prolog)
       "<?xml version=\\"1.0\\"?><foo foo=\\"bar\\">bar</foo>"
-
+      iex> prolog = [version: "1.0", encoding: "UTF-8"]
+      iex> Saxy.encode!(root, prolog)
+      "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?><foo foo=\\"bar\\">bar</foo>"
   """
 
   @spec encode!(root :: Saxy.XML.element(), prolog :: Saxy.Prolog.t() | Keyword.t() | nil) :: String.t()
