@@ -99,6 +99,36 @@ defmodule Saxy.Partial do
   end
 
   @doc """
+  Same as partial/2, but continue previous parsing with a new, provided state
+  as the third argument instead of the previous accumulated state.
+
+  i.e.
+  `Saxy.Partial.parse(partial, binary, new_state) # coninue previous partial with a new state`
+
+  This function can return in 3 ways:
+
+  * `{:cont, partial}` - The parsing process has not been terminated.
+  * `{:halt, user_state}` - The parsing process has been terminated, usually because of parser stopping.
+  * `{:halt, user_state, rest}` - The parsing process has been terminated, usually because of parser halting.
+  * `{:error, exception}` - The parsing process has erred.
+
+  """
+  @spec parse(
+          partial :: t(),
+          data :: binary,
+          user_state :: map()
+        ) ::
+          {:cont, partial :: t()}
+          | {:halt, state :: term()}
+          | {:halt, state :: term(), rest :: binary()}
+          | {:error, exception :: Saxy.ParseError.t()}
+
+  def parse(%__MODULE__{} = partial, data, user_state) do
+    partial = set_user_state(partial, user_state)
+    parse(partial, data)
+  end
+
+  @doc """
   Terminates the XML document parsing.
   """
 
@@ -116,10 +146,7 @@ defmodule Saxy.Partial do
   @spec get_state(partial :: t()) :: state :: term()
   def get_state(%__MODULE__{state: %{user_state: user_state}}), do: user_state
 
-  @doc """
-  Sets the user state.
-  """
-  @spec set_state(partial :: t(), user_state :: term()) :: partial :: t()
-  def set_state(%__MODULE__{state: state} = partial, user_state),
+  @spec set_user_state(partial :: t(), user_state :: term()) :: partial :: t()
+  defp set_user_state(%__MODULE__{state: state} = partial, user_state),
     do: %{partial | state: %{state | user_state: user_state}}
 end
