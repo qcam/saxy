@@ -116,7 +116,7 @@ defmodule Saxy.Partial do
   @spec parse(
           partial :: t(),
           data :: binary,
-          user_state :: map()
+          user_state :: term()
         ) ::
           {:cont, partial :: t()}
           | {:halt, state :: term()}
