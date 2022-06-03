@@ -35,7 +35,7 @@ defmodule Saxy.SimpleForm do
       iex> {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml, cdata_as_characters: true)
       {:ok, {"foo", [], ["<greeting>Hello, world!</greeting>"]}}
       iex> Saxy.encode!(simple_form)
-      "<foo><greeting>Hello, world!</greeting></foo>"
+      "<foo>&lt;greeting&gt;Hello, world!&lt;/greeting&gt;</foo>"
 
   ## Examples
 

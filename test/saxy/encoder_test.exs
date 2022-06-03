@@ -121,6 +121,12 @@ defmodule Saxy.EncoderTest do
              ~s(<person first_name="John" last_name="Doe"><address street="foo" city="bar"/><gender>male</gender></person>)
   end
 
+  test "encodes element" do
+    document = {"events", [], [{"event", [], ["test&test"]}]}
+    xml = encode(document)
+    assert xml == "<events><event>test&amp;test</event></events>"
+  end
+
   test "integration with builder" do
     import Saxy.XML
 
