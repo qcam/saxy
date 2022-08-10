@@ -65,19 +65,15 @@ defmodule Saxy.XML do
   @spec element(
           name :: term(),
           attributes :: [{key :: term(), value :: term()}],
-          children :: list()
+          children :: term()
         ) :: element()
 
-  def element(name, attributes, children) when not is_nil(name) and is_list(children) do
+  def element(name, attributes, children) when not is_nil(name) do
     {
       to_string(name),
       attributes(attributes),
-      children(children)
+      children(List.wrap(children))
     }
-  end
-
-  def element(name, attributes, child) when not is_nil(name) do
-    element(name, attributes, [child])
   end
 
   @doc """
