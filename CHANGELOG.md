@@ -43,6 +43,8 @@
 
 * Support Elixir 1.6+.
 * Fix white spaces emitting bug in empty elements.
+* **BREAKING CHANGES:**
+  * Leading whitespaces before a tag open will be emitted.
 
 ## v0.10.0 - 2019-08-26
 
