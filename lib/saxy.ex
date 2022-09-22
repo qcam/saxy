@@ -61,6 +61,7 @@ defmodule Saxy do
     * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
     * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
     * `{mod, fun, args}` - take the applied result of the specified MFA.
+    * `:never` - keep the original binary, including predefined entity reference, e.g. `"Orange &amp;"` will remain `"Orange &amp;"`
   * `:cdata_as_characters` - `true` to emit CData events as `:characters`. Defaults to `true`.
 
   ## Encoder

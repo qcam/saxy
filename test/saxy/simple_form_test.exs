@@ -94,6 +94,13 @@ defmodule Saxy.SimpleFormTest do
     assert simple_form == {"foo", [], [{:cdata, "<greeting>Hello, world!</greeting>"}]}
   end
 
+  test "parse xml without expanding entity" do
+    xml = "<foo><event>test &amp; test</event></foo>"
+
+    assert {:ok, {"foo", [], [{"event", [], ["test &amp; test"]}]}} ==
+             Saxy.SimpleForm.parse_string(xml, expand_entity: :never)
+  end
+
   def handle_entity_reference("reg") do
     "®"
   end

@@ -86,7 +86,7 @@ defmodule Saxy.Encoder do
   end
 
   defp content([characters | elements]) when is_binary(characters) do
-    [characters(characters) | content(elements)]
+    [characters | content(elements)]
   end
 
   defp content([element | elements]) do

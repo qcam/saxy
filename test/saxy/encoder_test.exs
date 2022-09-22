@@ -121,12 +121,6 @@ defmodule Saxy.EncoderTest do
              ~s(<person first_name="John" last_name="Doe"><address street="foo" city="bar"/><gender>male</gender></person>)
   end
 
-  test "encodes element" do
-    document = {"events", [], [{"event", [], ["test&test"]}]}
-    xml = encode(document)
-    assert xml == "<events><event>test&amp;test</event></events>"
-  end
-
   test "integration with builder" do
     import Saxy.XML
 
@@ -184,6 +178,11 @@ defmodule Saxy.EncoderTest do
     xml = "<?xml version=\"1.0\"?>" <> xml
 
     assert encode(document, version: "1.0") == xml
+  end
+
+  test "encodes non expanded entity reference" do
+    document = {"foo", [], [{"event", [], ["test &apos; test"]}]}
+    assert "<foo><event>test &apos; test</event></foo>" == encode(document)
   end
 
   defp encode(document, prolog \\ nil) do
