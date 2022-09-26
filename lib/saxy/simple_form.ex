@@ -26,6 +26,7 @@ defmodule Saxy.SimpleForm do
     * `:keep` - keep the original binary, for example `Orange &reg;` will be expanded to `"Orange &reg;"`, this is the default strategy.
     * `:skip` - skip the original binary, for example `Orange &reg;` will be expanded to `"Orange "`.
     * `{mod, fun, args}` - take the applied result of the specified MFA.
+    * `:never` - keep the original binary, including predefined entity reference, e.g. `"Orange &amp;"` will remain `"Orange &amp;"`
   * `:cdata_as_characters` - `true` to return CData as characters, `false` to wrap CData as `{:cdata, data}`. Defaults to `true`.
 
   Note that it is recommended to disable `:cdata_as_characters` if the outcome simple form data is meant to be re-encoded later.

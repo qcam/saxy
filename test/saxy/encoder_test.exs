@@ -180,6 +180,11 @@ defmodule Saxy.EncoderTest do
     assert encode(document, version: "1.0") == xml
   end
 
+  test "encodes non expanded entity reference" do
+    document = {"foo", [], [{"event", [], ["test &apos; test"]}]}
+    assert "<foo><event>test &apos; test</event></foo>" == encode(document)
+  end
+
   defp encode(document, prolog \\ nil) do
     Saxy.encode!(document, prolog)
   end

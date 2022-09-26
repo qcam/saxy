@@ -28,6 +28,9 @@ defmodule Saxy.Emitter do
 
   @compile {:inline, [convert_entity_reference: 2]}
 
+  def convert_entity_reference(reference_name, %{expand_entity: :never}),
+    do: [?&, reference_name, ?;]
+
   def convert_entity_reference("amp", _state), do: [?&]
   def convert_entity_reference("lt", _state), do: [?<]
   def convert_entity_reference("gt", _state), do: [?>]
