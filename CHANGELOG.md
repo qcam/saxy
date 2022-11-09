@@ -1,8 +1,11 @@
 # Changelog
 
-## master
+## v1.5.0 - 2022-11-09
 
 * Saxy.encode! now supports "UTF-8"/"utf-8" as string in the prolog [#102](https://github.com/qcam/saxy/pull/102).
+* Access user state inside partial to allow streaming output [#100](https://github.com/qcam/saxy/pull/100).
+* Introduce :never to expand_entity option [#114](https://github.com/qcam/saxy/pull/114).
+* Bug fixes around typespecs.
 
 ## v1.4.0 - 2021-06-05
 

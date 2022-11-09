@@ -23,7 +23,7 @@ Add `:saxy` to your `mix.exs`.
 ```elixir
 def deps() do
   [
-    {:saxy, "~> 1.4"}
+    {:saxy, "~> 1.5"}
   ]
 end
 ```
