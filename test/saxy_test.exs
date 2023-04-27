@@ -27,6 +27,18 @@ defmodule SaxyTest do
     end
   end
 
+  test "maps file streams" do
+    for fixture <- @fixtures do
+      stream = stream_fixture(fixture)
+      element_stream = Saxy.stream_events(stream)
+      assert [_ | _] = Enum.to_list element_stream
+    end
+
+    assert_raise Saxy.ParseError, fn ->
+      Enum.to_list Saxy.stream_events stream_fixture "incorrect.xml"
+    end
+  end
+
   test "parse_string/4 parses XML binary with multiple \":expand_entity\" strategy" do
     data = "<foo>Something &unknown;</foo>"
 
