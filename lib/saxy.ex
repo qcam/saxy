@@ -111,8 +111,11 @@ defmodule Saxy do
 
   """
 
+  @compile {:inline, do_transform_stream: 4}
+
   alias Saxy.{
     Encoder,
+    Handler.Accumulating,
     Parser,
     State
   }
@@ -309,10 +312,95 @@ defmodule Saxy do
   end
 
   defp reduce_stream(buffer, {cont_fun, state}) do
-    with {:halted, cont_fun, state} <- cont_fun.(buffer, true, state) do
-      {:cont, {cont_fun, state}}
-    else
-      other -> {:halt, other}
+    case cont_fun.(buffer, true, state) do
+      {:halted, cont_fun, state} ->
+        {:cont, {cont_fun, state}}
+
+      other ->
+        {:halt, other}
+    end
+  end
+
+  @doc """
+  Parses XML stream and returns a stream of elements.
+
+  This function takes a stream and returns a stream of xml SAX events.
+  When any parsing error occurs, it raises a `Saxy.ParseError` exception.
+
+
+  ## Examples
+
+      iex> stream = File.stream!("./test/support/fixture/foo.xml")
+      iex> Enum.to_list Saxy.stream_events stream
+      [
+        start_document: [version: "1.0"],
+        start_element: {"foo", [{"bar", "value"}]},
+        end_element: "foo"
+      ]
+      iex> Enum.to_list Saxy.stream_events ["<foo>unclosed value"]
+      ** (Saxy.ParseError) unexpected end of input, expected token: :chardata
+
+  > #### Warning {: .warning }
+  >
+  > Input stream is evaluated lazily, therefore some events may be emitted before
+  > exception is raised
+
+  ## Memory usage
+
+  `Saxy.stream_events/2` takes a `File.Stream` or `Stream` as the input, so the amount of bytes to buffer in each
+  chunk can be controlled by `File.stream!/3` API.
+
+  During parsing, the actual memory used by Saxy might be higher than the number configured for each chunk, since
+  Saxy holds in memory some parsed parts of the original binary to leverage Erlang sub-binary extracting. Anyway,
+  Saxy tries to free those up when it makes sense.
+
+  ### Options
+
+  See the “Shared options” section at the module documentation.
+
+  * `:character_data_max_length` - tells the parser to emit the `:characters` event when its length exceeds the specified
+    number. The option is useful when the tag being parsed containing a very large chunk of data. Defaults to `:infinity`.
+  """
+  @spec stream_events(in_stream :: Enumerable.t(), options :: Keyword.t()) :: out_stream :: Enumerable.t()
+  def stream_events(stream, options \\ []) do
+    expand_entity = Keyword.get(options, :expand_entity, :keep)
+    character_data_max_length = Keyword.get(options, :character_data_max_length, :infinity)
+    cdata_as_characters = Keyword.get(options, :cdata_as_characters, true)
+
+    state = %State{
+      prolog: nil,
+      handler: Accumulating,
+      user_state: [],
+      expand_entity: expand_entity,
+      cdata_as_characters: cdata_as_characters,
+      character_data_max_length: character_data_max_length
+    }
+
+    init = {&Parser.Stream.parse_prolog(&1, &2, &1, 0, &3), state}
+
+    stream
+    |> Stream.concat([:end_of_stream])
+    |> Stream.transform(init, &transform_stream/2)
+  end
+
+  defp transform_stream(:end_of_stream, {cont_fun, state}) do
+    do_transform_stream(<<>>, false, cont_fun, state)
+  end
+
+  defp transform_stream(buffer, {cont_fun, state}) do
+    do_transform_stream(buffer, true, cont_fun, state)
+  end
+
+  defp do_transform_stream(buffer, more?, cont_fun, state) do
+    case cont_fun.(buffer, more?, state) do
+      {:halted, cont_fun, %{user_state: user_state} = state} ->
+        {:lists.reverse(user_state), {cont_fun, %{state | user_state: []}}}
+
+      {:error, error} ->
+        raise error
+
+      other ->
+        {:halt, other}
     end
   end
 
