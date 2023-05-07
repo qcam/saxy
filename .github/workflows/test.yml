@@ -13,7 +13,7 @@ jobs:
         include:
           - pair:
               elixir: '1.6'
-              otp: '20.3'
+              otp: '20'
           - pair:
               elixir: '1.12'
               otp: '24'
