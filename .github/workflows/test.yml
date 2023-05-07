@@ -13,30 +13,34 @@ jobs:
         include:
           - pair:
               elixir: '1.6'
-              otp: '20.3'
+              otp: '20'
           - pair:
-              elixir: '1.12'
+              elixir: '1.14'
               otp: '24'
             check_format: true
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     name: mix test ${{ matrix.pair.elixir }}-erlang-${{ matrix.pair.otp }}
 
     steps:
     - uses: actions/checkout@v1
+
     - name: Setup Elixir
-      uses: erlef/setup-beam@v1
+      uses: erlef/setup-beam@v1.10
       with:
         otp-version: ${{matrix.pair.otp}}
         elixir-version: ${{matrix.pair.elixir}}
+
     - name: Install Dependencies
       run: |
         mix local.rebar --force
         mix local.hex --force
         mix deps.get
+
     - name: Check format
       if: matrix.check_format
       run: mix format --check-formatted
+
     - name: Run Tests
       run: mix test
