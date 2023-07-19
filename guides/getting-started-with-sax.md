@@ -52,8 +52,8 @@ defmodule FoodHandler do
     {:ok, state}
   end
 
-  def handle_event(:end_document, _, state) do
-    {:ok, state}
+  def handle_event(:end_document, _, {_current_tag, foods}) do
+    {:ok, foods}
   end
 end
 ```
@@ -77,7 +77,7 @@ To make it clear, let's call the state `foods` instead of `state`.
         end
       end
 
-      def handle_event(:end_document, _data, foods) do
+      def handle_event(:end_element, _data, foods) do
         {:ok, foods}
       end
     end
@@ -102,8 +102,12 @@ With this now we can import the content of "name", and probably other food
 properties too.
 
     def handle_event(:characters, content, {current_tag, foods}) do
-      [current_food | foods] = foods
+    case foods do
+    [] -> {:ok, {current_tag, foods}}
+      
 
+    _ -> 
+    [current_food | foods] = foods
       food =
         case current_tag do
           "name" ->
@@ -121,11 +125,12 @@ properties too.
 
       {:ok, {"food", [food | foods]}}
     end
+    end 
 
 As now we have implemented the event handler, it is time to parse the document.
 
     document = File.read!("/path/to/the/file")
-    Saxy.parse_string(document, {nil, []}, FoodHandler)
+    Saxy.parse_string(document, FoodHandler, {nil, []})
     {:ok,
      [
        %Food{name: "Belgian Waffles", price: "$5.95", description: "Two of our famous Belgian Waffles with plenty of real maple syrup"},
