@@ -77,7 +77,7 @@ To make it clear, let's call the state `foods` instead of `state`.
         end
       end
 
-      def handle_event(:end_document, _data, foods) do
+      def handle_event(:end_element, _data, foods) do
         {:ok, foods}
       end
     end
