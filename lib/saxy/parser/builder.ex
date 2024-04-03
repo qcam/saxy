@@ -1184,7 +1184,7 @@ defmodule Saxy.Parser.Builder do
         lookahead buffer, @streaming do
           ">" <> rest ->
             [open_tag | stack] = state.stack
-            ending_tag = binary_part(original, pos, len)
+            ending_tag = binary_part(original, pos, len) |> String.trim()
             pos = pos + len + 1
 
             if open_tag == ending_tag do
@@ -1205,6 +1205,9 @@ defmodule Saxy.Parser.Builder do
             end
 
           char <> rest when is_ascii_name_char(char) ->
+            close_tag_name(rest, more?, original, pos, state, len + 1)
+
+          char <> rest when is_whitespace(char) ->
             close_tag_name(rest, more?, original, pos, state, len + 1)
 
           token in unquote(utf8_binaries()) when more? ->

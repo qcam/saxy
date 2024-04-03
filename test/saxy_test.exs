@@ -31,11 +31,11 @@ defmodule SaxyTest do
     for fixture <- @fixtures do
       stream = stream_fixture(fixture)
       element_stream = Saxy.stream_events(stream)
-      assert [_ | _] = Enum.to_list element_stream
+      assert [_ | _] = Enum.to_list(element_stream)
     end
 
     assert_raise Saxy.ParseError, fn ->
-      Enum.to_list Saxy.stream_events stream_fixture "incorrect.xml"
+      Enum.to_list(Saxy.stream_events(stream_fixture("incorrect.xml")))
     end
   end
 
@@ -70,6 +70,20 @@ defmodule SaxyTest do
              {:characters, "Something known"},
              {:start_element, {"foo", []}},
              {:start_document, []}
+           ]
+  end
+
+  test "parse_string/4 parses XML binary with closing tags containing whitespaces" do
+    data = "<foo>Some Data</foo   >"
+
+    assert {:ok, state} = parse(data, StackHandler, [], expand_entity: :keep)
+
+    assert state == [
+             end_document: {},
+             end_element: "foo",
+             characters: "Some Data",
+             start_element: {"foo", []},
+             start_document: []
            ]
   end
 
