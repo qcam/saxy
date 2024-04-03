@@ -74,14 +74,14 @@ defmodule SaxyTest do
   end
 
   test "parse_string/4 parses XML binary with closing tags containing whitespaces" do
-    data = "<foo>Some Data</foo   >"
+    data = "<foo>Some data</foo    >"
 
-    assert {:ok, state} = parse(data, StackHandler, [], expand_entity: :keep)
+    assert {:ok, state} = parse(data, StackHandler, [])
 
     assert state == [
              end_document: {},
              end_element: "foo",
-             characters: "Some Data",
+             characters: "Some data",
              start_element: {"foo", []},
              start_document: []
            ]
