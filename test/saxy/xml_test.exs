@@ -26,7 +26,7 @@ defmodule Saxy.XMLTest do
   describe "characters/1" do
     test "generates characters in simple form" do
       assert characters("foo & bar") == {:characters, "foo & bar"}
-      assert characters('foo & bar') == {:characters, "foo & bar"}
+      assert characters(~c"foo & bar") == {:characters, "foo & bar"}
       assert characters(:foo) == {:characters, "foo"}
     end
   end
@@ -34,7 +34,7 @@ defmodule Saxy.XMLTest do
   describe "comment/1" do
     test "generates comment in simple form" do
       assert comment("foo & bar") == {:comment, "foo & bar"}
-      assert comment('foo & bar') == {:comment, "foo & bar"}
+      assert comment(~c"foo & bar") == {:comment, "foo & bar"}
       assert comment(:foo) == {:comment, "foo"}
     end
   end
@@ -42,7 +42,7 @@ defmodule Saxy.XMLTest do
   describe "cdata/1" do
     test "generates comment in simple form" do
       assert cdata("foo & bar") == {:cdata, "foo & bar"}
-      assert cdata('foo & bar') == {:cdata, "foo & bar"}
+      assert cdata(~c"foo & bar") == {:cdata, "foo & bar"}
       assert cdata(:foo) == {:cdata, "foo"}
     end
   end

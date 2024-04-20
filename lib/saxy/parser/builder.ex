@@ -107,7 +107,7 @@ defmodule Saxy.Parser.Builder do
 
             encoding_decl(rest, more?, original, pos + len + 1, state, prolog)
 
-          char <> rest when char in '0123456789' ->
+          char <> rest when char in ~c"0123456789" ->
             xml_ver_num(rest, more?, original, pos, state, open_quote, len + 1)
 
           _ in [""] when more? ->

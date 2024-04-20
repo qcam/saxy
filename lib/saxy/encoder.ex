@@ -9,7 +9,7 @@ defmodule Saxy.Encoder do
   end
 
   defp prolog(%Saxy.Prolog{} = prolog) do
-    ['<?xml', version(prolog.version), encoding(prolog.encoding), standalone(prolog.standalone), '?>']
+    [~c"<?xml", version(prolog.version), encoding(prolog.encoding), standalone(prolog.standalone), ~c"?>"]
   end
 
   defp prolog(prolog) when is_list(prolog) do
@@ -21,23 +21,23 @@ defmodule Saxy.Encoder do
   defp prolog(nil), do: []
 
   defp version(version) when is_binary(version) do
-    [?\s, 'version', ?=, ?", version, ?"]
+    [?\s, ~c"version", ?=, ?", version, ?"]
   end
 
   defp encoding(nil), do: []
 
   defp encoding(:utf8) do
-    [?\s, 'encoding', ?=, ?", 'utf-8', ?"]
+    [?\s, ~c"encoding", ?=, ?", ~c"utf-8", ?"]
   end
 
   defp encoding(encoding) when encoding in ["UTF-8", "utf-8"] do
-    [?\s, 'encoding', ?=, ?", ~c(#{encoding}), ?"]
+    [?\s, ~c"encoding", ?=, ?", ~c(#{encoding}), ?"]
   end
 
   defp standalone(nil), do: []
 
   defp standalone(true) do
-    [?\s, 'standalone', ?=, ?", "yes", ?"]
+    [?\s, ~c"standalone", ?=, ?", "yes", ?"]
   end
 
   defp element({tag_name, attributes, []}) do
@@ -102,11 +102,11 @@ defmodule Saxy.Encoder do
   end
 
   @escapes [
-    {?<, '&lt;'},
-    {?>, '&gt;'},
-    {?&, '&amp;'},
-    {?", '&quot;'},
-    {?', '&apos;'}
+    {?<, ~c"&lt;"},
+    {?>, ~c"&gt;"},
+    {?&, ~c"&amp;"},
+    {?", ~c"&quot;"},
+    {?', ~c"&apos;"}
   ]
 
   for {match, insert} <- @escapes do
@@ -124,7 +124,7 @@ defmodule Saxy.Encoder do
   end
 
   defp cdata(characters) do
-    ['<![CDATA[', characters | ']]>']
+    [~c"<![CDATA[", characters | ~c"]]>"]
   end
 
   defp reference({:entity, reference}) do
@@ -140,7 +140,7 @@ defmodule Saxy.Encoder do
   end
 
   defp comment(comment) do
-    ['<!--', escape_comment(comment, comment) | '-->']
+    [~c"<!--", escape_comment(comment, comment) | ~c"-->"]
   end
 
   defp escape_comment(<<?->>, original) do
@@ -156,6 +156,6 @@ defmodule Saxy.Encoder do
   end
 
   defp processing_instruction(name, content) do
-    ['<?', name, ?\s, content | '?>']
+    [~c"<?", name, ?\s, content | ~c"?>"]
   end
 end
