@@ -148,6 +148,10 @@ defmodule SaxyTest do
     data = "<foo><bar></bee></foo>"
     assert {:error, exception} = parse(data, StackHandler, [])
     assert Exception.message(exception) == "unexpected ending tag \"bee\", expected tag: \"bar\""
+
+    data = "<foo>Some data</foo    bar >"
+    assert {:error, exception} = parse(data, StackHandler, [])
+    assert Exception.message(exception) == "unexpected ending tag \"foo   \", expected tag: \"foo\""
   end
 
   describe "encode!/2" do
