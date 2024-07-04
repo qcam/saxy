@@ -851,7 +851,7 @@ defmodule Saxy.Parser.Builder do
             open_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(codepoint))
 
           "/" <> rest ->
-            close_tag_name(rest, more?, original, pos + 1, state, 0)
+            close_tag_name(rest, more?, original, pos + 1, state, 0, 0)
 
           "![CDATA[" <> rest ->
             element_cdata(rest, more?, original, pos + 8, state, 0)
@@ -1161,30 +1161,31 @@ defmodule Saxy.Parser.Builder do
         end
       end
 
-      defp close_tag_name(<<buffer::bits>>, more?, original, pos, state, 0) do
+      defp close_tag_name(<<buffer::bits>>, more?, original, pos, state, 0, 0) do
         lookahead buffer, @streaming do
           char <> rest when is_ascii_name_start_char(char) ->
-            close_tag_name(rest, more?, original, pos, state, 1)
+            close_tag_name(rest, more?, original, pos, state, 1, 1)
 
           token in unquote(utf8_binaries()) when more? ->
-            halt!(close_tag_name(token, more?, original, pos, state, 0))
+            halt!(close_tag_name(token, more?, original, pos, state, 0, 0))
 
           <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
-            close_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(codepoint))
+            len = Utils.compute_char_len(codepoint)
+            close_tag_name(rest, more?, original, pos, state, len, len)
 
           _ in [""] when more? ->
-            halt!(close_tag_name("", more?, original, pos, state, 0))
+            halt!(close_tag_name("", more?, original, pos, state, 0, 0))
 
           _ ->
             Utils.parse_error(original, pos, state, {:token, :end_tag})
         end
       end
 
-      defp close_tag_name(<<buffer::bits>>, more?, original, pos, state, len) do
+      defp close_tag_name(<<buffer::bits>>, more?, original, pos, state, len, copy_to) do
         lookahead buffer, @streaming do
           ">" <> rest ->
             [open_tag | stack] = state.stack
-            ending_tag = binary_part(original, pos, len)
+            ending_tag = binary_part(original, pos, copy_to)
             pos = pos + len + 1
 
             if open_tag == ending_tag do
@@ -1205,16 +1206,20 @@ defmodule Saxy.Parser.Builder do
             end
 
           char <> rest when is_ascii_name_char(char) ->
-            close_tag_name(rest, more?, original, pos, state, len + 1)
+            close_tag_name(rest, more?, original, pos, state, len + 1, copy_to + 1)
+
+          char <> rest when is_whitespace(char) ->
+            close_tag_name(rest, more?, original, pos, state, len + 1, copy_to)
 
           token in unquote(utf8_binaries()) when more? ->
-            halt!(close_tag_name(token, more?, original, pos, state, len))
+            halt!(close_tag_name(token, more?, original, pos, state, len, copy_to))
 
           <<codepoint::utf8>> <> rest when is_utf8_name_char(codepoint) ->
-            close_tag_name(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
+            char_len = Utils.compute_char_len(codepoint)
+            close_tag_name(rest, more?, original, pos, state, len + char_len, copy_to + char_len)
 
           _ in [""] when more? ->
-            halt!(close_tag_name("", more?, original, pos, state, len))
+            halt!(close_tag_name("", more?, original, pos, state, len, copy_to))
 
           _ ->
             Utils.parse_error(original, pos + len, state, {:token, :end_tag})

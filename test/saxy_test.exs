@@ -73,6 +73,20 @@ defmodule SaxyTest do
            ]
   end
 
+  test "parse_string/4 parses XML binary with closing tags containing whitespaces" do
+    data = "<foo>Some data</foo    >"
+
+    assert {:ok, state} = parse(data, StackHandler, [])
+
+    assert state == [
+             end_document: {},
+             end_element: "foo",
+             characters: "Some data",
+             start_element: {"foo", []},
+             start_document: []
+           ]
+  end
+
   test "handles trailing Unicode codepoints during streaming" do
     data = "<foo>𠜎𠜱𠝹𠱓</foo>"
     stream = for byte <- :binary.bin_to_list(data), do: <<byte>>
@@ -134,6 +148,10 @@ defmodule SaxyTest do
     data = "<foo><bar></bee></foo>"
     assert {:error, exception} = parse(data, StackHandler, [])
     assert Exception.message(exception) == "unexpected ending tag \"bee\", expected tag: \"bar\""
+
+    data = "<foo>Some data</foo    bar >"
+    assert {:error, exception} = parse(data, StackHandler, [])
+    assert Exception.message(exception) == "unexpected ending tag \"foo   \", expected tag: \"foo\""
   end
 
   describe "encode!/2" do
