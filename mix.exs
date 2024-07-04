@@ -2,13 +2,13 @@ defmodule Saxy.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/qcam/saxy"
-  @version "1.5.0"
+  @version "1.5.1"
 
   def project() do
     [
       app: :saxy,
       version: @version,
-      elixir: "~> 1.6",
+      elixir: "~> 1.11",
       name: "Saxy",
       consolidate_protocols: Mix.env() != :test,
       deps: deps(),

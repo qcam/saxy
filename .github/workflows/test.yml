@@ -8,35 +8,38 @@ on:
 
 jobs:
   build:
+    name: Test (${{matrix.elixir}}/${{matrix.otp}})
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - pair:
-              elixir: '1.6'
-              otp: '20'
-          - pair:
-              elixir: '1.14'
-              otp: '24'
-            check_format: true
-
-    runs-on: ubuntu-20.04
-
-    name: mix test ${{ matrix.pair.elixir }}-erlang-${{ matrix.pair.otp }}
-
+        otp: [24.x, 25.x, 26.x]
+        elixir: [1.11.x, 1.12.x, 1.13.x, 1.14.x, 1.15.x, 1.16.x]
+        exclude:
+          - otp: 26.x
+            elixir: 1.13.x
+          - otp: 26.x
+            elixir: 1.12.x
+          - otp: 26.x
+            elixir: 1.11.x
+          - otp: 25.x
+            elixir: 1.12.x
+          - otp: 25.x
+            elixir: 1.11.x
     steps:
-    - uses: actions/checkout@v1
-
-    - name: Setup Elixir
-      uses: erlef/setup-beam@v1.10
+    - uses: actions/checkout@v4
+    - uses: erlef/setup-beam@v1
       with:
-        otp-version: ${{matrix.pair.otp}}
-        elixir-version: ${{matrix.pair.elixir}}
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.otp }}
+    - name: Restore dependencies cache
+      uses: actions/cache@v4
+      with:
+        path: deps
+        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+        restore-keys: ${{ runner.os }}-mix-
 
     - name: Install Dependencies
-      run: |
-        mix local.rebar --force
-        mix local.hex --force
-        mix deps.get
+      run: mix deps.get
 
     - name: Check format
       if: matrix.check_format
