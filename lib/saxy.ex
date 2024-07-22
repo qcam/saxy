@@ -117,7 +117,7 @@ defmodule Saxy do
     Encoder,
     Handler.Accumulating,
     Parser,
-    State
+    Parser.State
   }
 
   @doc ~S"""
