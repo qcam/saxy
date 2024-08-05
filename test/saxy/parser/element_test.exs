@@ -178,6 +178,11 @@ defmodule Saxy.Parser.ElementTest do
     assert Exception.message(error) == "unexpected end of input, expected token: :\"]]\""
   end
 
+  test "handles CDATA with UTF-8 encoded £ symbol" do
+    events = assert_parse("<salaryTo><![CDATA[£26,000]]></salaryTo>")
+    assert find_events(events, :characters) == [{:characters, "£26,000"}]
+  end
+
   test "parses processing instruction" do
     events = assert_parse("<foo><?hello the instruction?></foo>")
     assert length(events) == 2
