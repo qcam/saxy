@@ -8,7 +8,7 @@ defmodule Saxy.MixProject do
     [
       app: :saxy,
       version: @version,
-      elixir: "~> 1.11",
+      elixir: "~> 1.12",
       name: "Saxy",
       consolidate_protocols: Mix.env() != :test,
       deps: deps(),
