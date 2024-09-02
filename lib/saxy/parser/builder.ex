@@ -27,6 +27,9 @@ defmodule Saxy.Parser.Builder do
 
       defp prolog(<<buffer::bits>>, more?, original, pos, state) do
         lookahead(buffer, @streaming) do
+          "<?xml-" <> _rest ->
+            prolog_misc(buffer, more?, original, pos, state, [])
+
           "<?xml" <> rest ->
             xml_decl(rest, more?, original, pos + 5, state)
 
