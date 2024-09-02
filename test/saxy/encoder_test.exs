@@ -168,7 +168,7 @@ defmodule Saxy.EncoderTest do
 
   test "generates deeply nested document" do
     {document, xml} =
-      Enum.reduce(100..1, {"content", "content"}, fn index, {document, xml} ->
+      Enum.reduce(100..1//-1, {"content", "content"}, fn index, {document, xml} ->
         {
           Saxy.XML.element("level#{index}", [], document),
           "<level#{index}>#{xml}</level#{index}>"

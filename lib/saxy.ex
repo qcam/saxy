@@ -441,7 +441,7 @@ defmodule Saxy do
       iex> prolog = [version: "1.0"]
       iex> Saxy.encode_to_iodata!(root, prolog)
       [
-        ['<?xml', [32, 'version', 61, 34, "1.0", 34], [], [], '?>'],
+        [~c'<?xml', [32, ~c'version', 61, 34, "1.0", 34], [], [], ~c'?>'],
         [60, "foo", 32, "foo", 61, 34, "bar", 34],
         62,
         ["bar"],
