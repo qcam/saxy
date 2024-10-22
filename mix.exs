@@ -8,7 +8,7 @@ defmodule Saxy.MixProject do
     [
       app: :saxy,
       version: @version,
-      elixir: "~> 1.11",
+      elixir: "~> 1.12",
       name: "Saxy",
       consolidate_protocols: Mix.env() != :test,
       deps: deps(),
@@ -36,7 +36,7 @@ defmodule Saxy.MixProject do
   defp deps() do
     [
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:stream_data, "~> 0.5", only: [:dev, :test]}
+      {:stream_data, "~> 1.0", only: [:dev, :test]}
     ]
   end
 

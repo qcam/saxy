@@ -12,38 +12,48 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        otp: [24.x, 25.x, 26.x]
-        elixir: [1.11.x, 1.12.x, 1.13.x, 1.14.x, 1.15.x, 1.16.x]
+        otp: [24.x, 25.x, 26.x, 27.x]
+        elixir: [1.12.x, 1.13.x, 1.14.x, 1.15.x, 1.16.x, 1.17.x]
         exclude:
+          - otp: 27.x
+            elixir: 1.16.x
+          - otp: 27.x
+            elixir: 1.15.x
+          - otp: 27.x
+            elixir: 1.14.x
+          - otp: 27.x
+            elixir: 1.13.x
+          - otp: 27.x
+            elixir: 1.12.x
           - otp: 26.x
             elixir: 1.13.x
           - otp: 26.x
             elixir: 1.12.x
-          - otp: 26.x
-            elixir: 1.11.x
+          - otp: 25.x
+            elixir: 1.13.x
           - otp: 25.x
             elixir: 1.12.x
-          - otp: 25.x
-            elixir: 1.11.x
+          - otp: 24.x
+            elixir: 1.17.x
     steps:
-    - uses: actions/checkout@v4
-    - uses: erlef/setup-beam@v1
-      with:
-        elixir-version: ${{ matrix.elixir }}
-        otp-version: ${{ matrix.otp }}
-    - name: Restore dependencies cache
-      uses: actions/cache@v4
-      with:
-        path: deps
-        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-        restore-keys: ${{ runner.os }}-mix-
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+      - name: Restore dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
 
-    - name: Install Dependencies
-      run: mix deps.get
+      - name: Install Dependencies
+        run: mix deps.get
 
-    - name: Check format
-      if: matrix.check_format
-      run: mix format --check-formatted
+      - name: Check format
+        if: matrix.check_format
+        run: mix format --check-formatted
 
-    - name: Run Tests
-      run: mix test
+      - name: Run Tests
+        run: mix test
