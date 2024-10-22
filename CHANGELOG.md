@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.0 - 2024-10-22
+
+* Require Elixir 1.12+.
+* Introduce `Saxy.stream_events` (#118)
+* Several bug fixes and compilation warnings
+
 ## v1.5.0 - 2022-11-09
 
 * Saxy.encode! now supports "UTF-8"/"utf-8" as string in the prolog [#102](https://github.com/qcam/saxy/pull/102).
