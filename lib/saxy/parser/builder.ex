@@ -892,11 +892,8 @@ defmodule Saxy.Parser.Builder do
           token in unquote(edge_ngrams("]]")) when more? ->
             halt!(element_cdata(token, more?, original, pos, state, len))
 
-          char <> rest when is_ascii(char) ->
+          char <> rest ->
             element_cdata(rest, more?, original, pos, state, len + 1)
-
-          <<codepoint::utf8>> <> rest ->
-            element_cdata(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
 
           _ ->
             Utils.parse_error(original, pos + len, state, {:token, :"]]"})
