@@ -324,6 +324,9 @@ defmodule Saxy.Parser.Builder do
           char <> rest when is_ascii(char) ->
             prolog_misc_comment(rest, more?, original, pos, state, prolog, len + 1)
 
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(prolog_misc_comment(token, more?, original, pos, state, prolog, len))
+
           <<codepoint::utf8>> <> rest ->
             prolog_misc_comment(rest, more?, original, pos, state, prolog, len + Utils.compute_char_len(codepoint))
         end
@@ -377,6 +380,9 @@ defmodule Saxy.Parser.Builder do
 
           char <> rest when is_ascii(char) ->
             prolog_pi_content(rest, more?, original, pos, state, prolog, len + 1)
+
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(prolog_pi_content(token, more?, original, pos, state, prolog, len))
 
           <<codepoint::utf8>> <> rest ->
             prolog_pi_content(rest, more?, original, pos, state, prolog, len + Utils.compute_char_len(codepoint))
@@ -453,6 +459,9 @@ defmodule Saxy.Parser.Builder do
           char <> rest when is_ascii(char) ->
             dtd_misc_comment(rest, more?, original, pos, state, len + 1)
 
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(dtd_misc_comment(token, more?, original, pos, state, len))
+
           <<codepoint::utf8>> <> rest ->
             dtd_misc_comment(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
 
@@ -509,6 +518,9 @@ defmodule Saxy.Parser.Builder do
 
           char <> rest when is_ascii(char) ->
             dtd_pi_content(rest, more?, original, pos, state, len + 1)
+
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(dtd_pi_content(token, more?, original, pos, state, len))
 
           <<codepoint::utf8>> <> rest ->
             dtd_pi_content(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
@@ -895,6 +907,9 @@ defmodule Saxy.Parser.Builder do
           char <> rest when is_ascii(char) ->
             element_cdata(rest, more?, original, pos, state, len + 1)
 
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(element_cdata(token, more?, original, pos, state, len))
+
           <<codepoint::utf8>> <> rest ->
             element_cdata(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
 
@@ -1156,6 +1171,9 @@ defmodule Saxy.Parser.Builder do
           char <> rest when is_ascii(char) ->
             element_content_comment(rest, more?, original, pos, state, len + 1)
 
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(element_content_comment(token, more?, original, pos, state, len))
+
           <<codepoint::utf8>> <> rest ->
             element_content_comment(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
 
@@ -1294,6 +1312,9 @@ defmodule Saxy.Parser.Builder do
           char <> rest when is_ascii(char) ->
             element_misc_comment_char(rest, more?, original, pos, state, len + 1)
 
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(element_misc_comment_char(token, more?, original, pos, state, len))
+
           <<codepoint::utf8>> <> rest ->
             element_misc_comment_char(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
 
@@ -1350,6 +1371,9 @@ defmodule Saxy.Parser.Builder do
 
           char <> rest when is_ascii(char) ->
             element_misc_pi_content(rest, more?, original, pos, state, len + 1)
+
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(element_misc_pi_content(token, more?, original, pos, state, len))
 
           <<codepoint::utf8>> <> rest ->
             element_misc_pi_content(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
