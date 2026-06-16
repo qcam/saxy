@@ -178,6 +178,43 @@ defmodule Saxy.Parser.ElementTest do
     assert Exception.message(error) == "unexpected end of input, expected token: :\"]]\""
   end
 
+  test "parses CDATA containing multi-byte UTF-8 characters" do
+    events = assert_parse("<foo><![CDATA[£26,000]]></foo>")
+    assert find_events(events, :characters) == [{:characters, "£26,000"}]
+  end
+
+  test "parses multi-byte UTF-8 split across chunks in an element comment" do
+    assert_parse("<foo><!-- £ --></foo>")
+  end
+
+  test "parses multi-byte UTF-8 split across chunks in an in-element processing instruction" do
+    assert_parse("<foo><?target £?></foo>")
+  end
+
+  test "parses multi-byte UTF-8 split across chunks in a prolog comment" do
+    assert_parse("<!-- £ --><foo/>")
+  end
+
+  test "parses multi-byte UTF-8 split across chunks in a prolog processing instruction" do
+    assert_parse("<?target £?><foo/>")
+  end
+
+  test "parses multi-byte UTF-8 split across chunks in a comment after the DOCTYPE" do
+    assert_parse("<!DOCTYPE foo><!-- £ --><foo/>")
+  end
+
+  test "parses multi-byte UTF-8 split across chunks in a processing instruction after the DOCTYPE" do
+    assert_parse("<!DOCTYPE foo><?target £?><foo/>")
+  end
+
+  test "parses multi-byte UTF-8 split across chunks in an epilog comment" do
+    assert_parse("<foo/><!-- £ -->")
+  end
+
+  test "parses multi-byte UTF-8 split across chunks in an epilog processing instruction" do
+    assert_parse("<foo/><?target £?>")
+  end
+
   test "parses processing instruction" do
     events = assert_parse("<foo><?hello the instruction?></foo>")
     assert length(events) == 2
