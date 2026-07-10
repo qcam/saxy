@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.6.1 - 2026-07-10
+
+* Handle UTF-8 chars split across chunks (#139)
+
 ## v1.6.0 - 2024-10-22
 
 * Require Elixir 1.12+.
