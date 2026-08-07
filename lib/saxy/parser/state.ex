@@ -1,4 +1,4 @@
-defmodule Saxy.State do
+defmodule Saxy.Parser.State do
   @moduledoc false
 
   @enforce_keys [

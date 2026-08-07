@@ -74,6 +74,7 @@ defmodule Saxy.EmitterTest do
   defp parse(data, handler, state) do
     assert result = Saxy.parse_string(data, handler, state)
     assert Saxy.parse_stream([data], handler, state) == result
+    assert Saxy.parse_stream([data], &handler.handle_event/3, state) == result
 
     result
   end
