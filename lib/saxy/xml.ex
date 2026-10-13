@@ -132,6 +132,10 @@ defmodule Saxy.XML do
 
   @doc """
   Builds processing instruction in simple form.
+
+  When encoded, the target must be an XML Name other than `xml` (in any case),
+  and the instruction must not contain `?>`. The encoder raises `ArgumentError`
+  for invalid processing instructions.
   """
 
   @spec processing_instruction(

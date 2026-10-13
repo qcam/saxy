@@ -1,6 +1,8 @@
 defmodule Saxy.Encoder do
   @moduledoc false
 
+  import Saxy.Guards
+
   def encode_to_iodata(root, prolog) do
     prolog = prolog(prolog)
     element = element(root)
@@ -162,6 +164,33 @@ defmodule Saxy.Encoder do
   end
 
   defp processing_instruction(name, content) do
+    name = IO.iodata_to_binary(name)
+    content = IO.iodata_to_binary(content)
+
+    unless valid_pi_target?(name) and name not in ~w(xml xmL xMl xML Xml XmL XMl XML) do
+      raise ArgumentError, "processing instruction target must be an XML Name other than xml (case-insensitive)"
+    end
+
+    if String.contains?(content, "?>") do
+      raise ArgumentError, "processing instruction content must not contain ?>"
+    end
+
     [~c"<?", name, ?\s, content | ~c"?>"]
   end
+
+  defp valid_pi_target?(<<codepoint::utf8, rest::binary>>)
+       when is_ascii_name_start_char(codepoint) or is_utf8_name_start_char(codepoint) do
+    valid_pi_target_chars?(rest)
+  end
+
+  defp valid_pi_target?(_name), do: false
+
+  defp valid_pi_target_chars?(<<>>), do: true
+
+  defp valid_pi_target_chars?(<<codepoint::utf8, rest::binary>>)
+       when is_ascii_name_char(codepoint) or is_utf8_name_char(codepoint) do
+    valid_pi_target_chars?(rest)
+  end
+
+  defp valid_pi_target_chars?(_name), do: false
 end
