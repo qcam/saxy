@@ -167,7 +167,7 @@ defmodule Saxy.Encoder do
     name = IO.iodata_to_binary(name)
     content = IO.iodata_to_binary(content)
 
-    if not valid_pi_target?(name) or name in ~w(xml xmL xMl xML Xml XmL XMl XML) do
+    if not valid_pi_target?(name) or Regex.match?(~r/\Axml\z/i, name) do
       raise ArgumentError, "processing instruction target must be an XML Name other than xml (case-insensitive)"
     end
 
