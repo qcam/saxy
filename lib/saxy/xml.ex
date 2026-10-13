@@ -101,6 +101,9 @@ defmodule Saxy.XML do
 
   @doc """
   Builds comment in simple form.
+
+  The encoder raises `ArgumentError` if the text contains `--` and appends a
+  space if the text ends in a single hyphen.
   """
 
   @spec comment(text :: term()) :: comment()

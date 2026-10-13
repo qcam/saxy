@@ -145,6 +145,10 @@ defmodule Saxy.Encoder do
     [~c"<!--", escape_comment(comment, comment) | ~c"-->"]
   end
 
+  defp escape_comment(<<?-, ?-, _rest::bits>>, _original) do
+    raise ArgumentError, "comment content must not contain --"
+  end
+
   defp escape_comment(<<?->>, original) do
     [original, ?\s]
   end

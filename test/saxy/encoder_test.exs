@@ -171,6 +171,53 @@ defmodule Saxy.EncoderTest do
     assert xml == ~s(<movie><!--This is obviously a comment--><!--A+, A, A- --></movie>)
   end
 
+  test "rejects double hyphens in comments" do
+    for text <- ["--", "---", "--start", "end--", "middle--text", "-->", "before-->after", "é--指示"],
+        comment <- [{:comment, text}, Saxy.XML.comment(text), Saxy.XML.comment(String.to_charlist(text))],
+        encoder <- [&Saxy.encode!/1, &Saxy.encode_to_iodata!/1] do
+      document = {"root", [], [{"nested", [], [comment]}]}
+
+      assert_raise ArgumentError, "comment content must not contain --", fn ->
+        encoder.(document)
+      end
+    end
+  end
+
+  test "rejects XML injection through the documented comment builder" do
+    note = "Quarterly report reviewed --><injected source=\"attacker\">true</injected><!-- continuing"
+
+    document =
+      Saxy.XML.element("report", [], [
+        Saxy.XML.comment(note),
+        Saxy.XML.element("status", [], "approved")
+      ])
+
+    for encoder <- [&Saxy.encode!/2, &Saxy.encode_to_iodata!/2] do
+      assert_raise ArgumentError, "comment content must not contain --", fn ->
+        encoder.(document, version: "1.0")
+      end
+    end
+  end
+
+  test "preserves valid comments and pads a trailing single hyphen" do
+    for {text, expected} <- [
+          {"", ""},
+          {"plain text", "plain text"},
+          {"é指示", "é指示"},
+          {"<tag> & 'text' \"quoted\"", "<tag> & 'text' \"quoted\""},
+          {"a-b - - c", "a-b - - c"},
+          {"-", "- "},
+          {"text-", "text- "}
+        ],
+        encoder <- [&Saxy.encode!/1, &Saxy.encode_to_iodata!/1] do
+      document = Saxy.XML.element("report", [], [Saxy.XML.comment(text), Saxy.XML.element("status", [], "approved")])
+      xml = document |> encoder.() |> IO.iodata_to_binary()
+
+      assert xml == "<report><!--#{expected}--><status>approved</status></report>"
+      assert Saxy.SimpleForm.parse_string(xml) == {:ok, {"report", [], [{"status", [], ["approved"]}]}}
+    end
+  end
+
   test "encodes processing instruction" do
     content = [
       {:processing_instruction, "xml-stylesheet", "type=\"text/xsl\" href=\"style.xsl\""}
