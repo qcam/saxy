@@ -124,7 +124,9 @@ defmodule Saxy.Encoder do
   end
 
   defp cdata(characters) do
-    [~c"<![CDATA[", characters | ~c"]]>"]
+    sections = [characters] |> IO.iodata_to_binary() |> :binary.split("]]>", [:global])
+
+    [~c"<![CDATA[", Enum.intersperse(sections, ~c"]]]]><![CDATA[>") | ~c"]]>"]
   end
 
   defp reference({:entity, reference}) do

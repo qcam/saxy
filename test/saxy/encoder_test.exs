@@ -44,6 +44,74 @@ defmodule Saxy.EncoderTest do
     assert xml == ~s(<?xml version="1.0"?><person><![CDATA[Tom & Jerry]]></person>)
   end
 
+  test "splits CDATA terminators into adjacent sections" do
+    for encoder <- [&Saxy.encode!/1, &Saxy.encode_to_iodata!/1] do
+      document = {"body", [], [{:cdata, "before]]>after]]>"}]}
+
+      assert IO.iodata_to_binary(encoder.(document)) ==
+               "<body><![CDATA[before]]]]><![CDATA[>after]]]]><![CDATA[>]]></body>"
+    end
+  end
+
+  test "round trips CDATA as text without injecting XML structure" do
+    payload = "Ordinary message]]><injected source=\"attacker\">true</injected><![CDATA[ continuing"
+
+    for text <- [
+          "",
+          "Tom & Jerry <tag> 'text' \"quoted\"",
+          "é指示",
+          "]]>",
+          "]]>tail",
+          "head]]>",
+          "]]>]]>",
+          "]]]]>",
+          "]",
+          "]]",
+          "before]]>middle]]>after",
+          payload
+        ],
+        encoder <- [&Saxy.encode!/2, &Saxy.encode_to_iodata!/2],
+        cdata_as_characters <- [true, false] do
+      document =
+        Saxy.XML.element("message", [], [
+          Saxy.XML.element("body", [], Saxy.XML.cdata(text)),
+          Saxy.XML.element("status", [], "delivered")
+        ])
+
+      xml = document |> encoder.(version: "1.0") |> IO.iodata_to_binary()
+
+      assert {:ok, {"message", [], [{"body", [], children}, {"status", [], ["delivered"]}]}} =
+               Saxy.SimpleForm.parse_string(xml, cdata_as_characters: cdata_as_characters)
+
+      decoded =
+        Enum.map(children, fn
+          {:cdata, characters} when not cdata_as_characters -> characters
+          characters when is_binary(characters) and cdata_as_characters -> characters
+        end)
+
+      assert IO.iodata_to_binary(decoded) == text
+    end
+  end
+
+  test "splits CDATA terminators across nested iodata chunks" do
+    for characters <- [["before]", [?], [">after"]]], ["before]]" | ">after"]],
+        encoder <- [&Saxy.encode!/1, &Saxy.encode_to_iodata!/1] do
+      xml = encoder.({"body", [], [{:cdata, characters}]}) |> IO.iodata_to_binary()
+
+      assert xml == "<body><![CDATA[before]]]]><![CDATA[>after]]></body>"
+
+      assert {:ok, {"body", [], [{:cdata, "before]]"}, {:cdata, ">after"}]}} =
+               Saxy.SimpleForm.parse_string(xml, cdata_as_characters: false)
+    end
+  end
+
+  test "encodes a single byte in a direct CDATA tuple" do
+    for encoder <- [&Saxy.encode!/1, &Saxy.encode_to_iodata!/1] do
+      assert IO.iodata_to_binary(encoder.({"body", [], [{:cdata, ?A}]})) ==
+               "<body><![CDATA[A]]></body>"
+    end
+  end
+
   test "encodes characters to references" do
     content = [
       {:characters, "Tom & Jerry"}

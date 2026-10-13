@@ -88,6 +88,9 @@ defmodule Saxy.XML do
 
   @doc """
   Builds CDATA in simple form.
+
+  The encoder splits text containing `]]>` into adjacent CDATA sections,
+  preserving the text when parsed.
   """
 
   @spec cdata(text :: term()) :: cdata()
