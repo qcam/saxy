@@ -82,7 +82,13 @@ defmodule Saxy.EncoderTest do
     document = {"movie", [], content}
     xml = encode(document, [])
 
-    assert xml == ~s(<?xml version="1.0"?><movie>&foo;&x3C;&x60;</movie>)
+    assert xml == ~s(<?xml version="1.0"?><movie>&foo;&#x3C;&#60;</movie>)
+  end
+
+  test "encodes character references that parse back to their characters" do
+    document = {"movie", [], [{:reference, {:hexadecimal, ?<}}, {:reference, {:decimal, ?>}}]}
+
+    assert Saxy.SimpleForm.parse_string(encode(document)) == {:ok, {"movie", [], ["<>"]}}
   end
 
   test "encodes comments" do
