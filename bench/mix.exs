@@ -5,14 +5,14 @@ defmodule Bench.MixProject do
     [
       app: :bench,
       version: "0.1.0",
-      elixir: "~> 1.10",
+      elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       consolidate_protocols: true,
       deps: deps()
     ]
   end
 
-  def application(), do: []
+  def application(), do: [extra_applications: [:xmerl]]
 
   defp deps() do
     [

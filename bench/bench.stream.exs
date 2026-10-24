@@ -22,7 +22,7 @@ continue_file = fn tail, {io, offset, chunk} ->
 end
 
 saxy_parser = fn file_path ->
-  stream = File.stream!(file_path, [], 1024)
+  stream = File.stream!(file_path, 1024)
   {:ok, _state} = Saxy.parse_stream(stream, NoopHandler, [])
 end
 

@@ -25,12 +25,12 @@ jobs:
     name: ${{ matrix.script_file }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Setup Elixir
       uses: erlef/setup-beam@v1
       with:
-        elixir-version: '1.14'
-        otp-version: '25'
+        elixir-version: '1.20'
+        otp-version: '29'
     - name: Install Dependencies
       run: |
         mix local.rebar --force
