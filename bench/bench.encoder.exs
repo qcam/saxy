@@ -26,7 +26,7 @@ defmodule Bench.Saxy.Builder do
   end
 
   def build(:nested) do
-    Enum.reduce(1000..1, "content", fn index, acc ->
+    Enum.reduce(1000..1//-1, "content", fn index, acc ->
       element("element.#{index}", [], acc)
     end)
   end
@@ -68,7 +68,7 @@ defmodule Bench.XMLBuilder.Builder do
     document(
       "level1",
       [],
-      Enum.reduce(1000..2, "content", fn index, acc ->
+      Enum.reduce(1000..2//-1, "content", fn index, acc ->
         [element("element.#{index}", [], acc)]
       end)
     )

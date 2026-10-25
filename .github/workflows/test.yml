@@ -9,40 +9,43 @@ on:
 jobs:
   build:
     name: Test (${{matrix.elixir}}/${{matrix.otp}})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     strategy:
       matrix:
-        otp: [24.x, 25.x, 26.x, 27.x]
-        elixir: [1.12.x, 1.13.x, 1.14.x, 1.15.x, 1.16.x, 1.17.x]
-        exclude:
-          - otp: 27.x
-            elixir: 1.16.x
-          - otp: 27.x
-            elixir: 1.15.x
-          - otp: 27.x
-            elixir: 1.14.x
-          - otp: 27.x
-            elixir: 1.13.x
-          - otp: 27.x
-            elixir: 1.12.x
-          - otp: 26.x
-            elixir: 1.13.x
-          - otp: 26.x
-            elixir: 1.12.x
-          - otp: 25.x
-            elixir: 1.13.x
-          - otp: 25.x
-            elixir: 1.12.x
-          - otp: 24.x
-            elixir: 1.17.x
+        include:
+          - { elixir: '1.12', otp: '24', os: 'ubuntu-24.04' }
+          - { elixir: '1.13', otp: '24', os: 'ubuntu-24.04' }
+          - { elixir: '1.13', otp: '25', os: 'ubuntu-24.04' }
+          - { elixir: '1.14', otp: '24', os: 'ubuntu-24.04' }
+          - { elixir: '1.14', otp: '25', os: 'ubuntu-24.04' }
+          - { elixir: '1.14', otp: '26' }
+          - { elixir: '1.15', otp: '24', os: 'ubuntu-24.04' }
+          - { elixir: '1.15', otp: '25', os: 'ubuntu-24.04' }
+          - { elixir: '1.15', otp: '26' }
+          - { elixir: '1.16', otp: '24', os: 'ubuntu-24.04' }
+          - { elixir: '1.16', otp: '25', os: 'ubuntu-24.04' }
+          - { elixir: '1.16', otp: '26' }
+          - { elixir: '1.17', otp: '25', os: 'ubuntu-24.04' }
+          - { elixir: '1.17', otp: '26' }
+          - { elixir: '1.17', otp: '27' }
+          - { elixir: '1.18', otp: '25', os: 'ubuntu-24.04' }
+          - { elixir: '1.18', otp: '26' }
+          - { elixir: '1.18', otp: '27' }
+          - { elixir: '1.18', otp: '28' }
+          - { elixir: '1.19', otp: '26' }
+          - { elixir: '1.19', otp: '27' }
+          - { elixir: '1.19', otp: '28' }
+          - { elixir: '1.20', otp: '27' }
+          - { elixir: '1.20', otp: '28' }
+          - { elixir: '1.20', otp: '29', check_format: true }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: erlef/setup-beam@v1
         with:
           elixir-version: ${{ matrix.elixir }}
           otp-version: ${{ matrix.otp }}
       - name: Restore dependencies cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: deps
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
