@@ -8,6 +8,7 @@ defmodule Saxy.ParseError do
           | {:wrong_closing_tag, open_tag :: String.t(), close_tag :: String.t()}
           | {:invalid_pi, pi_name :: String.t()}
           | {:invalid_encoding, encoding :: String.t()}
+          | {:invalid_char_ref, codepoint :: non_neg_integer() | :too_long}
           | {:bad_return, {event :: atom(), return :: term()}}
 
   @type t() :: %__MODULE__{
@@ -49,6 +50,14 @@ defmodule Saxy.ParseError do
 
   defp format_message({:invalid_encoding, encoding}, _, _) do
     "unexpected encoding declaration #{inspect(encoding)}, only UTF-8 is supported"
+  end
+
+  defp format_message({:invalid_char_ref, :too_long}, _, _) do
+    "unexpected character reference, too many digits"
+  end
+
+  defp format_message({:invalid_char_ref, codepoint}, _, _) do
+    "unexpected character reference to code point #{codepoint}, which is not a valid XML character"
   end
 
   defp format_message({:bad_return, {event, return}}, _, _) do

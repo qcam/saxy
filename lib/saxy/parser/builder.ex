@@ -795,9 +795,19 @@ defmodule Saxy.Parser.Builder do
             att_value_char_dec_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, len + 1)
 
           ";" <> rest ->
-            codepoint = original |> binary_part(pos, len) |> String.to_integer(10)
-            pos = pos + len + 1
-            att_value(rest, more?, original, pos, state, attributes, open_quote, att_name, [acc | <<codepoint::utf8>>], 0)
+            if len == 0 do
+              Utils.parse_error(original, pos, state, {:token, :char_ref})
+            else
+              case Utils.parse_char_ref(binary_part(original, pos, len), 10) do
+                {:ok, codepoint} ->
+                  pos = pos + len + 1
+
+                  att_value(rest, more?, original, pos, state, attributes, open_quote, att_name, [acc | <<codepoint::utf8>>], 0)
+
+                {:error, reason} ->
+                  Utils.parse_error(original, pos, state, reason)
+              end
+            end
 
           _ in [""] when more? ->
             halt!(att_value_char_dec_ref("", more?, original, pos, state, attributes, open_quote, att_name, acc, len))
@@ -813,10 +823,19 @@ defmodule Saxy.Parser.Builder do
             att_value_char_hex_ref(rest, more?, original, pos, state, attributes, open_quote, att_name, acc, len + 1)
 
           ";" <> rest ->
-            codepoint = original |> binary_part(pos, len) |> String.to_integer(16)
-            pos = pos + len + 1
+            if len == 0 do
+              Utils.parse_error(original, pos, state, {:token, :char_ref})
+            else
+              case Utils.parse_char_ref(binary_part(original, pos, len), 16) do
+                {:ok, codepoint} ->
+                  pos = pos + len + 1
 
-            att_value(rest, more?, original, pos, state, attributes, open_quote, att_name, [acc | <<codepoint::utf8>>], 0)
+                  att_value(rest, more?, original, pos, state, attributes, open_quote, att_name, [acc | <<codepoint::utf8>>], 0)
+
+                {:error, reason} ->
+                  Utils.parse_error(original, pos, state, reason)
+              end
+            end
 
           _ in [""] when more? ->
             halt!(att_value_char_hex_ref("", more?, original, pos, state, attributes, open_quote, att_name, acc, len))
@@ -1051,9 +1070,13 @@ defmodule Saxy.Parser.Builder do
             if len == 0 do
               Utils.parse_error(original, pos, state, {:token, :char_ref})
             else
-              char = original |> binary_part(pos, len) |> String.to_integer(10)
+              case Utils.parse_char_ref(binary_part(original, pos, len), 10) do
+                {:ok, char} ->
+                  chardata(rest, more?, original, pos + len + 1, state, [acc | <<char::utf8>>], 0)
 
-              chardata(rest, more?, original, pos + len + 1, state, [acc | <<char::utf8>>], 0)
+                {:error, reason} ->
+                  Utils.parse_error(original, pos, state, reason)
+              end
             end
 
           char <> rest when char in ?0..?9 ->
@@ -1073,9 +1096,13 @@ defmodule Saxy.Parser.Builder do
             if len == 0 do
               Utils.parse_error(original, pos, state, [])
             else
-              char = original |> binary_part(pos, len) |> String.to_integer(16)
+              case Utils.parse_char_ref(binary_part(original, pos, len), 16) do
+                {:ok, char} ->
+                  chardata(rest, more?, original, pos + len + 1, state, [acc | <<char::utf8>>], 0)
 
-              chardata(rest, more?, original, pos + len + 1, state, [acc | <<char::utf8>>], 0)
+                {:error, reason} ->
+                  Utils.parse_error(original, pos, state, reason)
+              end
             end
 
           char <> rest when char in ?0..?9 or char in ?A..?F or char in ?a..?f ->

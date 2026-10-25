@@ -157,6 +157,54 @@ defmodule Saxy.Parser.ElementTest do
     assert Exception.message(error) == "unexpected byte \" \", expected token: :entity_ref"
   end
 
+  test "rejects out-of-range numeric character references in element without crashing" do
+    # Surrogate code points are not valid XML characters.
+    error = refute_parse("<foo>&#xD800;</foo>")
+    assert Exception.message(error) =~ "not a valid XML character"
+
+    # Beyond the Unicode maximum (> U+10FFFF).
+    error = refute_parse("<foo>&#x110000;</foo>")
+    assert Exception.message(error) =~ "not a valid XML character"
+
+    error = refute_parse("<foo>&#1114112;</foo>")
+    assert Exception.message(error) =~ "not a valid XML character"
+
+    # Disallowed control character (NUL).
+    error = refute_parse("<foo>&#x0;</foo>")
+    assert Exception.message(error) =~ "not a valid XML character"
+  end
+
+  test "rejects overlong numeric character references in element without crashing" do
+    error = refute_parse("<foo>&#11111111111111111111;</foo>")
+    assert Exception.message(error) =~ "character reference"
+
+    error = refute_parse("<foo>&#x1111111111111111;</foo>")
+    assert Exception.message(error) =~ "character reference"
+  end
+
+  test "rejects out-of-range numeric character references in attribute without crashing" do
+    error = refute_parse(~s(<foo val="&#xD800;" />))
+    assert Exception.message(error) =~ "not a valid XML character"
+
+    error = refute_parse(~s(<foo val="&#x110000;" />))
+    assert Exception.message(error) =~ "not a valid XML character"
+
+    error = refute_parse(~s(<foo val="&#11111111111111111111;" />))
+    assert Exception.message(error) =~ "character reference"
+  end
+
+  test "parses boundary numeric character references" do
+    events = assert_parse("<foo>&#x10FFFF;</foo>")
+    assert find_event(events, :characters, <<0x10FFFF::utf8>>)
+
+    # Leading zeros within the digit budget are still accepted.
+    events = assert_parse("<foo>&#x00041;</foo>")
+    assert find_event(events, :characters, "A")
+
+    events = assert_parse("<foo>&#x9;</foo>")
+    assert find_event(events, :characters, "\t")
+  end
+
   test "malformed misc in the end of the document" do
     error = refute_parse("<foo/>bar")
     assert Exception.message(error) == "unexpected byte \"b\", expected token: :misc"
