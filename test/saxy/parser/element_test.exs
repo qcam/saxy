@@ -263,6 +263,12 @@ defmodule Saxy.Parser.ElementTest do
     assert_parse("<foo/><?target £?>")
   end
 
+  test "parses multi-byte UTF-8 split across chunks at the start of a child element name" do
+    assert_parse("<foo><été/></foo>")
+    assert_parse("<foo><日本語></日本語></foo>")
+    assert_parse("<foo><𐌰/></foo>")
+  end
+
   test "parses processing instruction" do
     events = assert_parse("<foo><?hello the instruction?></foo>")
     assert length(events) == 2

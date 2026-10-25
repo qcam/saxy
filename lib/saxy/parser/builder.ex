@@ -881,6 +881,9 @@ defmodule Saxy.Parser.Builder do
           char <> rest when is_ascii_name_start_char(char) ->
             open_tag_name(rest, more?, original, pos, state, 1)
 
+          token in unquote(utf8_binaries()) when more? ->
+            halt!(element_content_rest(token, more?, original, pos, state))
+
           <<codepoint::utf8>> <> rest when is_utf8_name_start_char(codepoint) ->
             open_tag_name(rest, more?, original, pos, state, Utils.compute_char_len(codepoint))
 
