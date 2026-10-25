@@ -34,10 +34,12 @@ defmodule Saxy.Parser.Utils do
 
   # Maximum number of digits allowed in a numeric character reference. The
   # largest valid code point is U+10FFFF, which needs 7 decimal / 6 hexadecimal
-  # digits; the extra budget tolerates a few leading zeros while still bounding
+  # digits; the extra budget applies after leading zeros are skipped, still bounding
   # the integer we hand to `String.to_integer/2`, preventing huge-bignum DoS.
   @max_decimal_char_ref_digits 10
   @max_hexadecimal_char_ref_digits 8
+
+  @compile {:inline, [valid_char_ref?: 1, skip_zeros: 1]}
 
   @doc """
   Parses the digits of a numeric character reference into a code point.
@@ -53,10 +55,12 @@ defmodule Saxy.Parser.Utils do
         16 -> @max_hexadecimal_char_ref_digits
       end
 
+    digits = skip_zeros(digits)
+
     if byte_size(digits) > max_digits do
       {:error, {:invalid_char_ref, :too_long}}
     else
-      codepoint = String.to_integer(digits, base)
+      codepoint = if digits == "", do: 0, else: String.to_integer(digits, base)
 
       if valid_char_ref?(codepoint) do
         {:ok, codepoint}
@@ -66,7 +70,8 @@ defmodule Saxy.Parser.Utils do
     end
   end
 
-  @compile {:inline, [valid_char_ref?: 1]}
+  defp skip_zeros(<<?0, rest::bits>>), do: skip_zeros(rest)
+  defp skip_zeros(digits), do: digits
 
   # Returns `true` when the code point is a valid XML 1.0 `Char`, ordered with
   # the common printable BMP range first. See https://www.w3.org/TR/xml/#NT-Char
