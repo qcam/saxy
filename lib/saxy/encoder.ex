@@ -132,11 +132,11 @@ defmodule Saxy.Encoder do
   end
 
   defp reference({:hexadecimal, reference}) do
-    [?&, ?x, Integer.to_string(reference, 16), ?;]
+    [?&, ?#, ?x, Integer.to_string(reference, 16), ?;]
   end
 
   defp reference({:decimal, reference}) do
-    [?&, ?x, Integer.to_string(reference, 10), ?;]
+    [?&, ?#, Integer.to_string(reference, 10), ?;]
   end
 
   defp comment(comment) do
