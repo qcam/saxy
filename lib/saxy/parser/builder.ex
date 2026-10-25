@@ -1094,7 +1094,7 @@ defmodule Saxy.Parser.Builder do
         lookahead buffer, @streaming do
           ";" <> rest ->
             if len == 0 do
-              Utils.parse_error(original, pos, state, [])
+              Utils.parse_error(original, pos, state, {:token, :char_ref})
             else
               case Utils.parse_char_ref(binary_part(original, pos, len), 16) do
                 {:ok, char} ->

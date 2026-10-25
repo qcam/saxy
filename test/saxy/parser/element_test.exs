@@ -205,6 +205,51 @@ defmodule Saxy.Parser.ElementTest do
     assert find_event(events, :characters, "\t")
   end
 
+  test "parses numeric character references with many leading zeros" do
+    events = assert_parse("<foo>&#00000000065;</foo>")
+    assert find_event(events, :characters, "A")
+
+    events = assert_parse("<foo>&#x0000000041;</foo>")
+    assert find_event(events, :characters, "A")
+
+    events = assert_parse(~s(<foo val="&#00000000065;" />))
+    assert find_event(events, :start_element, {"foo", [{"val", "A"}]})
+
+    error = refute_parse("<foo>&#00000000000;</foo>")
+    assert Exception.message(error) =~ "not a valid XML character"
+  end
+
+  test "rejects decimal NUL, U+FFFE and U+FFFF references" do
+    for ref <- ["&#0;", "&#65534;", "&#65535;", "&#xFFFE;", "&#xFFFF;"] do
+      error = refute_parse("<foo>#{ref}</foo>")
+      assert Exception.message(error) =~ "not a valid XML character"
+
+      error = refute_parse(~s(<foo val="#{ref}" />))
+      assert Exception.message(error) =~ "not a valid XML character"
+    end
+  end
+
+  test "rejects empty numeric character references" do
+    for ref <- ["&#;", "&#x;"] do
+      error = refute_parse("<foo>#{ref}</foo>")
+      assert Exception.message(error) == "unexpected byte \";\", expected token: :char_ref"
+
+      error = refute_parse(~s(<foo val="#{ref}" />))
+      assert Exception.message(error) == "unexpected byte \";\", expected token: :char_ref"
+    end
+  end
+
+  test "parses character references split across chunk boundaries" do
+    data = ~s(<foo val="&#x26;&#65;">a&#x10FFFF;&#00000000065;b</foo>)
+    expected = Saxy.parse_string(data, StackHandler, [])
+    assert {:ok, _} = expected
+
+    for i <- 1..(byte_size(data) - 1) do
+      <<a::binary-size(i), b::binary>> = data
+      assert Saxy.parse_stream([a, b], StackHandler, []) == expected
+    end
+  end
+
   test "malformed misc in the end of the document" do
     error = refute_parse("<foo/>bar")
     assert Exception.message(error) == "unexpected byte \"b\", expected token: :misc"
