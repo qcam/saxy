@@ -4,12 +4,13 @@ bench_options = [
   inputs: %{
     "simple document" => :simple,
     "deeply nested elements " => :nested,
-    "long content element" => :long_content
+    "long content element" => :long_content,
+    "content to escape" => :escaping
   }
 ]
 
 defmodule Bench.Saxy.Builder do
-  import Saxy.XML, only: [element: 3]
+  import Saxy.XML, only: [characters: 1, element: 3]
 
   def build(:simple) do
     element("root", [], [
@@ -44,6 +45,19 @@ defmodule Bench.Saxy.Builder do
         element("long-string", [], @long_string)
       ]
     )
+  end
+
+  @string_to_escape String.duplicate(~s(if a < b && c > d then "e" ), 1000)
+
+  def build(:escaping) do
+    element("root", [], [
+      element("text", [], characters(@string_to_escape)),
+      element(
+        "attributes",
+        [],
+        Enum.map(1..100, &element("item", [{"q", ~s(a < b & "#{&1}")}], []))
+      )
+    ])
   end
 end
 
@@ -87,6 +101,15 @@ defmodule Bench.XMLBuilder.Builder do
         element("long-string", [], @long_string)
       ]
     )
+  end
+
+  @string_to_escape String.duplicate(~s(if a < b && c > d then "e" ), 1000)
+
+  def build(:escaping) do
+    document("root", [], [
+      element("text", [], @string_to_escape),
+      element("attributes", [], Enum.map(1..100, &element("item", [q: ~s(a < b & "#{&1}")], [])))
+    ])
   end
 end
 
