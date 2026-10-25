@@ -1013,7 +1013,8 @@ defmodule Saxy.Parser.Builder do
 
               with {:cont, state} <- emit(:characters, chars, state, {original, pos}) do
                 {original, pos} = maybe_trim(true, original, pos)
-                chardata(<<>>, true, original, pos, state, <<>>, 0)
+                # Empty, but a match context, unlike `<<>>`.
+                chardata(buffer, true, original, pos, state, <<>>, 0)
               end
             else
               halt!(chardata("", more?, original, pos, state, acc, len))
