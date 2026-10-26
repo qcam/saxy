@@ -60,7 +60,7 @@ defmodule Saxy.Encoder do
   defp attributes([]), do: []
 
   defp attributes([{name, value} | attributes]) do
-    [?\s, name, ?=, ?", escape(value, 0, value), ?" | attributes(attributes)]
+    [?\s, name, ?=, ?", escape(value, value, 0, 0), ?" | attributes(attributes)]
   end
 
   defp content([]), do: []
@@ -98,29 +98,33 @@ defmodule Saxy.Encoder do
   end
 
   defp characters(characters) do
-    escape(characters, 0, characters)
+    escape(characters, characters, 0, 0)
   end
 
   @escapes [
-    {?<, ~c"&lt;"},
-    {?>, ~c"&gt;"},
-    {?&, ~c"&amp;"},
-    {?", ~c"&quot;"},
-    {?', ~c"&apos;"}
+    {?<, "&lt;"},
+    {?>, "&gt;"},
+    {?&, "&amp;"},
+    {?", "&quot;"},
+    {?', "&apos;"}
   ]
 
   for {match, insert} <- @escapes do
-    defp escape(<<unquote(match), rest::bits>>, len, original) do
-      [binary_part(original, 0, len), unquote(insert) | escape(rest, 0, rest)]
+    defp escape(<<unquote(match), rest::bits>>, original, start, len) do
+      [binary_part(original, start, len), unquote(insert) | escape(rest, original, start + len + 1, 0)]
     end
   end
 
-  defp escape(<<>>, _len, original) do
+  defp escape(<<>>, original, 0, _len) do
     original
   end
 
-  defp escape(<<_, rest::bits>>, len, original) do
-    escape(rest, len + 1, original)
+  defp escape(<<>>, original, start, len) do
+    binary_part(original, start, len)
+  end
+
+  defp escape(<<_, rest::bits>>, original, start, len) do
+    escape(rest, original, start, len + 1)
   end
 
   defp cdata(characters) do
