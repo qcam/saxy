@@ -45,7 +45,7 @@ defmodule Saxy.Partial do
     character_data_max_length = Keyword.get(options, :character_data_max_length, :infinity)
     cdata_as_characters = Keyword.get(options, :cdata_as_characters, true)
 
-    state = %Saxy.State{
+    state = %Parser.State{
       prolog: nil,
       handler: handler,
       user_state: initial_state,

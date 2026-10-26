@@ -1,7 +1,7 @@
 defmodule Saxy.Emitter do
   @moduledoc false
 
-  alias Saxy.State
+  alias Saxy.Parser.State
 
   def emit(event_type, data, state, on_halt) do
     case emit(event_type, data, state) do
@@ -22,8 +22,12 @@ defmodule Saxy.Emitter do
     end
   end
 
-  defp do_emit(event_type, data, handler, user_state) do
+  defp do_emit(event_type, data, handler, user_state) when is_atom(handler) do
     handler.handle_event(event_type, data, user_state)
+  end
+
+  defp do_emit(event_type, data, handler, user_state) do
+    handler.(event_type, data, user_state)
   end
 
   @compile {:inline, [convert_entity_reference: 2]}
