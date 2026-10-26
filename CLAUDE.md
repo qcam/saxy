@@ -34,6 +34,7 @@ When changing parsing logic, change the builder once, and cover both binary and 
 Design goal is speed, so keep the binary-matching optimizations intact (see the Forza posts "How I sped up my XML parser by 15 times" and "Binary parsing optimizations in Elixir"):
 
 - Keep the match context alive: pass the buffer forward to the next function, never return `rest` from a helper.
+- Hand a parser function only a buffer matched by its caller, never a binary built or written out (`<<>>`, `token <> chunk`). One such call makes the function check for a match context on every call, so a loop pays for it on every byte. That is why halt continuations match the joined buffer before calling.
 - One function per grammar rule. Don't write a shared dispatcher clause-matching on a token type, since the compiler doesn't reorder binary clauses.
 - Every clause starts with a `<<...>>` pattern as its first argument. Keep argument order consistent across related functions.
 - Prefer `::bits` over `::bytes` (avoids a divisible-by-8 check).

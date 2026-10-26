@@ -16,24 +16,31 @@ defmodule Saxy.Parser.Lookahead do
   defmacro lookahead(data, streaming?, do: rules) do
     streaming? = Macro.expand(streaming?, __CALLER__)
 
+    clauses =
+      rules
+      |> Enum.flat_map(fn {:->, _, [clause, code]} -> build_clause(clause, code, streaming?) end)
+      |> sink_empty_halts([])
+
     quote do
       case unquote(data) do
-        unquote(build_clauses(rules, streaming?))
+        unquote(clauses)
       end
     end
   end
 
-  defp build_clauses([], _streaming?), do: []
-
-  defp build_clauses([{:->, _, [clause, code]} | rest], streaming?) do
-    build_clause(clause, code, streaming?) ++ build_clauses(rest, streaming?)
-  end
+  # Moves empty-buffer halts below the clauses that need a byte, which they
+  # would otherwise split into groups the compiler matches one after another.
+  defp sink_empty_halts([{:empty_halt, clause} | rest], held), do: sink_empty_halts(rest, [clause | held])
+  defp sink_empty_halts([{:byte, clause} | rest], held), do: [clause | sink_empty_halts(rest, held)]
+  defp sink_empty_halts([{:any, clause} | rest], held), do: Enum.reverse(held, [clause | sink_empty_halts(rest, [])])
+  defp sink_empty_halts([], held), do: Enum.reverse(held)
 
   # "binary" <> rest.
   defp build_clause([{:<>, _, [ahead, rest]}], code, _streaming?) do
     quote do
       <<unquote(ahead), unquote(rest)::bits>> -> unquote(code)
     end
+    |> tag(if ahead == "", do: :any, else: :byte)
   end
 
   defp build_clause([{:when, _, [left, guards]}], code, streaming?) do
@@ -47,6 +54,7 @@ defmodule Saxy.Parser.Lookahead do
                 unquote(token_var) = unquote(token)
                 unquote(code)
             end
+            |> tag(if token == "", do: :empty_halt, else: :byte)
           end)
         else
           []
@@ -58,6 +66,7 @@ defmodule Saxy.Parser.Lookahead do
           <<unquote(ahead), unquote(rest)::bits>> when unquote(guards) ->
             unquote(code)
         end
+        |> tag(if ahead == "", do: :any, else: :byte)
     end
   end
 
@@ -65,5 +74,8 @@ defmodule Saxy.Parser.Lookahead do
     quote do
       unquote(other) -> unquote(code)
     end
+    |> tag(:any)
   end
+
+  defp tag(clauses, kind), do: Enum.map(clauses, &{kind, &1})
 end
