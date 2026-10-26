@@ -102,11 +102,11 @@ defmodule Saxy.Encoder do
   end
 
   @escapes [
-    {?<, ~c"&lt;"},
-    {?>, ~c"&gt;"},
-    {?&, ~c"&amp;"},
-    {?", ~c"&quot;"},
-    {?', ~c"&apos;"}
+    {?<, "&lt;"},
+    {?>, "&gt;"},
+    {?&, "&amp;"},
+    {?", "&quot;"},
+    {?', "&apos;"}
   ]
 
   for {match, insert} <- @escapes do
