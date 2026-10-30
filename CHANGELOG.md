@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.7.0 - 2026-10-30
+
+* Security: the encoder now rejects input that could inject XML structure.
+  * Comments containing `--` raise `ArgumentError`.
+  * Processing instructions with an invalid target (or the reserved `xml`
+    target), or content containing `?>`, raise `ArgumentError`.
+  * `]]>` inside CDATA is split into adjacent CDATA sections, preserving the text.
+* Harden numeric character reference parsing: cap digit length and reject code
+  points outside the XML `Char` production (#140, #144).
+* Fix encoding of numeric character references, now `&#x..;` and `&#..;` (#143).
+* Handle UTF-8 element names split across chunks (#142).
+* Test on Elixir 1.12 to 1.20 and OTP 24 to 29 (#141).
+
 ## v1.6.1 - 2026-07-10
 
 * Handle UTF-8 chars split across chunks (#139)
