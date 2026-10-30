@@ -276,6 +276,22 @@ defmodule Saxy.Parser.ElementTest do
     assert find_events(events, :characters) == [{:characters, "£26,000"}]
   end
 
+  test "normalizes line breaks in character data and CDATA" do
+    events = assert_parse("<foo>a\r\nb\rc\r\r\nd&amp;\r\ne\r</foo>")
+    assert find_events(events, :characters) == [{:characters, "a\nb\nc\n\nd&\ne\n"}]
+
+    events = assert_parse("<foo>\r\n  <bar/>\r</foo>")
+    assert find_events(events, :characters) == [{:characters, "\n  "}, {:characters, "\n"}]
+
+    events = assert_parse("<foo><![CDATA[a\r\nb\rc\r]]></foo>", cdata_as_characters: false)
+    assert find_events(events, :cdata) == [{:cdata, "a\nb\nc\n"}]
+  end
+
+  test "keeps carriage returns from character references" do
+    events = assert_parse("<foo>a&#13;&#xD;&#10;b\r\n</foo>")
+    assert find_events(events, :characters) == [{:characters, "a\r\r\nb\n"}]
+  end
+
   test "parses multi-byte UTF-8 split across chunks in an element comment" do
     assert_parse("<foo><!-- £ --></foo>")
   end

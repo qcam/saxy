@@ -855,6 +855,9 @@ defmodule Saxy.Parser.Builder do
               ?& ->
                 element_content_reference(rest, more?, original, pos + 1, state, <<>>)
 
+              ?\r ->
+                chardata_newline(rest, more?, original, pos + 1, state, "\n")
+
               whitespace when is_whitespace(whitespace) ->
                 chardata_whitespace(rest, more?, original, pos, state, 1)
 
@@ -891,7 +894,7 @@ defmodule Saxy.Parser.Builder do
             close_tag_name(rest, more?, original, pos + 1, state, 0, 0)
 
           "![CDATA[" <> rest ->
-            element_cdata(rest, more?, original, pos + 8, state, 0)
+            element_cdata(rest, more?, original, pos + 8, state, "", 0)
 
           "!--" <> rest ->
             element_content_comment(rest, more?, original, pos + 3, state, 0)
@@ -907,10 +910,15 @@ defmodule Saxy.Parser.Builder do
         end
       end
 
-      defp element_cdata(<<buffer::bits>>, more?, original, pos, state, len) do
+      defp element_cdata(<<buffer::bits>>, more?, original, pos, state, acc, len) do
         lookahead buffer, @streaming do
           "]]>" <> rest ->
-            cdata = binary_part(original, pos, len)
+            cdata =
+              case acc do
+                "" -> binary_part(original, pos, len)
+                _ -> IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+              end
+
             pos = pos + len + 3
 
             if state.cdata_as_characters do
@@ -924,19 +932,51 @@ defmodule Saxy.Parser.Builder do
             end
 
           token in unquote(edge_ngrams("]]")) when more? ->
-            halt!(element_cdata(token, more?, original, pos, state, len))
+            halt!(element_cdata(token, more?, original, pos, state, acc, len))
+
+          "\r" <> rest ->
+            acc = [acc, binary_part(original, pos, len), ?\n]
+            element_cdata_newline(rest, more?, original, pos + len + 1, state, acc)
 
           char <> rest when is_ascii(char) ->
-            element_cdata(rest, more?, original, pos, state, len + 1)
+            element_cdata(rest, more?, original, pos, state, acc, len + 1)
 
           token in unquote(utf8_binaries()) when more? ->
-            halt!(element_cdata(token, more?, original, pos, state, len))
+            halt!(element_cdata(token, more?, original, pos, state, acc, len))
 
           <<codepoint::utf8>> <> rest ->
-            element_cdata(rest, more?, original, pos, state, len + Utils.compute_char_len(codepoint))
+            element_cdata(rest, more?, original, pos, state, acc, len + Utils.compute_char_len(codepoint))
 
           _ ->
             Utils.parse_error(original, pos + len, state, {:token, :"]]"})
+        end
+      end
+
+      # A line break is CRLF or a CR that LF doesn't follow; both are read as LF
+      # (XML 1.0 section 2.11). The CR has been consumed; skip an LF after it.
+      defp element_cdata_newline(<<buffer::bits>>, more?, original, pos, state, acc) do
+        lookahead buffer, @streaming do
+          "\n" <> rest ->
+            element_cdata(rest, more?, original, pos + 1, state, acc, 0)
+
+          _ in [""] when more? ->
+            halt!(element_cdata_newline("", more?, original, pos, state, acc))
+
+          _ ->
+            element_cdata(buffer, more?, original, pos, state, acc, 0)
+        end
+      end
+
+      defp chardata_newline(<<buffer::bits>>, more?, original, pos, state, acc) do
+        lookahead buffer, @streaming do
+          "\n" <> rest ->
+            chardata(rest, more?, original, pos + 1, state, acc, 0)
+
+          _ in [""] when more? ->
+            halt!(chardata_newline("", more?, original, pos, state, acc))
+
+          _ ->
+            chardata(buffer, more?, original, pos, state, acc, 0)
         end
       end
 
@@ -944,6 +984,9 @@ defmodule Saxy.Parser.Builder do
         lookahead buffer, @streaming do
           char <> rest when is_ascii(char) ->
             case char do
+              ?\r ->
+                chardata_newline(rest, more?, original, pos + len + 1, state, [binary_part(original, pos, len), ?\n])
+
               whitespace when is_whitespace(whitespace) ->
                 chardata_whitespace(rest, more?, original, pos, state, len + 1)
 
@@ -993,6 +1036,10 @@ defmodule Saxy.Parser.Builder do
                 chars = binary_part(original, pos, len)
 
                 element_content_reference(rest, more?, original, pos + len + 1, state, [acc | chars])
+
+              ?\r ->
+                acc = [acc, binary_part(original, pos, len), ?\n]
+                chardata_newline(rest, more?, original, pos + len + 1, state, acc)
 
               _ ->
                 chardata(rest, more?, original, pos, state, acc, len + 1)
