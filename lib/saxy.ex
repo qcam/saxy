@@ -111,7 +111,7 @@ defmodule Saxy do
 
   """
 
-  @compile {:inline, do_transform_stream: 4}
+  @compile {:inline, do_transform_stream: 5}
 
   alias Saxy.{
     Encoder,
@@ -360,41 +360,151 @@ defmodule Saxy do
 
   * `:character_data_max_length` - tells the parser to emit the `:characters` event when its length exceeds the specified
     number. The option is useful when the tag being parsed containing a very large chunk of data. Defaults to `:infinity`.
+
   """
   @spec stream_events(in_stream :: Enumerable.t(), options :: Keyword.t()) :: out_stream :: Enumerable.t()
   def stream_events(stream, options \\ []) do
+    cont_fun = fn user_state -> {:lists.reverse(user_state), []} end
+    stream_state(stream, Accumulating, [], cont_fun, options)
+  end
+
+  @doc """
+  Parses an XML stream with the supplied handler and returns a stream of parsed elements.
+
+  This function expects:
+  * a stream;
+  * a SAX event handler (see more at `Saxy.Handler`);
+  * an initial state;
+  * and an emit function that will be called after parsing each element of the input stream.
+
+  The `emit_fun` takes the user state as input and returns a tuple `{emitted, new_state}`,
+  where `emitted` is an enumerable of elements that will be appended to the output stream,
+  and `new_state` is the user state that will be used in subsequent parsing.
+
+  This lets you control both when elements are emitted, as well the user state as you parse along the stream.
+  For example: emiting only elements that are completely parsed or cleaning up the state
+  by removing elements from it when they have been emitted.
+
+  Parsing errors raise a `Saxy.ParseError` exception.
+
+  ## Examples
+
+      defmodule BookHandler do
+        @behaviour Saxy.Handler
+
+        def handle_event(:start_document, _prolog, state) do
+          {:ok, state}
+        end
+
+        def handle_event(:end_document, _data, state) do
+          {:ok, state}
+        end
+
+        def handle_event(:start_element, {"book", attributes}, state) do
+          category = with {"category", category} <- List.keyfind(attributes, "category", 0), do: category
+          {:ok, %{state | book: %{category: category}}}
+        end
+
+        def handle_event(:start_element, {"title", _attributes}, %{book: book} = state) when is_map(book) do
+          state = Map.put_new(state, :title, "")
+          {:ok, state}
+        end
+
+        def handle_event(:start_element, _, state) do
+          {:ok, state}
+        end
+
+        def handle_event(:end_element, "book", %{parsed: parsed, book: book} = state) do
+          {:ok, %{state | parsed: [book | parsed], book: nil}}
+        end
+
+        def handle_event(:end_element, "title", %{book: book, title: title} = state) do
+          book = Map.put(book, :title, title)
+          state = Map.drop(state, [:title])
+          {:ok, %{state | book: book}}
+        end
+
+        def handle_event(:end_element, _, state) do
+          {:ok, state}
+        end
+
+        def handle_event(:characters, chars, %{title: title} = state) when is_binary(title) do
+          {:ok, %{state | title: title <> chars}}
+        end
+
+        def handle_event(:characters, _chars, state) do
+          {:ok, state}
+        end
+      end
+
+      iex> stream = File.stream!("./test/support/fixture/books.xml")
+      iex> initial_state = %{parsed: [], book: nil}
+      iex> emit_fun = fn %{parsed: parsed} = state -> {parsed, Map.put(state, :parsed, [])} end
+      iex> stream |> Saxy.stream_state(BookHandler, initial_state, emit_fun) |> Enum.to_list
+      [
+        %{category: "cooking", title: "Everyday Italian"},
+        %{category: "children", title: "Harry Potter"},
+        %{category: "web", title: "XQuery Kick Start"},
+        %{category: "web", title: "Learning XML"}
+      ]
+      iex> ["<foo>unclosed value"]  |> Saxy.stream_state(BookHandler, %{}, fn state -> {[], state} end) |> Enum.to_list
+      ** (Saxy.ParseError) unexpected end of input, expected token: :chardata
+
+  > #### Warning {: .warning }
+  >
+  > The input stream is evaluated lazily, therefore some events may be emitted before any exception is raised
+
+  ### Options
+
+  See the “Shared options” section at the module documentation.
+
+  * `:character_data_max_length` - tells the parser to emit the `:characters` event when its length exceeds the specified
+    number. The option is useful when the tag being parsed containing a very large chunk of data. Defaults to `:infinity`.
+
+  """
+
+  @spec stream_state(
+          in_stream :: Enumerable.t(),
+          handler :: module(),
+          initial_state :: term(),
+          emit_fun,
+          options :: Keyword.t()
+        ) :: out_stream :: Enumerable.t()
+        when emit_fun: (any() -> {Enumerable.t(), any()})
+  def stream_state(stream, handler, initial_state, emit_fun, options \\ []) do
     expand_entity = Keyword.get(options, :expand_entity, :keep)
     character_data_max_length = Keyword.get(options, :character_data_max_length, :infinity)
     cdata_as_characters = Keyword.get(options, :cdata_as_characters, true)
 
     state = %State{
       prolog: nil,
-      handler: Accumulating,
-      user_state: [],
+      handler: handler,
+      user_state: initial_state,
       expand_entity: expand_entity,
       cdata_as_characters: cdata_as_characters,
       character_data_max_length: character_data_max_length
     }
 
-    init = {&Parser.Stream.parse_prolog(&1, &2, &1, 0, &3), state}
+    init = {&Parser.Stream.parse_prolog(&1, &2, &1, 0, &3), emit_fun, state}
 
     stream
     |> Stream.concat([:end_of_stream])
     |> Stream.transform(init, &transform_stream/2)
   end
 
-  defp transform_stream(:end_of_stream, {cont_fun, state}) do
-    do_transform_stream(<<>>, false, cont_fun, state)
+  defp transform_stream(:end_of_stream, {cont_fun, emit_fun, state}) do
+    do_transform_stream(<<>>, false, cont_fun, emit_fun, state)
   end
 
-  defp transform_stream(buffer, {cont_fun, state}) do
-    do_transform_stream(buffer, true, cont_fun, state)
+  defp transform_stream(buffer, {cont_fun, emit_fun, state}) do
+    do_transform_stream(buffer, true, cont_fun, emit_fun, state)
   end
 
-  defp do_transform_stream(buffer, more?, cont_fun, state) do
+  defp do_transform_stream(buffer, more?, cont_fun, emit_fun, state) do
     case cont_fun.(buffer, more?, state) do
       {:halted, cont_fun, %{user_state: user_state} = state} ->
-        {:lists.reverse(user_state), {cont_fun, %{state | user_state: []}}}
+        {emit, new_state} = emit_fun.(user_state)
+        {emit, {cont_fun, emit_fun, %{state | user_state: new_state}}}
 
       {:error, error} ->
         raise error

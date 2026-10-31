@@ -58,6 +58,54 @@ defmodule MyTestHandler do
   end
 end
 
+defmodule BookHandler do
+  @behaviour Saxy.Handler
+
+  def handle_event(:start_document, _prolog, state) do
+    {:ok, state}
+  end
+
+  def handle_event(:end_document, _data, state) do
+    {:ok, state}
+  end
+
+  def handle_event(:start_element, {"book", attributes}, state) do
+    category = with {"category", category} <- List.keyfind(attributes, "category", 0), do: category
+    {:ok, %{state | book: %{category: category}}}
+  end
+
+  def handle_event(:start_element, {"title", _attributes}, %{book: book} = state) when is_map(book) do
+    state = Map.put_new(state, :title, "")
+    {:ok, state}
+  end
+
+  def handle_event(:start_element, _, state) do
+    {:ok, state}
+  end
+
+  def handle_event(:end_element, "book", %{parsed: parsed, book: book} = state) do
+    {:ok, %{state | parsed: [book | parsed], book: nil}}
+  end
+
+  def handle_event(:end_element, "title", %{book: book, title: title} = state) do
+    book = Map.put(book, :title, title)
+    state = Map.drop(state, [:title])
+    {:ok, %{state | book: book}}
+  end
+
+  def handle_event(:end_element, _, state) do
+    {:ok, state}
+  end
+
+  def handle_event(:characters, chars, %{title: title} = state) when is_binary(title) do
+    {:ok, %{state | title: title <> chars}}
+  end
+
+  def handle_event(:characters, _chars, state) do
+    {:ok, state}
+  end
+end
+
 defmodule Person do
   @derive {
     Saxy.Builder,
