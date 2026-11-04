@@ -691,7 +691,7 @@ defmodule Saxy.Parser.Builder do
       defp att_value(<<buffer::bits>>, more?, original, pos, state, attributes, open_quote, att_name, acc, len) do
         lookahead(buffer, @streaming) do
           ^open_quote <> rest ->
-            att_value = [acc | binary_part(original, pos, len)] |> IO.iodata_to_binary()
+            att_value = text_value(acc, original, pos, len)
             attributes = [{att_name, att_value} | attributes]
 
             sattribute(rest, more?, original, pos + len + 1, state, attributes)
@@ -982,7 +982,7 @@ defmodule Saxy.Parser.Builder do
           char <> rest when is_ascii(char) ->
             case char do
               ?< ->
-                chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+                chars = text_value(acc, original, pos, len)
                 pos = pos + len + 1
 
                 with {:cont, state} <- emit(:characters, chars, state, {original, pos - 1}) do
@@ -1008,7 +1008,7 @@ defmodule Saxy.Parser.Builder do
             %{character_data_max_length: max_length} = state
 
             if max_length != :infinity and len >= max_length do
-              chars = IO.iodata_to_binary([acc | binary_part(original, pos, len)])
+              chars = text_value(acc, original, pos, len)
               pos = pos + len
 
               with {:cont, state} <- emit(:characters, chars, state, {original, pos}) do
@@ -1428,6 +1428,10 @@ defmodule Saxy.Parser.Builder do
       else
         defp maybe_trim(_, binary, pos), do: {binary, pos}
       end
+
+      # A slice of up to 64 bytes is already a copy, which IO.iodata_to_binary/1 would copy again.
+      defp text_value(<<>>, original, pos, len) when len <= 64, do: binary_part(original, pos, len)
+      defp text_value(acc, original, pos, len), do: IO.iodata_to_binary([acc | binary_part(original, pos, len)])
     end
   end
 end
