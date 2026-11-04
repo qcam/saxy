@@ -26,8 +26,11 @@ defmodule Saxy.BufferingHelper do
   defp build_context_fun(fun_name, [token, _more?, original, pos, _state | args]) do
     quote do
       fn cont_buffer, more?, state ->
+        # Matched here so the parser function gets a match context.
+        <<buffer::bits>> = unquote(token) <> cont_buffer
+
         unquote(fun_name)(
-          unquote(token) <> cont_buffer,
+          buffer,
           more?,
           unquote(original) <> cont_buffer,
           unquote(pos),
