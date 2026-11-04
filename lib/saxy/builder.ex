@@ -77,7 +77,15 @@ end
 defimpl Saxy.Builder, for: Any do
   defmacro __deriving__(module, _struct, options) do
     name = Keyword.fetch!(options, :name)
-    attribute_fields = Keyword.get(options, :attributes, [])
+
+    attribute_fields =
+      options
+      |> Keyword.get(:attributes, [])
+      |> Map.new(fn
+        field when is_atom(field) -> {field, field}
+        {field, attribute} -> {field, attribute}
+      end)
+
     children_fields = Keyword.get(options, :children, [])
 
     quote do
@@ -87,8 +95,13 @@ defimpl Saxy.Builder, for: Any do
 
           attributes =
             struct
-            |> Map.take(unquote(attribute_fields))
-            |> Enum.to_list()
+            |> Map.take(unquote(Map.keys(attribute_fields)))
+            |> Enum.map(fn {field, value} ->
+              case unquote(Macro.escape(attribute_fields)) do
+                %{^field => attribute} -> {attribute, value}
+                _ -> {field, value}
+              end
+            end)
 
           children =
             Enum.map(

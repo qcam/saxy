@@ -114,6 +114,16 @@ defmodule Saxy.BuilderTest do
            }
   end
 
+  defmodule DeliveryOption do
+    @derive {Saxy.Builder, name: "option", attributes: [:cost, :days, order_before: "order-before"]}
+    defstruct [:cost, :days, :order_before]
+  end
+
+  test "builds structs with renamed attributes" do
+    delivery_option = %DeliveryOption{cost: 300, days: 4, order_before: 18}
+    assert build(delivery_option) == {"option", [{"cost", "300"}, {"days", "4"}, {"order-before", "18"}], []}
+  end
+
   @tag :property
 
   property "number" do
