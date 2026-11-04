@@ -30,7 +30,7 @@ defmodule Saxy.SimpleForm do
   * `:cdata_as_characters` - `true` to return CData as characters, `false` to wrap CData as `{:cdata, data}`. Defaults to `true`.
 
   Note that it is recommended to disable `:cdata_as_characters` if the outcome simple form data is meant to be re-encoded later.
-  Consider the following example, the encoded document has different sematics from the original one.
+  Consider the following example, the encoded document has different semantics from the original one.
 
       iex> xml = \"<foo><![CDATA[<greeting>Hello, world!</greeting>]]></foo>\"
       iex> {:ok, simple_form} = Saxy.SimpleForm.parse_string(xml, cdata_as_characters: true)

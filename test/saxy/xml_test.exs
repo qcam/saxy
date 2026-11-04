@@ -48,7 +48,7 @@ defmodule Saxy.XMLTest do
   end
 
   describe "reference/2" do
-    test "generates refence in simple form" do
+    test "generates reference in simple form" do
       assert reference(:entity, "foo") == {:reference, {:entity, "foo"}}
       assert reference(:hexadecimal, 64) == {:reference, {:hexadecimal, 64}}
       assert reference(:decimal, 64) == {:reference, {:decimal, 64}}
@@ -56,7 +56,7 @@ defmodule Saxy.XMLTest do
   end
 
   describe "processing_instruction/3" do
-    test "generates refence in simple form" do
+    test "generates reference in simple form" do
       assert processing_instruction("foo", "bar") == {:processing_instruction, "foo", "bar"}
       assert processing_instruction(:foo, "bar") == {:processing_instruction, "foo", "bar"}
 

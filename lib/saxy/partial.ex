@@ -103,7 +103,7 @@ defmodule Saxy.Partial do
   as the third argument instead of the previous accumulated state.
 
   i.e.
-  `Saxy.Partial.parse(partial, binary, new_state) # coninue previous partial with a new state`
+  `Saxy.Partial.parse(partial, binary, new_state) # continue previous partial with a new state`
 
   This function can return in 3 ways:
 
