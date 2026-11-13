@@ -51,7 +51,7 @@ defmodule Saxy.Encoder do
       start_tag(tag_name, attributes),
       ?>,
       content(contents),
-      end_tag(tag_name, contents)
+      end_tag(tag_name)
     ]
   end
 
@@ -95,7 +95,7 @@ defmodule Saxy.Encoder do
     [element(element) | content(elements)]
   end
 
-  defp end_tag(tag_name, _other) do
+  defp end_tag(tag_name) do
     [?<, ?/, tag_name, ?>]
   end
 

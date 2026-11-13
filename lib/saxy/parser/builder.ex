@@ -13,13 +13,24 @@ defmodule Saxy.Parser.Builder do
     streaming? = Keyword.fetch!(options, :streaming?)
 
     quote do
+      import unquote(__MODULE__), only: [maybe_trim_step: 4]
       @streaming unquote(streaming?)
 
       @before_compile unquote(__MODULE__)
     end
   end
 
-  defmacro __before_compile__(_env) do
+  defmacro maybe_trim_step(true, more, original, pos) do
+    quote do
+      {unquote(original), unquote(pos)} = maybe_trim(unquote(more), unquote(original), unquote(pos))
+    end
+  end
+
+  defmacro maybe_trim_step(false, _more, _original, _pos), do: nil
+
+  defmacro __before_compile__(env) do
+    streaming? = Module.get_attribute(env.module, :streaming)
+
     quote location: :keep do
       def parse_prolog(<<buffer::bits>>, more?, original, pos, state) do
         prolog(buffer, more?, original, pos, state)
@@ -614,7 +625,7 @@ defmodule Saxy.Parser.Builder do
                   element_misc(rest, more?, original, pos, state)
 
                 _ ->
-                  {original, pos} = maybe_trim(more?, original, pos)
+                  maybe_trim_step(unquote(streaming?), more?, original, pos)
                   element_content(rest, more?, original, pos, state)
               end
             end
@@ -1012,7 +1023,7 @@ defmodule Saxy.Parser.Builder do
               pos = pos + len
 
               with {:cont, state} <- emit(:characters, chars, state, {original, pos}) do
-                {original, pos} = maybe_trim(true, original, pos)
+                maybe_trim_step(unquote(streaming?), true, original, pos)
                 chardata(<<>>, true, original, pos, state, <<>>, 0)
               end
             else
@@ -1248,7 +1259,7 @@ defmodule Saxy.Parser.Builder do
                     element_misc(rest, more?, original, pos, state)
 
                   [_parent | _stack] ->
-                    {original, pos} = maybe_trim(more?, original, pos)
+                    maybe_trim_step(unquote(streaming?), more?, original, pos)
                     element_content(rest, more?, original, pos, state)
                 end
               end
@@ -1413,9 +1424,9 @@ defmodule Saxy.Parser.Builder do
         end
       end
 
-      @compile {:inline, [maybe_trim: 3]}
+      if unquote(streaming?) do
+        @compile {:inline, [maybe_trim: 3]}
 
-      if @streaming do
         defp maybe_trim(true, binary, pos) do
           binary_size = byte_size(binary)
 
@@ -1425,8 +1436,6 @@ defmodule Saxy.Parser.Builder do
         defp maybe_trim(_more?, binary, pos) do
           {binary, pos}
         end
-      else
-        defp maybe_trim(_, binary, pos), do: {binary, pos}
       end
     end
   end
